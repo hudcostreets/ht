@@ -15,7 +15,7 @@ interface Vehicle {
 interface VehiclePosition {
   x: number;
   y: number;
-  state: 'approaching' | 'queued' | 'tunnel' | 'exiting' | 'staging';
+  state: 'approaching' | 'queued' | 'tunnel' | 'exiting' | 'staging' | 'pen';
   opacity: number;
 }
 
@@ -156,513 +156,271 @@ export function HollandTunnelDeterministic() {
     }
   };
 
-  // Calculate vehicle position at a given time
-  const getVehiclePosition = (vehicle: Vehicle, time: number): VehiclePosition | null => {
-    const currentMin = Math.floor(time / 60) % 60;
-    const currentSec = time % 60;
+  // Get vehicle position at an exact minute (no interpolation)
+  const getVehiclePositionAtMinute = (vehicle: Vehicle, minuteTime: number): VehiclePosition | null => {
+    const currentMin = Math.floor(minuteTime / 60) % 60;
+    const currentHour = Math.floor(minuteTime / 3600);
     
-    // Special handling for sweep and pace vehicles
+    // Handle special vehicles (sweep and pace)
     if (vehicle.type === 'sweep' || vehicle.type === 'pace') {
-      const speed = vehicle.type === 'sweep' ? SWEEP_SPEED : PACE_SPEED;
+      const isSweep = vehicle.type === 'sweep';
+      const transitMinutes = isSweep ? 10 : 5;
+      const stagingOffset = isSweep ? 35 : 60;
       
-      // Calculate time needed to cross tunnel
-      // 2 miles at 12mph (sweep) = 10 minutes
-      // 2 miles at 24mph (pace) = 5 minutes
-      const transitMinutes = TUNNEL_LENGTH_MILES / (vehicle.type === 'sweep' ? SWEEP_MPH : PACE_MPH) * 60;
-      const stagingMinutes = 10; // Time between transits
-      
-      // Sweep schedule:
-      // :50-:00 - East transit (10 min)
-      // :00-:10 - Staging at west
-      // :20-:30 - West transit (10 min) 
-      // :30-:40 - Staging at east
-      // :40-:50 - Staging at east (waiting for next cycle)
-      
-      // Pace schedule:
-      // :55-:00 - East transit (5 min)
-      // :00-:10 - Staging at west
-      // :25-:30 - West transit (5 min)
-      // :30-:40 - Staging at east
-      // :40-:55 - Staging at east (waiting for next cycle)
-      
-      let isActive = false;
-      let activeDirection: 'east' | 'west' = 'east';
-      let phaseStartMin = 0;
-      
-      if (vehicle.type === 'sweep') {
-        // Add transition from staging to tunnel entrance
-        if (currentMin === 49 && currentSec >= 30) {
-          // Animate from staging to tunnel entrance during last 30 seconds of :49
-          const transitionProgress = (currentSec - 30) / 30; // 0 to 1 over 30 seconds
-          const startX = QUEUE_AREA_WIDTH - 50; // Staging position
-          const endX = QUEUE_AREA_WIDTH; // Tunnel entrance
-          const startY = getLaneY('east', 2) + 35; // Staging Y with offset
-          const endY = getLaneY('east', 2); // Lane Y
-          
-          return {
-            x: startX + (endX - startX) * transitionProgress,
-            y: startY + (endY - startY) * transitionProgress,
-            state: 'staging',
-            opacity: 1
-          };
-        } else if (currentMin === 19 && currentSec >= 30) {
-          // West transition
-          const transitionProgress = (currentSec - 30) / 30;
-          const startX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50;
-          const endX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH;
-          const startY = getLaneY('west', 2) - 35;
-          const endY = getLaneY('west', 2);
-          
-          return {
-            x: startX + (endX - startX) * transitionProgress,
-            y: startY + (endY - startY) * transitionProgress,
-            state: 'staging',
-            opacity: 1
-          };
-        } else if (currentMin >= 50 || currentMin < 10) {
-          // East transit or just finished
-          if (currentMin >= 50) {
-            isActive = true;
-            activeDirection = 'east';
-            phaseStartMin = 50;
+      // Define schedule states for each minute
+      if (isSweep) {
+        // Sweep schedule
+        if (currentMin >= 50) {
+          // Moving east
+          const progress = (currentMin - 50) / transitMinutes;
+          const distance = TUNNEL_WIDTH * progress;
+          return { x: QUEUE_AREA_WIDTH + distance, y: getLaneY('east', 2), state: 'tunnel', opacity: 1 };
+        } else if (currentMin < 10) {
+          // Still moving east or staging west
+          const totalMin = currentMin + 10; // Minutes since :50
+          if (totalMin < 10) {
+            const progress = totalMin / transitMinutes;
+            const distance = TUNNEL_WIDTH * progress;
+            return { x: QUEUE_AREA_WIDTH + distance, y: getLaneY('east', 2), state: 'tunnel', opacity: 1 };
           } else {
-            // Just finished east transit, staging west
-            const timeSinceStart = currentMin * 60 + currentSec;
-            if (timeSinceStart < transitMinutes * 60) {
-              isActive = true;
-              activeDirection = 'east';
-              phaseStartMin = -10; // Started 10 minutes "before" hour
-            }
+            // Staging west
+            return {
+              x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50,
+              y: getLaneY('west', 2) - stagingOffset,
+              state: 'staging',
+              opacity: 1
+            };
           }
         } else if (currentMin >= 20 && currentMin < 30) {
-          isActive = true;
-          activeDirection = 'west';
-          phaseStartMin = 20;
-        }
-      } else { // pace
-        // Add transition from staging to tunnel entrance
-        if (currentMin === 54 && currentSec >= 30) {
-          // Animate from staging to tunnel entrance during last 30 seconds of :54
-          const transitionProgress = (currentSec - 30) / 30; // 0 to 1 over 30 seconds
-          const startX = QUEUE_AREA_WIDTH - 50; // Staging position
-          const endX = QUEUE_AREA_WIDTH; // Tunnel entrance
-          const startY = getLaneY('east', 2) + 60; // Staging Y with offset
-          const endY = getLaneY('east', 2); // Lane Y
-          
-          return {
-            x: startX + (endX - startX) * transitionProgress,
-            y: startY + (endY - startY) * transitionProgress,
-            state: 'staging',
-            opacity: 1
+          // Moving west
+          const progress = (currentMin - 20) / transitMinutes;
+          const distance = TUNNEL_WIDTH * progress;
+          return { 
+            x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH - distance, 
+            y: getLaneY('west', 2), 
+            state: 'tunnel', 
+            opacity: 1 
           };
-        } else if (currentMin === 24 && currentSec >= 30) {
-          // West transition
-          const transitionProgress = (currentSec - 30) / 30;
-          const startX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50;
-          const endX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH;
-          const startY = getLaneY('west', 2) - 60;
-          const endY = getLaneY('west', 2);
-          
-          return {
-            x: startX + (endX - startX) * transitionProgress,
-            y: startY + (endY - startY) * transitionProgress,
-            state: 'staging',
-            opacity: 1
-          };
-        } else if (currentMin >= 55 || currentMin < 10) {
-          // East transit or just finished
-          if (currentMin >= 55) {
-            isActive = true;
-            activeDirection = 'east';
-            phaseStartMin = 55;
-          } else {
-            // Check if still in transit from previous hour
-            const timeSinceStart = currentMin * 60 + currentSec;
-            if (timeSinceStart < transitMinutes * 60) { // 5 minutes from :55
-              isActive = true;
-              activeDirection = 'east';
-              phaseStartMin = -5;
-            }
-          }
-        } else if (currentMin >= 25 && currentMin < 30) {
-          isActive = true;
-          activeDirection = 'west';
-          phaseStartMin = 25;
-        }
-      }
-      
-      if (!isActive) {
-        // Vehicle is in staging area
-        const stagingOffset = vehicle.type === 'sweep' ? 35 : 60;
-        
-        // Determine which staging area based on schedule
-        if (vehicle.type === 'sweep') {
-          if (currentMin >= 0 && currentMin < 20) {
-            // Staging west after east transit
-            return {
-              x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50,
-              y: getLaneY('west', 2) - stagingOffset,
-              state: 'staging',
-              opacity: 1
-            };
-          } else {
-            // Staging east after west transit or waiting
-            return {
-              x: QUEUE_AREA_WIDTH - 50,
-              y: getLaneY('east', 2) + stagingOffset,
-              state: 'staging',
-              opacity: 1
-            };
-          }
-        } else { // pace
-          if (currentMin >= 0 && currentMin < 25) {
-            // Staging west after east transit
-            return {
-              x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50,
-              y: getLaneY('west', 2) - stagingOffset,
-              state: 'staging',
-              opacity: 1
-            };
-          } else {
-            // Staging east after west transit or waiting
-            return {
-              x: QUEUE_AREA_WIDTH - 50,
-              y: getLaneY('east', 2) + stagingOffset,
-              state: 'staging',
-              opacity: 1
-            };
-          }
-        }
-      }
-      
-      // Vehicle is active - calculate position
-      const phaseTime = ((currentMin - phaseStartMin + 60) % 60) * 60 + currentSec;
-      const distance = speed * phaseTime;
-      
-      // Need to travel full tunnel width + some extra to clear
-      const tunnelClearDistance = TUNNEL_WIDTH + 100;
-      
-      if (activeDirection === 'east') {
-        const x = QUEUE_AREA_WIDTH + distance;
-        if (distance > tunnelClearDistance) {
-          // Move to staging
+        } else if (currentMin < 20) {
+          // Staging west
           return {
             x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50,
-            y: getLaneY('west', 2) - (vehicle.type === 'sweep' ? 35 : 60),
+            y: getLaneY('west', 2) - stagingOffset,
             state: 'staging',
             opacity: 1
           };
-        }
-        return { x, y: getLaneY('east', 2), state: 'tunnel', opacity: 1 };
-      } else {
-        const x = TUNNEL_WIDTH + QUEUE_AREA_WIDTH - distance;
-        if (distance > tunnelClearDistance) {
-          // Move to staging
+        } else {
+          // Staging east
           return {
             x: QUEUE_AREA_WIDTH - 50,
-            y: getLaneY('east', 2) + (vehicle.type === 'sweep' ? 35 : 60),
+            y: getLaneY('east', 2) + stagingOffset,
             state: 'staging',
             opacity: 1
           };
         }
-        return { x, y: getLaneY('west', 2), state: 'tunnel', opacity: 1 };
+      } else {
+        // Pace schedule
+        if (currentMin >= 55) {
+          // Moving east
+          const progress = (currentMin - 55) / transitMinutes;
+          const distance = TUNNEL_WIDTH * progress;
+          return { x: QUEUE_AREA_WIDTH + distance, y: getLaneY('east', 2), state: 'tunnel', opacity: 1 };
+        } else if (currentMin < 5) {
+          // Still moving east or staging west
+          const totalMin = currentMin + 5; // Minutes since :55
+          if (totalMin < 5) {
+            const progress = totalMin / transitMinutes;
+            const distance = TUNNEL_WIDTH * progress;
+            return { x: QUEUE_AREA_WIDTH + distance, y: getLaneY('east', 2), state: 'tunnel', opacity: 1 };
+          } else {
+            // Staging west
+            return {
+              x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50,
+              y: getLaneY('west', 2) - stagingOffset,
+              state: 'staging',
+              opacity: 1
+            };
+          }
+        } else if (currentMin >= 25 && currentMin < 30) {
+          // Moving west
+          const progress = (currentMin - 25) / transitMinutes;
+          const distance = TUNNEL_WIDTH * progress;
+          return { 
+            x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH - distance, 
+            y: getLaneY('west', 2), 
+            state: 'tunnel', 
+            opacity: 1 
+          };
+        } else if (currentMin < 25) {
+          // Staging west
+          return {
+            x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50,
+            y: getLaneY('west', 2) - stagingOffset,
+            state: 'staging',
+            opacity: 1
+          };
+        } else {
+          // Staging east
+          return {
+            x: QUEUE_AREA_WIDTH - 50,
+            y: getLaneY('east', 2) + stagingOffset,
+            state: 'staging',
+            opacity: 1
+          };
+        }
       }
     }
-
-    // Handle cars
-    if (vehicle.type === 'car') {
-      // Cars spawn once per hour at their designated minute
-      const currentHour = Math.floor(time / 3600);
-      const spawnTime = (currentHour * 3600) + (vehicle.spawnMinute * 60);
+    
+    // Handle bikes
+    if (vehicle.type === 'bike') {
+      const bikeSpawnMinute = vehicle.spawnMinute * 4;
+      const minuteInHour = currentMin;
       
-      // Check if we're within 1 minute of spawn time
-      if (time < spawnTime - 60) return null; // Don't show cars more than 1 minute early
+      if (vehicle.spawnMinute > 13 || bikeSpawnMinute > minuteInHour) return null;
       
-      // Check if lane is open when car arrives
-      const phase = getPhase(vehicle.spawnMinute, vehicle.direction);
-      const isLane2Blocked = vehicle.lane === 2 && phase !== 'normal';
+      const releaseMinute = vehicle.direction === 'east' ? 45 : 15;
       
-      // Calculate position
-      let enterTime = spawnTime;
-      
-      // If we're before spawn time but within fade-in period, car is fading in
-      if (time < spawnTime && time >= spawnTime - 60) {
-        // Calculate how close we are to spawn time (0 to 1 over the last minute)
-        const timeUntilSpawn = spawnTime - time;
-        const fadeProgress = 1 - (timeUntilSpawn / 60); // Fade in over 1 minute
-        
-        // Car appears at tunnel entrance with increasing opacity
-        const x = vehicle.direction === 'east' ? 
-          QUEUE_AREA_WIDTH : 
-          TUNNEL_WIDTH + QUEUE_AREA_WIDTH;
+      if (currentMin < releaseMinute) {
+        // In pen
+        const col = vehicle.spawnMinute % 3;
+        const row = Math.floor(vehicle.spawnMinute / 3);
+        const penX = vehicle.direction === 'east' ? 70 : TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 70;
+        const penY = vehicle.direction === 'east' ? 310 : 60;
         
         return {
-          x,
-          y: getLaneY(vehicle.direction, vehicle.lane),
-          state: 'approaching',
-          opacity: fadeProgress
+          x: penX + (col * 25 - 25),
+          y: penY + (row * 15 - 30),
+          state: 'pen',
+          opacity: 1
         };
       }
       
-      if (isLane2Blocked) {
-        // Car needs to queue - find next normal phase
-        let nextNormalMinute;
-        if (vehicle.direction === 'east') {
-          // East normal phase is :00-:45 and :56-:59
-          // :45 car enters at :56 (after pace car)
-          if (vehicle.spawnMinute === 45) {
-            nextNormalMinute = 56;
-          } else if (vehicle.spawnMinute < 45 || vehicle.spawnMinute >= 56) {
-            nextNormalMinute = vehicle.spawnMinute;
-          } else {
-            nextNormalMinute = 60; // Next hour (for :46-:55 which don't exist)
-          }
-        } else {
-          // West normal phase is :30-:15 (wraps around)
-          // :15 car enters at :26 (after pace car)
-          if (vehicle.spawnMinute === 15) {
-            nextNormalMinute = 26;
-          } else if (vehicle.spawnMinute >= 30 || vehicle.spawnMinute < 15) {
-            nextNormalMinute = vehicle.spawnMinute;
-          } else {
-            nextNormalMinute = 30;
-          }
-        }
+      // Calculate minutes since release
+      const minutesSinceRelease = currentMin - releaseMinute;
+      const releaseOrder = vehicle.spawnMinute;
+      const releaseDelayMinutes = releaseOrder / 5; // 5 bikes per minute
+      
+      if (minutesSinceRelease < releaseDelayMinutes) {
+        // Still in pen waiting
+        const col = vehicle.spawnMinute % 3;
+        const row = Math.floor(vehicle.spawnMinute / 3);
+        const penX = vehicle.direction === 'east' ? 70 : TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 70;
+        const penY = vehicle.direction === 'east' ? 310 : 60;
         
-        const nextNormalTime = (currentHour * 3600) + (nextNormalMinute * 60);
-        if (nextNormalMinute === 60) {
-          // Wait for next hour
-          enterTime = ((currentHour + 1) * 3600);
-        } else {
-          enterTime = nextNormalTime;
-        }
-        
-        // If still waiting to enter
-        if (time < enterTime) {
-          // Calculate queue position based on when car will enter
-          let queueIndex = 0;
-          if (vehicle.direction === 'east') {
-            // East: :45 car is first, :46 would be second if it existed
-            queueIndex = vehicle.spawnMinute - 45;
-          } else {
-            // West: :15 car is first, :16-:19 would follow
-            queueIndex = vehicle.spawnMinute >= 15 ? vehicle.spawnMinute - 15 : vehicle.spawnMinute + 45;
-          }
-          
-          const queueSpacing = 50; // More spacing between cars
-          const baseOffset = 60;
-          
-          return {
-            x: vehicle.direction === 'east' ? 
-              QUEUE_AREA_WIDTH - baseOffset - (queueIndex * queueSpacing) :
-              TUNNEL_WIDTH + QUEUE_AREA_WIDTH + baseOffset + (queueIndex * queueSpacing),
-            y: getLaneY(vehicle.direction, vehicle.lane),
-            state: 'queued',
-            opacity: 1
-          };
-        }
+        return {
+          x: penX + (col * 25 - 25),
+          y: penY + (row * 15 - 30),
+          state: 'pen',
+          opacity: 1
+        };
       }
       
       // Moving through tunnel
-      const travelTime = time - enterTime;
+      const travelMinutes = minutesSinceRelease - releaseDelayMinutes;
       
-      // Calculate tunnel transit time (2 miles at 24mph = 5 minutes)
-      const tunnelTransitTime = (TUNNEL_LENGTH_MILES / CAR_MPH) * 3600; // Convert hours to seconds
-      const totalTransitTime = tunnelTransitTime + 120; // Add 2 minutes for fade zones
+      // Calculate distance based on variable speeds
+      let distance = 0;
+      const halfwayMinutes = (TUNNEL_WIDTH / 2) / (BIKE_SPEED_DOWNHILL * 60);
       
-      // Cars spawn at tunnel entrance
-      const fadeZone = 100;
-      const tunnelEntrance = vehicle.direction === 'east' ? 
-        QUEUE_AREA_WIDTH : 
-        TUNNEL_WIDTH + QUEUE_AREA_WIDTH;
-      
-      // For cars from previous hour, check if they should still be visible
-      if (travelTime < 0) {
-        // This car is from the previous hour
-        const prevHourTravelTime = travelTime + 3600; // Add an hour
-        if (prevHourTravelTime > totalTransitTime) {
-          return null; // Car has exited
-        }
-        // Use previous hour travel time for position calculation
-        const distance = CAR_SPEED * prevHourTravelTime;
-        const x = vehicle.direction === 'east' ? 
-          tunnelEntrance + distance : 
-          tunnelEntrance - distance;
-        
-        // Check if still in view
-        if ((vehicle.direction === 'east' && x > TUNNEL_WIDTH + QUEUE_AREA_WIDTH + fadeZone) ||
-            (vehicle.direction === 'west' && x < QUEUE_AREA_WIDTH - fadeZone)) {
-          return null;
-        }
-        
-        // Calculate opacity
-        let opacity = 1;
-        if (vehicle.direction === 'east') {
-          if (x > TUNNEL_WIDTH + QUEUE_AREA_WIDTH) {
-            opacity = Math.max(0, (TUNNEL_WIDTH + QUEUE_AREA_WIDTH + fadeZone - x) / fadeZone);
-          }
-        } else {
-          if (x < QUEUE_AREA_WIDTH) {
-            opacity = Math.max(0, (x - (QUEUE_AREA_WIDTH - fadeZone)) / fadeZone);
-          }
-        }
-        
-        return {
-          x,
-          y: getLaneY(vehicle.direction, vehicle.lane),
-          state: x < QUEUE_AREA_WIDTH || x > TUNNEL_WIDTH + QUEUE_AREA_WIDTH ? 'approaching' : 'tunnel',
-          opacity
-        };
-      }
-      
-      // If car has been traveling for more than total transit time, it's gone
-      if (travelTime > totalTransitTime) {
-        return null;
-      }
-      
-      // Calculate position based on travel time
-      const distance = CAR_SPEED * travelTime;
-      const x = vehicle.direction === 'east' ? 
-        tunnelEntrance + distance : 
-        tunnelEntrance - distance;
-      
-      // Check if exited (with fade zone)
-      if ((vehicle.direction === 'east' && x > TUNNEL_WIDTH + QUEUE_AREA_WIDTH + fadeZone) ||
-          (vehicle.direction === 'west' && x < QUEUE_AREA_WIDTH - fadeZone)) {
-        return null;
-      }
-      
-      // Calculate opacity for fade out at exits only
-      // (fade in is handled in the approaching state above)
-      let opacity = 1;
-      
-      if (vehicle.direction === 'east') {
-        if (x > TUNNEL_WIDTH + QUEUE_AREA_WIDTH) {
-          // Fading out at exit
-          opacity = Math.max(0, (TUNNEL_WIDTH + QUEUE_AREA_WIDTH + fadeZone - x) / fadeZone);
-        }
+      if (travelMinutes <= halfwayMinutes) {
+        distance = BIKE_SPEED_DOWNHILL * 60 * travelMinutes;
       } else {
-        if (x < QUEUE_AREA_WIDTH) {
-          // Fading out at exit
-          opacity = Math.max(0, (x - (QUEUE_AREA_WIDTH - fadeZone)) / fadeZone);
-        }
+        distance = (TUNNEL_WIDTH / 2) + BIKE_SPEED_UPHILL * 60 * (travelMinutes - halfwayMinutes);
+      }
+      
+      const startX = vehicle.direction === 'east' ? QUEUE_AREA_WIDTH : TUNNEL_WIDTH + QUEUE_AREA_WIDTH;
+      const x = vehicle.direction === 'east' ? startX + distance : startX - distance;
+      
+      // Check if exited
+      const exitX = vehicle.direction === 'east' ? 
+        TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50 : 
+        QUEUE_AREA_WIDTH - 50;
+      
+      if ((vehicle.direction === 'east' && x > exitX) ||
+          (vehicle.direction === 'west' && x < exitX)) {
+        return null;
+      }
+      
+      // Calculate opacity for fade zones
+      let opacity = 1;
+      const fadeZone = 50;
+      if (vehicle.direction === 'east' && x > TUNNEL_WIDTH + QUEUE_AREA_WIDTH) {
+        opacity = Math.max(0, (exitX - x) / fadeZone);
+      } else if (vehicle.direction === 'west' && x < QUEUE_AREA_WIDTH) {
+        opacity = Math.max(0, (x - exitX) / fadeZone);
       }
       
       return {
         x,
         y: getLaneY(vehicle.direction, vehicle.lane),
-        state: x < QUEUE_AREA_WIDTH || x > TUNNEL_WIDTH + QUEUE_AREA_WIDTH ? 'approaching' : 'tunnel',
+        state: 'tunnel',
         opacity
       };
     }
-
-    // Handle bikes
-    if (vehicle.type === 'bike') {
-      // Bikes spawn every 4 minutes (15 total per hour)
-      const bikeSpawnMinute = vehicle.spawnMinute * 4;
-      const currentHour = Math.floor(time / 3600);
-      const minuteInHour = Math.floor(time / 60) % 60;
+    
+    // Handle cars
+    if (vehicle.type === 'car') {
+      const spawnMinute = vehicle.spawnMinute;
+      const phase = getPhase(spawnMinute, vehicle.direction);
+      const isBlocked = vehicle.lane === 2 && phase !== 'normal';
       
-      // Check if this bike should exist yet
-      // Only spawn bikes up to minute 56 (14 bikes total, 0-13)
-      if (vehicle.spawnMinute > 13 || bikeSpawnMinute > minuteInHour) return null;
+      // Check if car exists yet
+      if (spawnMinute > currentMin) return null;
       
-      // Determine release time based on phase
-      const releaseMinute = vehicle.direction === 'east' ? 45 : 15;
-      const releaseTime = (currentHour * 3600) + (releaseMinute * 60);
-      
-      if (time < releaseTime) {
-        // Still in pen - arrange bikes in a grid
-        const penX = vehicle.direction === 'east' ? 70 : TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 70;
-        const penY = vehicle.direction === 'east' ? 310 : 60;
-        
-        // Arrange in a 3x5 grid (3 columns, 5 rows)
-        const col = vehicle.spawnMinute % 3;
-        const row = Math.floor(vehicle.spawnMinute / 3);
-        
-        const xOffset = col * 25 - 25; // 25px spacing between columns
-        const yOffset = row * 15 - 30; // 15px spacing between rows
-        
-        return {
-          x: penX + xOffset,
-          y: penY + yOffset,
-          state: 'queued',
-          opacity: 1
-        };
+      // Calculate when car can enter
+      let enterMinute = spawnMinute;
+      if (isBlocked) {
+        if (vehicle.direction === 'east') {
+          if (spawnMinute === 45) enterMinute = 56;
+          else if (spawnMinute >= 46 && spawnMinute <= 55) return null; // These don't spawn
+        } else {
+          if (spawnMinute === 15) enterMinute = 26;
+          else if (spawnMinute >= 16 && spawnMinute <= 25) return null;
+        }
       }
       
-      // First bike stages at tunnel entrance at :45/:15
-      const isFirstBike = vehicle.spawnMinute === 0;
-      
-      if (isFirstBike && time >= releaseTime && time < releaseTime + 12) {
-        // First bike is already at tunnel entrance when phase starts
+      if (currentMin < enterMinute) {
+        // Queued
+        const queueIndex = spawnMinute % 15;
+        const queueSpacing = 40;
+        const baseOffset = 50;
+        
+        const x = vehicle.direction === 'east' ? 
+          QUEUE_AREA_WIDTH - baseOffset - (queueIndex * queueSpacing) :
+          TUNNEL_WIDTH + QUEUE_AREA_WIDTH + baseOffset + (queueIndex * queueSpacing);
+        
         return {
-          x: vehicle.direction === 'east' ? QUEUE_AREA_WIDTH : TUNNEL_WIDTH + QUEUE_AREA_WIDTH,
+          x,
           y: getLaneY(vehicle.direction, vehicle.lane),
-          state: 'tunnel',
-          opacity: 1
-        };
-      }
-      
-      // Calculate release timing
-      const releaseOrder = vehicle.spawnMinute;
-      const releaseDelay = releaseOrder * 12; // 5 per minute = 12 seconds apart
-      const actualReleaseTime = releaseTime + releaseDelay;
-      
-      if (time < actualReleaseTime) {
-        // Still waiting to be released in pen - arrange in grid
-        const penX = vehicle.direction === 'east' ? 70 : TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 70;
-        const penY = vehicle.direction === 'east' ? 310 : 60;
-        
-        // Arrange in a 3x5 grid (3 columns, 5 rows)
-        const col = vehicle.spawnMinute % 3;
-        const row = Math.floor(vehicle.spawnMinute / 3);
-        
-        const xOffset = col * 25 - 25; // 25px spacing between columns
-        const yOffset = row * 15 - 30; // 15px spacing between rows
-        
-        return {
-          x: penX + xOffset,
-          y: penY + yOffset,
           state: 'queued',
           opacity: 1
         };
       }
       
       // Moving through tunnel
-      const travelTime = time - actualReleaseTime;
+      const travelMinutes = currentMin - enterMinute;
+      const distance = CAR_SPEED * 60 * travelMinutes;
       
-      // Calculate position with variable speed
-      let distance = 0;
-      // Both directions start downhill, then go uphill
-      const halfwayTime = (TUNNEL_WIDTH / 2) / BIKE_SPEED_DOWNHILL;
-      if (travelTime <= halfwayTime) {
-        distance = BIKE_SPEED_DOWNHILL * travelTime;
-      } else {
-        distance = (TUNNEL_WIDTH / 2) + BIKE_SPEED_UPHILL * (travelTime - halfwayTime);
-      }
-      
-      // Bikes start from tunnel entrance
       const startX = vehicle.direction === 'east' ? QUEUE_AREA_WIDTH : TUNNEL_WIDTH + QUEUE_AREA_WIDTH;
       const x = vehicle.direction === 'east' ? startX + distance : startX - distance;
       
-      // Check if exited (with fade zone)
-      const fadeZone = 50;
-      if ((vehicle.direction === 'east' && x > TUNNEL_WIDTH + QUEUE_AREA_WIDTH + fadeZone) ||
-          (vehicle.direction === 'west' && x < -fadeZone)) {
+      // Check if exited
+      const exitX = vehicle.direction === 'east' ? 
+        TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 100 : 
+        QUEUE_AREA_WIDTH - 100;
+      
+      if ((vehicle.direction === 'east' && x > exitX) ||
+          (vehicle.direction === 'west' && x < exitX)) {
         return null;
       }
       
-      // Calculate opacity - bikes fade only at exit
+      // Calculate opacity for fade zones
       let opacity = 1;
-      if (vehicle.direction === 'east') {
-        if (x > TUNNEL_WIDTH + QUEUE_AREA_WIDTH) {
-          opacity = Math.max(0, (TUNNEL_WIDTH + QUEUE_AREA_WIDTH + fadeZone - x) / fadeZone);
-        }
-      } else {
-        if (x < QUEUE_AREA_WIDTH) {
-          opacity = Math.max(0, (x + fadeZone) / fadeZone);
-        }
+      const fadeZone = 100;
+      if (vehicle.direction === 'east' && x > TUNNEL_WIDTH + QUEUE_AREA_WIDTH) {
+        opacity = Math.max(0, (exitX - x) / fadeZone);
+      } else if (vehicle.direction === 'west' && x < QUEUE_AREA_WIDTH) {
+        opacity = Math.max(0, (x - exitX) / fadeZone);
       }
       
       return {
@@ -674,6 +432,33 @@ export function HollandTunnelDeterministic() {
     }
     
     return null;
+  };
+  
+  // Get interpolated vehicle position at any time
+  const getVehiclePosition = (vehicle: Vehicle, time: number): VehiclePosition | null => {
+    const currentSec = time % 60;
+    const currentMinuteTime = Math.floor(time / 60) * 60;
+    const nextMinuteTime = currentMinuteTime + 60;
+    
+    // Get positions at current and next minute
+    const currentPos = getVehiclePositionAtMinute(vehicle, currentMinuteTime);
+    const nextPos = getVehiclePositionAtMinute(vehicle, nextMinuteTime);
+    
+    // If vehicle doesn't exist at current minute, return null
+    if (!currentPos) return null;
+    
+    // If vehicle doesn't exist at next minute, just return current position
+    if (!nextPos) return currentPos;
+    
+    // Interpolate between positions
+    const interpolationFactor = currentSec / 60;
+    
+    return {
+      x: currentPos.x + (nextPos.x - currentPos.x) * interpolationFactor,
+      y: currentPos.y + (nextPos.y - currentPos.y) * interpolationFactor,
+      state: currentPos.state, // Use current state
+      opacity: currentPos.opacity + (nextPos.opacity - currentPos.opacity) * interpolationFactor
+    };
   };
 
   // Get visible vehicles
