@@ -13,6 +13,7 @@
     "framer-motion": "^12.23.6",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-tooltip": "^5.29.1",
     "use-session-storage-state": "^19.0.1"
   },
   "devDependencies": {

@@ -1,8 +1,8 @@
-import { HollandTunnelSVG } from './components/HollandTunnelSVG'
+import { HollandTunnelDeterministic } from './components/HollandTunnelDeterministic'
 import './App.css'
 
 function App() {
-  return <HollandTunnelSVG />
+  return <HollandTunnelDeterministic />
 }
 
 export default App

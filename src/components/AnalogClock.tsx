@@ -7,6 +7,7 @@ interface AnalogClockProps {
 
 export function AnalogClock({ minute, size = 80 }: AnalogClockProps) {
   // Calculate minute hand angle (6 degrees per minute)
+  // Use fractional minutes for smooth animation
   const minuteAngle = (minute * 6) - 90; // -90 to start from top
   
   return (
