@@ -1,8 +1,8 @@
-import { HollandTunnel } from './components/HollandTunnel'
+import { HollandTunnelSVG } from './components/HollandTunnelSVG'
 import './App.css'
 
 function App() {
-  return <HollandTunnel />
+  return <HollandTunnelSVG />
 }
 
 export default App

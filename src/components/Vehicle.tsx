@@ -27,7 +27,7 @@ export function Vehicle({ type, position, lane, direction, tunnelLength }: Vehic
   const y = lane === 1 ? 10 : 10; // Both lanes at same vertical position within their container
 
   return (
-    <motion.div
+    <div
       className={`vehicle vehicle-${type}`}
       style={{
         position: 'absolute',
@@ -36,12 +36,8 @@ export function Vehicle({ type, position, lane, direction, tunnelLength }: Vehic
         top: `${y}px`,
         transform: direction === 'west' ? 'scaleX(-1)' : 'scaleX(1)',
       }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
     >
       {emoji}
-    </motion.div>
+    </div>
   );
 }
