@@ -65,30 +65,16 @@ for (let minute = 0; minute < 60; minute++) {
     { id: `car-w1-${minute}`, type: 'car', spawnMinute: minute, lane: 1, direction: 'west' }
   );
   
-  // Lane 2 (R lane) - only during normal phase
-  // East: :00-:44, then :56-:59 (resume after pace car)
-  if (minute < 45 || minute >= 56) {
-    ALL_VEHICLES.push(
-      { id: `car-e2-${minute}`, type: 'car', spawnMinute: minute, lane: 2, direction: 'east' }
-    );
-  } else if (minute === 45) {
-    // :45 car that will queue and enter at :56
-    ALL_VEHICLES.push(
-      { id: `car-e2-${minute}`, type: 'car', spawnMinute: minute, lane: 2, direction: 'east' }
-    );
-  }
+  // Lane 2 (R lane)
+  // East: All minutes spawn, but :45-:55 will queue
+  ALL_VEHICLES.push(
+    { id: `car-e2-${minute}`, type: 'car', spawnMinute: minute, lane: 2, direction: 'east' }
+  );
   
-  // West: :26-:59 and :00-:14, then queue :15
-  if ((minute >= 26 || minute < 15)) {
-    ALL_VEHICLES.push(
-      { id: `car-w2-${minute}`, type: 'car', spawnMinute: minute, lane: 2, direction: 'west' }
-    );
-  } else if (minute === 15) {
-    // :15 car that will queue and enter at :26
-    ALL_VEHICLES.push(
-      { id: `car-w2-${minute}`, type: 'car', spawnMinute: minute, lane: 2, direction: 'west' }
-    );
-  }
+  // West: All minutes spawn, but :15-:25 will queue
+  ALL_VEHICLES.push(
+    { id: `car-w2-${minute}`, type: 'car', spawnMinute: minute, lane: 2, direction: 'west' }
+  );
 }
 
 // 15 bikes for each direction (spawn every 4 minutes)
@@ -171,19 +157,31 @@ export function HollandTunnelDeterministic() {
       if (isSweep) {
         // Sweep schedule
         if (currentMin >= 50) {
-          // Moving east
+          // Moving east :50-:59
           const progress = (currentMin - 50) / transitMinutes;
           const distance = TUNNEL_WIDTH * progress;
           return { x: QUEUE_AREA_WIDTH + distance, y: getLaneY('east', 2), state: 'tunnel', opacity: 1 };
         } else if (currentMin < 10) {
-          // Still moving east or staging west
-          const totalMin = currentMin + 10; // Minutes since :50
-          if (totalMin < 10) {
-            const progress = totalMin / transitMinutes;
-            const distance = TUNNEL_WIDTH * progress;
-            return { x: QUEUE_AREA_WIDTH + distance, y: getLaneY('east', 2), state: 'tunnel', opacity: 1 };
+          // :00-:09
+          if (currentMin === 0) {
+            // Still at tunnel exit
+            return { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH, y: getLaneY('east', 2), state: 'tunnel', opacity: 1 };
+          } else if (currentMin >= 1 && currentMin <= 5) {
+            // Moving to west staging :01-:05
+            const progress = (currentMin - 1) / 4; // Over 4 minutes
+            const startX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH;
+            const endX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50;
+            const startY = getLaneY('east', 2);
+            const endY = getLaneY('west', 2) - stagingOffset;
+            
+            return {
+              x: startX + (endX - startX) * progress,
+              y: startY + (endY - startY) * progress,
+              state: 'staging',
+              opacity: 1
+            };
           } else {
-            // Staging west
+            // Staging west :06-:09
             return {
               x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50,
               y: getLaneY('west', 2) - stagingOffset,
@@ -192,7 +190,7 @@ export function HollandTunnelDeterministic() {
             };
           }
         } else if (currentMin >= 20 && currentMin < 30) {
-          // Moving west
+          // Moving west :20-:29
           const progress = (currentMin - 20) / transitMinutes;
           const distance = TUNNEL_WIDTH * progress;
           return { 
@@ -201,8 +199,22 @@ export function HollandTunnelDeterministic() {
             state: 'tunnel', 
             opacity: 1 
           };
-        } else if (currentMin < 20) {
-          // Staging west
+        } else if (currentMin >= 30 && currentMin <= 35) {
+          // Moving to east staging :30-:35
+          const progress = (currentMin - 30) / 5; // Over 5 minutes
+          const startX = QUEUE_AREA_WIDTH;
+          const endX = QUEUE_AREA_WIDTH - 50;
+          const startY = getLaneY('west', 2);
+          const endY = getLaneY('east', 2) + stagingOffset;
+          
+          return {
+            x: startX + (endX - startX) * progress,
+            y: startY + (endY - startY) * progress,
+            state: 'staging',
+            opacity: 1
+          };
+        } else if (currentMin >= 10 && currentMin < 20) {
+          // Staging west :10-:19
           return {
             x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50,
             y: getLaneY('west', 2) - stagingOffset,
@@ -210,7 +222,7 @@ export function HollandTunnelDeterministic() {
             opacity: 1
           };
         } else {
-          // Staging east
+          // Staging east :36-:49
           return {
             x: QUEUE_AREA_WIDTH - 50,
             y: getLaneY('east', 2) + stagingOffset,
@@ -221,28 +233,29 @@ export function HollandTunnelDeterministic() {
       } else {
         // Pace schedule
         if (currentMin >= 55) {
-          // Moving east
+          // Moving east :55-:59
           const progress = (currentMin - 55) / transitMinutes;
           const distance = TUNNEL_WIDTH * progress;
           return { x: QUEUE_AREA_WIDTH + distance, y: getLaneY('east', 2), state: 'tunnel', opacity: 1 };
-        } else if (currentMin < 5) {
-          // Still moving east or staging west
-          const totalMin = currentMin + 5; // Minutes since :55
-          if (totalMin < 5) {
-            const progress = totalMin / transitMinutes;
-            const distance = TUNNEL_WIDTH * progress;
-            return { x: QUEUE_AREA_WIDTH + distance, y: getLaneY('east', 2), state: 'tunnel', opacity: 1 };
-          } else {
-            // Staging west
-            return {
-              x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50,
-              y: getLaneY('west', 2) - stagingOffset,
-              state: 'staging',
-              opacity: 1
-            };
-          }
+        } else if (currentMin === 0) {
+          // At tunnel exit
+          return { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH, y: getLaneY('east', 2), state: 'tunnel', opacity: 1 };
+        } else if (currentMin >= 1 && currentMin <= 5) {
+          // Moving to west staging :01-:05
+          const progress = (currentMin - 1) / 4; // Over 4 minutes
+          const startX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH;
+          const endX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50;
+          const startY = getLaneY('east', 2);
+          const endY = getLaneY('west', 2) - stagingOffset;
+          
+          return {
+            x: startX + (endX - startX) * progress,
+            y: startY + (endY - startY) * progress,
+            state: 'staging',
+            opacity: 1
+          };
         } else if (currentMin >= 25 && currentMin < 30) {
-          // Moving west
+          // Moving west :25-:29
           const progress = (currentMin - 25) / transitMinutes;
           const distance = TUNNEL_WIDTH * progress;
           return { 
@@ -251,8 +264,22 @@ export function HollandTunnelDeterministic() {
             state: 'tunnel', 
             opacity: 1 
           };
-        } else if (currentMin < 25) {
-          // Staging west
+        } else if (currentMin >= 30 && currentMin <= 35) {
+          // Moving to east staging :30-:35
+          const progress = (currentMin - 30) / 5; // Over 5 minutes
+          const startX = QUEUE_AREA_WIDTH;
+          const endX = QUEUE_AREA_WIDTH - 50;
+          const startY = getLaneY('west', 2);
+          const endY = getLaneY('east', 2) + stagingOffset;
+          
+          return {
+            x: startX + (endX - startX) * progress,
+            y: startY + (endY - startY) * progress,
+            state: 'staging',
+            opacity: 1
+          };
+        } else if (currentMin >= 6 && currentMin < 25) {
+          // Staging west :06-:24
           return {
             x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50,
             y: getLaneY('west', 2) - stagingOffset,
@@ -260,7 +287,7 @@ export function HollandTunnelDeterministic() {
             opacity: 1
           };
         } else {
-          // Staging east
+          // Staging east :36-:54
           return {
             x: QUEUE_AREA_WIDTH - 50,
             y: getLaneY('east', 2) + stagingOffset,
@@ -276,12 +303,48 @@ export function HollandTunnelDeterministic() {
       const bikeSpawnMinute = vehicle.spawnMinute * 4;
       const minuteInHour = currentMin;
       
-      if (vehicle.spawnMinute > 13 || bikeSpawnMinute > minuteInHour) return null;
+      // Don't show bikes that haven't spawned yet
+      if (vehicle.spawnMinute > 13 || bikeSpawnMinute > minuteInHour) {
+        // Check if we're in the minute before spawn (for fade-in handling in interpolation)
+        if (bikeSpawnMinute === minuteInHour + 1 && vehicle.spawnMinute <= 13) {
+          // Return position with 0 opacity so interpolation can fade it in
+          const col = vehicle.spawnMinute % 3;
+          const row = Math.floor(vehicle.spawnMinute / 3);
+          const penX = vehicle.direction === 'east' ? 70 : TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 70;
+          const penY = vehicle.direction === 'east' ? 310 : 60;
+          
+          return {
+            x: penX + (col * 25 - 25),
+            y: penY + (row * 15 - 30),
+            state: 'pen',
+            opacity: 0
+          };
+        }
+        return null;
+      }
       
       const releaseMinute = vehicle.direction === 'east' ? 45 : 15;
       
       if (currentMin < releaseMinute) {
         // In pen
+        const col = vehicle.spawnMinute % 3;
+        const row = Math.floor(vehicle.spawnMinute / 3);
+        const penX = vehicle.direction === 'east' ? 70 : TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 70;
+        const penY = vehicle.direction === 'east' ? 310 : 60;
+        
+        return {
+          x: penX + (col * 25 - 25),
+          y: penY + (row * 15 - 30),
+          state: 'pen',
+          opacity: 1
+        };
+      }
+      
+      // Check if this bike spawned after pen close
+      const penCloseMinute = vehicle.direction === 'east' ? 48 : 18;
+      
+      if (bikeSpawnMinute >= penCloseMinute) {
+        // Bikes spawning at or after pen close stay in pen permanently
         const col = vehicle.spawnMinute % 3;
         const row = Math.floor(vehicle.spawnMinute / 3);
         const penX = vehicle.direction === 'east' ? 70 : TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 70;
@@ -301,7 +364,7 @@ export function HollandTunnelDeterministic() {
       const releaseDelayMinutes = releaseOrder / 5; // 5 bikes per minute
       
       if (minutesSinceRelease < releaseDelayMinutes) {
-        // Still in pen waiting
+        // Still in pen waiting to be released
         const col = vehicle.spawnMinute % 3;
         const row = Math.floor(vehicle.spawnMinute / 3);
         const penX = vehicle.direction === 'east' ? 70 : TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 70;
@@ -365,24 +428,110 @@ export function HollandTunnelDeterministic() {
       const isBlocked = vehicle.lane === 2 && phase !== 'normal';
       
       // Check if car exists yet
-      if (spawnMinute > currentMin) return null;
+      if (spawnMinute > currentMin) {
+        // Check if we're in the minute before spawn (for fade-in handling in interpolation)
+        if (spawnMinute === currentMin + 1) {
+          // Calculate staging position 1 minute away from final position
+          const oneMinuteDistance = CAR_SPEED * 60; // Distance car travels in 1 minute
+          
+          // Determine if this car will queue
+          let willQueue = false;
+          let queueIndex = 0;
+          
+          if (isBlocked) {
+            if (vehicle.direction === 'east' && spawnMinute >= 45 && spawnMinute <= 55) {
+              willQueue = true;
+              queueIndex = spawnMinute - 45;
+            } else if (vehicle.direction === 'west' && spawnMinute >= 15 && spawnMinute <= 25) {
+              willQueue = true;
+              queueIndex = spawnMinute - 15;
+            }
+          }
+          
+          // Special handling for :56 and :57 cars that arrive when queue is moving
+          const isLateArrival = (vehicle.direction === 'east' && (spawnMinute === 56 || spawnMinute === 57)) ||
+                               (vehicle.direction === 'west' && (spawnMinute === 26 || spawnMinute === 27));
+          
+          // Calculate staging position
+          let x;
+          if (willQueue || isLateArrival) {
+            // For queued cars, staging position is offset from queue position
+            const queueSpacing = 30;
+            const baseOffset = 50;
+            
+            if (isLateArrival) {
+              // For late arrivals, calculate where the back of the queue will be
+              const queueStartTime = vehicle.direction === 'east' ? 55 : 25;
+              const elapsedMinutes = spawnMinute - queueStartTime;
+              const paceProgress = elapsedMinutes / 5; // 5 minutes to cross
+              const paceDistance = TUNNEL_WIDTH * paceProgress;
+              
+              // Calculate position based on being at back of moving queue
+              const lastQueuedIndex = 10; // :55/:25 is the last in the original queue
+              const effectiveIndex = spawnMinute - (vehicle.direction === 'east' ? 45 : 15);
+              const offset = (effectiveIndex + 1) * queueSpacing;
+              
+              const queueBackX = vehicle.direction === 'east' ? 
+                QUEUE_AREA_WIDTH + paceDistance - offset :
+                TUNNEL_WIDTH + QUEUE_AREA_WIDTH - paceDistance + offset;
+              
+              x = vehicle.direction === 'east' ? 
+                queueBackX - oneMinuteDistance :
+                queueBackX + oneMinuteDistance;
+            } else {
+              // Normal queued car staging
+              const queueX = vehicle.direction === 'east' ? 
+                QUEUE_AREA_WIDTH - baseOffset - (queueIndex * queueSpacing) :
+                TUNNEL_WIDTH + QUEUE_AREA_WIDTH + baseOffset + (queueIndex * queueSpacing);
+              
+              x = vehicle.direction === 'east' ? 
+                queueX - oneMinuteDistance :
+                queueX + oneMinuteDistance;
+            }
+          } else {
+            // For non-queued cars, staging position is upstream of tunnel entrance
+            x = vehicle.direction === 'east' ? 
+              QUEUE_AREA_WIDTH - oneMinuteDistance :
+              TUNNEL_WIDTH + QUEUE_AREA_WIDTH + oneMinuteDistance;
+          }
+          
+          return {
+            x,
+            y: getLaneY(vehicle.direction, vehicle.lane),
+            state: 'approaching',
+            opacity: 0
+          };
+        }
+        return null;
+      }
       
       // Calculate when car can enter
       let enterMinute = spawnMinute;
+      let queueIndex = 0;
+      
+      // Special handling for :56/:57 and :26/:27 cars
+      const isLateArrival = (vehicle.direction === 'east' && (spawnMinute === 56 || spawnMinute === 57)) ||
+                           (vehicle.direction === 'west' && (spawnMinute === 26 || spawnMinute === 27));
+      
       if (isBlocked) {
         if (vehicle.direction === 'east') {
-          if (spawnMinute === 45) enterMinute = 56;
-          else if (spawnMinute >= 46 && spawnMinute <= 55) return null; // These don't spawn
+          if (spawnMinute >= 45 && spawnMinute <= 55) {
+            enterMinute = 56;
+            // Queue index based on order of blocked cars
+            queueIndex = spawnMinute - 45; // :45=0, :46=1, :47=2, etc.
+          }
         } else {
-          if (spawnMinute === 15) enterMinute = 26;
-          else if (spawnMinute >= 16 && spawnMinute <= 25) return null;
+          if (spawnMinute >= 15 && spawnMinute <= 25) {
+            enterMinute = 26;
+            // Queue index based on order of blocked cars
+            queueIndex = spawnMinute - 15; // :15=0, :16=1, :17=2, etc.
+          }
         }
       }
       
       if (currentMin < enterMinute) {
-        // Queued
-        const queueIndex = spawnMinute % 15;
-        const queueSpacing = 40;
+        // Normal queued position
+        const queueSpacing = 30;
         const baseOffset = 50;
         
         const x = vehicle.direction === 'east' ? 
@@ -399,10 +548,45 @@ export function HollandTunnelDeterministic() {
       
       // Moving through tunnel
       const travelMinutes = currentMin - enterMinute;
-      const distance = CAR_SPEED * 60 * travelMinutes;
       
-      const startX = vehicle.direction === 'east' ? QUEUE_AREA_WIDTH : TUNNEL_WIDTH + QUEUE_AREA_WIDTH;
-      const x = vehicle.direction === 'east' ? startX + distance : startX - distance;
+      // Check if we're following the pace car (queued cars entering at :56/:26)
+      const isFollowingPace = (enterMinute === 56 && vehicle.direction === 'east') || 
+                              (enterMinute === 26 && vehicle.direction === 'west');
+      
+      let x;
+      if (isFollowingPace || isLateArrival) {
+        // Calculate pace car position
+        const paceStartMinute = vehicle.direction === 'east' ? 55 : 25;
+        const paceProgress = (currentMin - paceStartMinute) / 5; // 5 minutes to cross
+        const paceDistance = TUNNEL_WIDTH * paceProgress;
+        
+        // Pace car position
+        const paceX = vehicle.direction === 'east' ? 
+          QUEUE_AREA_WIDTH + paceDistance :
+          TUNNEL_WIDTH + QUEUE_AREA_WIDTH - paceDistance;
+        
+        // Follow with queue offset
+        const queueSpacing = 30;
+        let effectiveIndex;
+        
+        if (isLateArrival) {
+          // Late arrivals use their spawn minute to determine position
+          effectiveIndex = spawnMinute - (vehicle.direction === 'east' ? 45 : 15);
+        } else {
+          effectiveIndex = queueIndex;
+        }
+        
+        const offset = (effectiveIndex + 1) * queueSpacing; // +1 because pace car is in front
+        
+        x = vehicle.direction === 'east' ? 
+          paceX - offset :
+          paceX + offset;
+      } else {
+        // Normal movement
+        const distance = CAR_SPEED * 60 * travelMinutes;
+        const startX = vehicle.direction === 'east' ? QUEUE_AREA_WIDTH : TUNNEL_WIDTH + QUEUE_AREA_WIDTH;
+        x = vehicle.direction === 'east' ? startX + distance : startX - distance;
+      }
       
       // Check if exited
       const exitX = vehicle.direction === 'east' ? 
@@ -601,6 +785,105 @@ export function HollandTunnelDeterministic() {
   const eastPhase = getPhase(currentMinute, 'east');
   const westPhase = getPhase(currentMinute, 'west');
 
+  // Get color rectangle state at a specific minute time
+  const getColorRectAtMinute = (direction: 'east' | 'west', minuteTime: number) => {
+    const currentMin = Math.floor(minuteTime / 60) % 60;
+    const phase = getPhase(currentMin, direction);
+    
+    if (direction === 'west') {
+      // Westbound: colors move right to left
+      if (phase === 'bikes-enter' || (phase === 'normal' && currentMin === 14)) {
+        // Green follows behind last car (spawned at :14) at car speed
+        const lastCarTime = 14 * 60;
+        const timeSinceLastCar = (currentMin * 60) - lastCarTime;
+        const lastCarDistance = timeSinceLastCar > 0 ? CAR_SPEED * timeSinceLastCar : 0;
+        const greenWidth = Math.min(lastCarDistance, TUNNEL_WIDTH);
+        
+        return {
+          green: { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH - greenWidth, width: greenWidth },
+          yellow: null,
+          red: null,
+          gray: null
+        };
+      } else if (phase === 'clearing') {
+        // Yellow emanates from pen close at :18
+        const penCloseTime = 18 * 60;
+        const timeSincePenClose = (currentMin * 60) - penCloseTime;
+        const yellowMinutes = timeSincePenClose / 60;
+        
+        // Calculate yellow distance based on bike speeds
+        let yellowDistance = 0;
+        const halfwayMinutes = (TUNNEL_WIDTH / 2) / (BIKE_SPEED_DOWNHILL * 60);
+        if (yellowMinutes <= halfwayMinutes) {
+          yellowDistance = BIKE_SPEED_DOWNHILL * 60 * yellowMinutes;
+        } else {
+          yellowDistance = (TUNNEL_WIDTH / 2) + BIKE_SPEED_UPHILL * 60 * (yellowMinutes - halfwayMinutes);
+        }
+        
+        const yellowWidth = Math.min(yellowDistance, TUNNEL_WIDTH);
+        const remainingGreen = TUNNEL_WIDTH - yellowWidth;
+        
+        return {
+          green: remainingGreen > 0 ? { x: QUEUE_AREA_WIDTH, width: remainingGreen } : null,
+          yellow: yellowWidth > 0 ? { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH - yellowWidth, width: yellowWidth } : null,
+          red: null,
+          gray: null
+        };
+      } else if (phase === 'sweep') {
+        // Continue yellow from pen close at :18
+        const penCloseTime = 18 * 60;
+        const timeSincePenClose = currentMin >= 18 ? 
+          (currentMin * 60) - penCloseTime : 
+          (currentMin * 60) + (60 * 60) - penCloseTime;
+        const yellowMinutes = timeSincePenClose / 60;
+        
+        // Calculate yellow distance based on bike speeds  
+        let yellowDistance = 0;
+        const halfwayMinutes = (TUNNEL_WIDTH / 2) / (BIKE_SPEED_DOWNHILL * 60);
+        if (yellowMinutes <= halfwayMinutes) {
+          yellowDistance = BIKE_SPEED_DOWNHILL * 60 * yellowMinutes;
+        } else {
+          yellowDistance = (TUNNEL_WIDTH / 2) + BIKE_SPEED_UPHILL * 60 * (yellowMinutes - halfwayMinutes);
+        }
+        
+        // Red follows sweep van
+        const sweepPos = getVehiclePositionAtMinute({ id: 'sweep-main', type: 'sweep', spawnMinute: 0, lane: 2, direction: 'west' }, minuteTime);
+        const redDistance = sweepPos ? TUNNEL_WIDTH + QUEUE_AREA_WIDTH - sweepPos.x : 0;
+        
+        return {
+          green: null,
+          yellow: yellowDistance > redDistance ? 
+            { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH - yellowDistance, width: yellowDistance - redDistance } : null,
+          red: redDistance > 0 ? 
+            { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH - redDistance, width: redDistance } : null,
+          gray: null
+        };
+      } else if (phase === 'pace-car') {
+        // Gray follows pace car
+        const pacePos = getVehiclePositionAtMinute({ id: 'pace-main', type: 'pace', spawnMinute: 0, lane: 2, direction: 'west' }, minuteTime);
+        const grayDistance = pacePos ? TUNNEL_WIDTH + QUEUE_AREA_WIDTH - pacePos.x : 0;
+        
+        return {
+          green: null,
+          yellow: null,
+          red: null,
+          gray: grayDistance > 0 ? 
+            { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH - grayDistance, width: grayDistance } : null
+        };
+      } else if (phase === 'normal') {
+        // During normal phase, no color overlay (just gray base)
+        return {
+          green: null,
+          yellow: null,
+          red: null,
+          gray: null
+        };
+      }
+    }
+    
+    return { green: null, yellow: null, red: null, gray: null };
+  };
+
   // Count bikes in pens
   const eastBikeCount = visibleVehicles.filter(v => 
     v && v.type === 'bike' && v.direction === 'east' && v.position.state === 'queued'
@@ -661,181 +944,77 @@ export function HollandTunnelDeterministic() {
                   fill="#666" />
             {/* Progressive color change overlay */}
             {(() => {
-              const currentMin = Math.floor(displayTime / 60) % 60;
               const currentSec = displayTime % 60;
+              const currentMinuteTime = Math.floor(displayTime / 60) * 60;
+              const nextMinuteTime = currentMinuteTime + 60;
+              
+              // Get color states at current and next minute
+              const currentColors = getColorRectAtMinute('west', currentMinuteTime);
+              const nextColors = getColorRectAtMinute('west', nextMinuteTime);
+              
+              // Interpolation factor
+              const t = currentSec / 60;
+              
+              // Render green rect with interpolation
+              if (currentColors.green || nextColors.green) {
+                const currentGreen = currentColors.green || { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH, width: 0 };
+                const nextGreen = nextColors.green || { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH, width: 0 };
+                
+                const greenX = currentGreen.x + (nextGreen.x - currentGreen.x) * t;
+                const greenWidth = currentGreen.width + (nextGreen.width - currentGreen.width) * t;
+                
+                if (greenWidth > 0) {
+                  return (
+                    <rect 
+                      x={greenX} 
+                      y="100" 
+                      width={greenWidth} 
+                      height={LANE_HEIGHT} 
+                      fill="#28a745" 
+                    />
+                  );
+                }
+              }
+              
+              const currentMin = Math.floor(displayTime / 60) % 60;
               const currentTime = currentMin * 60 + currentSec;
               
-              // Westbound: colors move right to left
-              // Show green rect starting at :14 (one minute before bikes-enter phase)
-              if (westPhase === 'bikes-enter' || (westPhase === 'normal' && currentMin === 14)) {
-                // Green follows behind last car (spawned at :14) at car speed
-                const lastCarTime = 14 * 60; // :14 car
-                const timeSinceLastCar = currentTime - lastCarTime;
-                const lastCarDistance = timeSinceLastCar > 0 ? CAR_SPEED * timeSinceLastCar : 0;
-                const greenWidth = Math.min(lastCarDistance, TUNNEL_WIDTH);
+              // Render all color rects with interpolation
+              const layers = [];
+              
+              // Gray rect (pace car phase)
+              if (currentColors.gray || nextColors.gray) {
+                const currentGray = currentColors.gray || { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH, width: 0 };
+                const nextGray = nextColors.gray || { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH, width: 0 };
                 
-                return (
-                  <rect 
-                    x={TUNNEL_WIDTH + QUEUE_AREA_WIDTH - greenWidth} 
-                    y="100" 
-                    width={greenWidth} 
-                    height={LANE_HEIGHT} 
-                    fill="#28a745" 
-                  />
-                );
-              } else if (westPhase === 'clearing') {
-                // Yellow emanates from pen close at :18
-                const penCloseTime = 18 * 60;
-                const timeSincePenClose = currentTime - penCloseTime;
-                const yellowTrailDistance = calculateYellowDistance(timeSincePenClose);
+                const grayX = currentGray.x + (nextGray.x - currentGray.x) * t;
+                const grayWidth = currentGray.width + (nextGray.width - currentGray.width) * t;
                 
-                const layers = [];
-                
-                // Yellow trailing from pen close (moving right to left)
-                if (yellowTrailDistance > 0) {
+                if (grayWidth > 0) {
                   layers.push(
-                    <rect key="yellow"
-                      x={TUNNEL_WIDTH + QUEUE_AREA_WIDTH - yellowTrailDistance} 
+                    <rect key="gray"
+                      x={grayX} 
                       y="100" 
-                      width={Math.min(yellowTrailDistance, TUNNEL_WIDTH)} 
+                      width={grayWidth} 
                       height={LANE_HEIGHT} 
-                      fill="#ffeb3b" 
+                      fill="#666" 
                     />
                   );
                 }
+              }
+              
+              // Red rect (sweep phase)
+              if (currentColors.red || nextColors.red) {
+                const currentRed = currentColors.red || { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH, width: 0 };
+                const nextRed = nextColors.red || { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH, width: 0 };
                 
-                // Green to the left of yellow
-                const remainingGreen = TUNNEL_WIDTH - yellowTrailDistance;
-                if (remainingGreen > 0) {
-                  layers.push(
-                    <rect key="green"
-                      x={QUEUE_AREA_WIDTH} 
-                      y="100" 
-                      width={remainingGreen} 
-                      height={LANE_HEIGHT} 
-                      fill="#28a745" 
-                    />
-                  );
-                }
+                const redX = currentRed.x + (nextRed.x - currentRed.x) * t;
+                const redWidth = currentRed.width + (nextRed.width - currentRed.width) * t;
                 
-                return <>{layers}</>;
-              } else if (westPhase === 'sweep') {
-                // Continue yellow from pen close at :18
-                const penCloseTime = 18 * 60;
-                const timeSincePenClose = currentMin >= 18 ? 
-                  currentTime - penCloseTime : 
-                  currentTime + (60 * 60) - penCloseTime;
-                const yellowDistance = calculateYellowDistance(timeSincePenClose);
-                
-                // Red follows sweep van (starts at :20)
-                const sweepStartTime = 20 * 60;
-                const timeSinceSweepStart = currentMin >= 20 ? 
-                  currentTime - sweepStartTime : 
-                  currentTime + (60 * 60) - sweepStartTime;
-                const sweepDistance = SWEEP_SPEED * timeSinceSweepStart;
-                
-                const layers = [];
-                
-                // Green if yellow hasn't reached start yet
-                if (yellowDistance < TUNNEL_WIDTH) {
-                  layers.push(
-                    <rect key="green"
-                      x={QUEUE_AREA_WIDTH} 
-                      y="100" 
-                      width={TUNNEL_WIDTH - yellowDistance} 
-                      height={LANE_HEIGHT} 
-                      fill="#28a745" 
-                    />
-                  );
-                }
-                
-                // Yellow (continuing from clearing phase)
-                if (yellowDistance > 0) {
-                  layers.push(
-                    <rect key="yellow"
-                      x={TUNNEL_WIDTH + QUEUE_AREA_WIDTH - yellowDistance} 
-                      y="100" 
-                      width={yellowDistance} 
-                      height={LANE_HEIGHT} 
-                      fill="#ffeb3b" 
-                    />
-                  );
-                }
-                
-                // Red DMZ behind sweep (moving right to left)
-                if (sweepDistance > 0) {
+                if (redWidth > 0) {
                   layers.push(
                     <rect key="red"
-                      x={TUNNEL_WIDTH + QUEUE_AREA_WIDTH - sweepDistance} 
-                      y="100" 
-                      width={Math.min(sweepDistance, TUNNEL_WIDTH)} 
-                      height={LANE_HEIGHT} 
-                      fill="#dc3545" 
-                    />
-                  );
-                }
-                
-                return <>{layers}</>;
-              } else if (westPhase === 'pace-car') {
-                // Continue calculating positions from previous phases
-                const penCloseTime = 18 * 60;
-                const timeSincePenClose = currentMin >= 18 ? 
-                  currentTime - penCloseTime : 
-                  currentTime + (60 * 60) - penCloseTime;
-                const yellowDistance = calculateYellowDistance(timeSincePenClose);
-                
-                // Red continues from sweep phase (started at :20)
-                const sweepStartTime = 20 * 60;
-                const timeSinceSweepStart = currentMin >= 20 ? 
-                  currentTime - sweepStartTime : 
-                  currentTime + (60 * 60) - sweepStartTime;
-                const redDistance = Math.min(SWEEP_SPEED * timeSinceSweepStart, TUNNEL_WIDTH);
-                
-                // Gray follows pace car (starts at :25)
-                const paceStartTime = 25 * 60;
-                const timeSincePaceStart = currentMin >= 25 ? 
-                  currentTime - paceStartTime : 
-                  currentTime + (60 * 60) - paceStartTime;
-                const grayDistance = PACE_SPEED * timeSincePaceStart;
-                
-                const layers = [];
-                
-                // Base layer - whatever was there before
-                if (yellowDistance < TUNNEL_WIDTH) {
-                  // Still some green at the left
-                  layers.push(
-                    <rect key="green"
-                      x={QUEUE_AREA_WIDTH} 
-                      y="100" 
-                      width={TUNNEL_WIDTH - yellowDistance} 
-                      height={LANE_HEIGHT} 
-                      fill="#28a745" 
-                    />
-                  );
-                }
-                
-                // Yellow (if not fully covered by red)
-                if (yellowDistance > redDistance) {
-                  const yellowStart = TUNNEL_WIDTH + QUEUE_AREA_WIDTH - yellowDistance;
-                  const yellowWidth = yellowDistance - redDistance;
-                  layers.push(
-                    <rect key="yellow"
-                      x={yellowStart} 
-                      y="100" 
-                      width={yellowWidth} 
-                      height={LANE_HEIGHT} 
-                      fill="#ffeb3b" 
-                    />
-                  );
-                }
-                
-                // Red (if not fully covered by gray)
-                if (redDistance > grayDistance) {
-                  const redStart = TUNNEL_WIDTH + QUEUE_AREA_WIDTH - redDistance;
-                  const redWidth = redDistance - grayDistance;
-                  layers.push(
-                    <rect key="red"
-                      x={redStart} 
+                      x={redX} 
                       y="100" 
                       width={redWidth} 
                       height={LANE_HEIGHT} 
@@ -843,34 +1022,51 @@ export function HollandTunnelDeterministic() {
                     />
                   );
                 }
+              }
+              
+              // Yellow rect
+              if (currentColors.yellow || nextColors.yellow) {
+                const currentYellow = currentColors.yellow || { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH, width: 0 };
+                const nextYellow = nextColors.yellow || { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH, width: 0 };
                 
-                // Gray following pace car
-                if (grayDistance > 0) {
+                const yellowX = currentYellow.x + (nextYellow.x - currentYellow.x) * t;
+                const yellowWidth = currentYellow.width + (nextYellow.width - currentYellow.width) * t;
+                
+                if (yellowWidth > 0) {
                   layers.push(
-                    <rect key="gray"
-                      x={TUNNEL_WIDTH + QUEUE_AREA_WIDTH - grayDistance} 
+                    <rect key="yellow"
+                      x={yellowX} 
                       y="100" 
-                      width={Math.min(grayDistance, TUNNEL_WIDTH)} 
+                      width={yellowWidth} 
                       height={LANE_HEIGHT} 
-                      fill="#666" 
+                      fill="#ffeb3b" 
                     />
                   );
                 }
-                
-                return <>{layers}</>;
-              } else if (westPhase !== 'normal') {
-                // Transition phases
-                return (
-                  <rect 
-                    x={QUEUE_AREA_WIDTH} 
-                    y="100" 
-                    width={TUNNEL_WIDTH} 
-                    height={LANE_HEIGHT} 
-                    fill="#28a745" 
-                  />
-                );
               }
-              return null;
+              
+              // Green rect  
+              if (currentColors.green || nextColors.green) {
+                const currentGreen = currentColors.green || { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH, width: 0 };
+                const nextGreen = nextColors.green || { x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH, width: 0 };
+                
+                const greenX = currentGreen.x + (nextGreen.x - currentGreen.x) * t;
+                const greenWidth = currentGreen.width + (nextGreen.width - currentGreen.width) * t;
+                
+                if (greenWidth > 0) {
+                  layers.push(
+                    <rect key="green"
+                      x={greenX} 
+                      y="100" 
+                      width={greenWidth} 
+                      height={LANE_HEIGHT} 
+                      fill="#28a745" 
+                    />
+                  );
+                }
+              }
+              
+              return layers.length > 0 ? <>{layers}</> : null;
             })()}
             
             {/* Lane 1 (L Lane) - always cars - BELOW for westbound */}
