@@ -14,7 +14,9 @@ interface Vehicle {
   state: 'queued' | 'entering' | 'tunnel' | 'exiting' | 'returning';
   targetX?: number;
   targetY?: number;
-  spawnTime?: number;
+  spawnTime?: number; // Time when vehicle was spawned (in simulated seconds)
+  enterTime?: number; // Time when vehicle entered tunnel (in simulated seconds)
+  queuePosition?: number; // Position in queue (0 = first)
 }
 
 // Layout constants
@@ -37,23 +39,22 @@ const TUNNEL_LENGTH_MILES = 2;
 const TUNNEL_LENGTH_PX = 800;
 const PX_PER_MILE = TUNNEL_LENGTH_PX / TUNNEL_LENGTH_MILES;
 
-// Convert MPH to pixels per update
-// At speed=1: 1 real second = 1 simulated minute
-// Update interval: 50ms = 20 updates/second
-// So 1 simulated hour = 60 real seconds = 1200 updates
-function mphToPixelsPerUpdate(mph: number): number {
-  const milesPerMinute = mph / 60;
-  const pixelsPerMinute = milesPerMinute * PX_PER_MILE;
-  const updatesPerMinute = 20; // 20 updates/sec * 1 sec/min
-  return pixelsPerMinute / updatesPerMinute;
+// Convert MPH to pixels per simulated second
+// At speed=1: 1 real second = 1 simulated minute = 60 simulated seconds
+function mphToPixelsPerSecond(mph: number): number {
+  const milesPerHour = mph;
+  const pixelsPerHour = milesPerHour * PX_PER_MILE;
+  const pixelsPerMinute = pixelsPerHour / 60;
+  const pixelsPerSecond = pixelsPerMinute / 60;
+  return pixelsPerSecond;
 }
 
-// Calculate actual speeds
-const CAR_SPEED = mphToPixelsPerUpdate(CAR_MPH);  // 6.67 px/update
-const SWEEP_SPEED = mphToPixelsPerUpdate(SWEEP_MPH);  // 4.0 px/update
-const BIKE_SPEED_DOWNHILL = mphToPixelsPerUpdate(BIKE_DOWNHILL_MPH);  // 5.0 px/update
-const BIKE_SPEED_UPHILL = mphToPixelsPerUpdate(BIKE_UPHILL_MPH);  // 2.67 px/update
-const PACE_SPEED = mphToPixelsPerUpdate(PACE_MPH);  // 6.67 px/update
+// Calculate actual speeds in pixels per simulated second
+const CAR_SPEED = mphToPixelsPerSecond(CAR_MPH);  // pixels per sim second
+const SWEEP_SPEED = mphToPixelsPerSecond(SWEEP_MPH);
+const BIKE_SPEED_DOWNHILL = mphToPixelsPerSecond(BIKE_DOWNHILL_MPH);
+const BIKE_SPEED_UPHILL = mphToPixelsPerSecond(BIKE_UPHILL_MPH);
+const PACE_SPEED = mphToPixelsPerSecond(PACE_MPH);
 
 // Vehicle sizes and spacing
 const VEHICLE_LENGTH = 30;  // pixels
@@ -141,16 +142,81 @@ export function HollandTunnelSVG() {
       e.preventDefault();
       // Pause if running
       setIsPaused(true);
-      // Step forward or back by 1 minute
-      setCurrentMinute(prev => {
-        if (e.code === 'ArrowRight') {
-          return (prev + 1) % 60;
-        } else {
-          return prev === 0 ? 59 : prev - 1;
-        }
+      
+      // Calculate time change
+      const timeChange = e.code === 'ArrowRight' ? 60 : -60; // +/- 60 seconds
+      
+      // Calculate new minute
+      const newMinute = e.code === 'ArrowRight' 
+        ? (currentMinute + 1) % 60
+        : currentMinute === 0 ? 59 : currentMinute - 1;
+      
+      // Update simulation time to match new minute
+      const newSimTime = newMinute * 60;
+      simulatedTimeRef.current = newSimTime;
+      
+      // Update minute
+      setCurrentMinute(newMinute);
+      
+      // TODO: Make this fully deterministic
+      // Currently, vehicles only spawn during the update loop, not when jumping time
+      // A proper implementation would:
+      // 1. Calculate which vehicles should exist at any given time
+      // 2. Spawn/despawn vehicles as needed when time changes
+      // 3. Animate smoothly to new positions
+      // For now, just update existing vehicle positions
+      setVehicles(prev => {
+        // First, move existing vehicles
+        const movedVehicles = prev.map(vehicle => {
+          if (vehicle.state !== 'tunnel') {
+            return vehicle;
+          }
+          
+          // Calculate new position based on time change
+          let actualSpeed = vehicle.speed;
+          
+          // For bikes, use current speed
+          if (vehicle.type === 'bike') {
+            actualSpeed = getBikeSpeed(vehicle.x, vehicle.direction);
+          }
+          
+          const distanceChange = actualSpeed * Math.abs(timeChange);
+          let newX = vehicle.x;
+          
+          if (timeChange > 0) {
+            // Moving forward in time
+            newX = vehicle.direction === 'east' 
+              ? vehicle.x + distanceChange
+              : vehicle.x - distanceChange;
+          } else {
+            // Moving backward in time
+            newX = vehicle.direction === 'east' 
+              ? vehicle.x - distanceChange
+              : vehicle.x + distanceChange;
+          }
+          
+          // Keep within bounds
+          newX = Math.max(QUEUE_AREA_WIDTH - 50, Math.min(TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50, newX));
+          
+          return { ...vehicle, x: newX };
+        });
+        
+        // Filter out vehicles that have exited
+        return movedVehicles.filter(v => {
+          if (v.type === 'car' || v.type === 'bike') {
+            if (v.direction === 'east' && v.x > TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50) return false;
+            if (v.direction === 'west' && v.x < QUEUE_AREA_WIDTH - 50) return false;
+          }
+          return true;
+        });
       });
+      
+      // Trigger spawn check after time jump
+      setTimeout(() => {
+        checkAndSpawnVehicles();
+      }, 0);
     }
-  }, [setIsPaused, setCurrentMinute]);
+  }, [setIsPaused, setCurrentMinute, setVehicles, getBikeSpeed, currentMinute]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -190,11 +256,9 @@ export function HollandTunnelSVG() {
     });
   }, []); // Only run once on mount
 
-  // Spawn vehicles
-  useEffect(() => {
-    if (isPaused) return;
-
-    const spawnInterval = setInterval(() => {
+  // Function to check and spawn vehicles
+  const checkAndSpawnVehicles = useCallback(() => {
+    setVehicles(vehicles => {
       // Update simulated time: at speed=1, 1 real second = 1 simulated minute = 60 simulated seconds
       // So 50ms real time = 50ms * speed * 60 simulated seconds/real second / 1000ms
       simulatedTimeRef.current += (50 * speed * 60) / 1000; // Convert to simulated seconds
@@ -467,10 +531,20 @@ export function HollandTunnelSVG() {
         }
       }
 
+      return vehicles;
+    });
+  }, [currentMinute, carsPerMinute, minGapMultiplier, setVehicles]);
+
+  // Spawn vehicles periodically
+  useEffect(() => {
+    if (isPaused) return;
+
+    const spawnInterval = setInterval(() => {
+      checkAndSpawnVehicles();
     }, 50); // Check every 50ms for consistent spawning
 
     return () => clearInterval(spawnInterval);
-  }, [currentMinute, isPaused, carsPerMinute, speed, minGapMultiplier]);
+  }, [isPaused, checkAndSpawnVehicles]);
 
   // Add bikes to queue during appropriate phases
   useEffect(() => {
@@ -560,10 +634,13 @@ export function HollandTunnelSVG() {
             newVehicle.speed = getBikeSpeed(vehicle.x, vehicle.direction);
           }
           
+          // Update position: 50ms real time = (50 * speed * 60) / 1000 simulated seconds
+          const simSecondsElapsed = (50 * speed * 60) / 1000; // = 3 * speed at speed=1
+          
           if (vehicle.direction === 'east') {
-            newVehicle.x += vehicle.speed * speed;
+            newVehicle.x += vehicle.speed * simSecondsElapsed;
           } else {
-            newVehicle.x -= vehicle.speed * speed;
+            newVehicle.x -= vehicle.speed * simSecondsElapsed;
           }
         }
 
