@@ -25,32 +25,59 @@ const QUEUE_AREA_WIDTH = 150;
 const BIKE_PEN_WIDTH = 120;
 const BIKE_PEN_HEIGHT = 80;
 
-// Speed constants
-// Tunnel is 800px = 2 miles
-// Update every 50ms = 20 updates/sec
-// When speed multiplier = 1: 1 real second = 1 simulated minute
-// 
-// Cars at 20mph cross 2mi in 6 min = 6 real seconds = 120 updates
-// 800px / 120 updates = 6.67 px/update
-// BUT this needs to be divided by speed multiplier in the movement code
-//
-// For consistent speeds without overtaking:
-const CAR_SPEED = 1.33;  // Will be multiplied by speed factor
-const BIKE_SPEED_DOWNHILL = 1.0;  // 15mph
-const BIKE_SPEED_UPHILL = 0.53;   // 8mph 
-const SWEEP_SPEED = 0.8;  // 12mph - slower than cars
-const PACE_SPEED = CAR_SPEED;  // Same as cars
+// Speed constants in MPH
+const CAR_MPH = 20;
+const SWEEP_MPH = 12;
+const BIKE_DOWNHILL_MPH = 15;
+const BIKE_UPHILL_MPH = 8;
+const PACE_MPH = 20;
 
-// Vehicle sizes for spacing
+// Tunnel dimensions
+const TUNNEL_LENGTH_MILES = 2;
+const TUNNEL_LENGTH_PX = 800;
+const PX_PER_MILE = TUNNEL_LENGTH_PX / TUNNEL_LENGTH_MILES;
+
+// Convert MPH to pixels per update
+// At speed=1: 1 real second = 1 simulated minute
+// Update interval: 50ms = 20 updates/second
+// So 1 simulated hour = 60 real seconds = 1200 updates
+function mphToPixelsPerUpdate(mph: number): number {
+  const milesPerMinute = mph / 60;
+  const pixelsPerMinute = milesPerMinute * PX_PER_MILE;
+  const updatesPerMinute = 20; // 20 updates/sec * 1 sec/min
+  return pixelsPerMinute / updatesPerMinute;
+}
+
+// Calculate actual speeds
+const CAR_SPEED = mphToPixelsPerUpdate(CAR_MPH);  // 6.67 px/update
+const SWEEP_SPEED = mphToPixelsPerUpdate(SWEEP_MPH);  // 4.0 px/update
+const BIKE_SPEED_DOWNHILL = mphToPixelsPerUpdate(BIKE_DOWNHILL_MPH);  // 5.0 px/update
+const BIKE_SPEED_UPHILL = mphToPixelsPerUpdate(BIKE_UPHILL_MPH);  // 2.67 px/update
+const PACE_SPEED = mphToPixelsPerUpdate(PACE_MPH);  // 6.67 px/update
+
+// Vehicle sizes and spacing
 const VEHICLE_LENGTH = 30;  // pixels
-const MIN_GAP = 35;  // 1 car length spacing
+const DEFAULT_MIN_GAP_MULTIPLIER = 1;  // car lengths
 
 export function HollandTunnelSVG() {
-  const [currentMinute, setCurrentMinute] = useSessionStorageState('ht-current-minute', 0);
+  const [currentMinute, setCurrentMinute] = useSessionStorageState<number>('ht-current-minute', {
+    defaultValue: 0
+  });
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [isPaused, setIsPaused] = useSessionStorageState('ht-is-paused', false);
-  const [speed, setSpeed] = useSessionStorageState('ht-speed', 1);
+  const [isPaused, setIsPaused] = useSessionStorageState<boolean>('ht-is-paused', {
+    defaultValue: false
+  });
+  const [speed, setSpeed] = useSessionStorageState<number>('ht-speed', {
+    defaultValue: 1
+  });
+  const [carsPerMinute, setCarsPerMinute] = useSessionStorageState<number>('ht-cars-per-minute', {
+    defaultValue: 1
+  });
+  const [minGapMultiplier, setMinGapMultiplier] = useSessionStorageState<number>('ht-min-gap', {
+    defaultValue: DEFAULT_MIN_GAP_MULTIPLIER
+  });
   const vehicleIdCounter = useRef(0);
+  const lastCarSpawnTime = useRef({ east: 0, west: 0 });
   const lastSpawnTime = useRef({ east: 0, west: 0 });
 
   // Calculate phase based on current minute
@@ -66,9 +93,18 @@ export function HollandTunnelSVG() {
   };
 
   // Get lane Y position (center of lane)
+  // Lane 1 is always left lane (in direction of travel)
+  // Lane 2 is always right lane (in direction of travel)
   const getLaneY = (direction: 'east' | 'west', lane: number) => {
-    const baseY = direction === 'west' ? 100 : 200;
-    return baseY + (lane - 1) * LANE_HEIGHT + LANE_HEIGHT / 2;
+    if (direction === 'west') {
+      // Westbound: Lane 1 (bottom) is left, Lane 2 (top) is right
+      const baseY = 100;
+      return baseY + (2 - lane) * LANE_HEIGHT + LANE_HEIGHT / 2;
+    } else {
+      // Eastbound: Lane 1 (top) is left, Lane 2 (bottom) is right
+      const baseY = 200;
+      return baseY + (lane - 1) * LANE_HEIGHT + LANE_HEIGHT / 2;
+    }
   };
 
   // Get bike speed based on position
@@ -82,11 +118,12 @@ export function HollandTunnelSVG() {
   };
 
   // Check if position is safe to spawn (no collision)
-  const isSafeToSpawn = (x: number, y: number, direction: 'east' | 'west') => {
+  const isSafeToSpawn = (x: number, y: number, customGap?: number) => {
+    const gap = customGap ?? (VEHICLE_LENGTH * minGapMultiplier);
     return !vehicles.some(v => {
       if (v.y !== y) return false;
       const distance = Math.abs(v.x - x);
-      return distance < MIN_GAP;
+      return distance < gap;
     });
   };
 
@@ -94,7 +131,7 @@ export function HollandTunnelSVG() {
   const handleKeyPress = useCallback((e: KeyboardEvent) => {
     if (e.code === 'Space') {
       e.preventDefault();
-      setIsPaused(prev => !prev);
+      setIsPaused((prev: boolean) => !prev);
     }
   }, [setIsPaused]);
 
@@ -102,6 +139,39 @@ export function HollandTunnelSVG() {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [handleKeyPress]);
+
+  // Initialize persistent vehicles (sweep and pace) - only ONE of each
+  useEffect(() => {
+    setVehicles(prev => {
+      // Remove any duplicate sweep/pace vehicles first
+      const filtered = prev.filter(v => v.type !== 'sweep' && v.type !== 'pace');
+      
+      // Add single sweep and pace vehicles
+      return [
+        ...filtered,
+        {
+          id: `sweep-main`,
+          type: 'sweep',
+          x: 20, // Far left, waiting to go east
+          y: 330,
+          lane: 2,
+          direction: 'east',
+          speed: SWEEP_SPEED,
+          state: 'queued'
+        },
+        {
+          id: `pace-main`,
+          type: 'pace',
+          x: 20, // Far left, waiting to go east
+          y: 360,
+          lane: 2,
+          direction: 'east',
+          speed: PACE_SPEED,
+          state: 'queued'
+        }
+      ];
+    });
+  }, []); // Only run once on mount
 
   // Spawn vehicles
   useEffect(() => {
@@ -111,25 +181,44 @@ export function HollandTunnelSVG() {
       const now = Date.now();
       const eastPhase = getPhase(currentMinute, 'east');
       const westPhase = getPhase(currentMinute, 'west');
+      // Car spawn interval: at speed=1, 1 simulated minute = 1 real second
+      // So X cars per simulated minute = X cars per real second
+      const carSpawnInterval = 1000 / (carsPerMinute * speed); // ms between car spawns
 
-      // Eastbound spawning - continuous stream during each phase
-      if (eastPhase === 'normal') {
-        const lane = Math.random() < 0.5 ? 1 : 2;
-        const spawnX = QUEUE_AREA_WIDTH + 10;
-        const spawnY = getLaneY('east', lane);
-        
-        if (isSafeToSpawn(spawnX, spawnY, 'east')) {
-          setVehicles(prev => [...prev, {
-            id: `car-e-${vehicleIdCounter.current++}`,
-            type: 'car',
-            x: spawnX,
-            y: spawnY,
-            lane,
-            direction: 'east',
-            speed: CAR_SPEED,
-            state: 'tunnel',
-            spawnTime: now
-          }]);
+      // Eastbound spawning - cars per minute rate during normal phase
+      if (eastPhase === 'normal' && (lastCarSpawnTime.current.east === 0 || now - lastCarSpawnTime.current.east > carSpawnInterval)) {
+        // Check if queued cars should enter
+        const queuedCars = vehicles.filter(v => v.direction === 'east' && v.type === 'car' && v.state === 'queued');
+        if (queuedCars.length > 0) {
+          // Move first queued car into tunnel
+          const firstCar = queuedCars[0];
+          const spawnY = getLaneY('east', 2);
+          if (isSafeToSpawn(QUEUE_AREA_WIDTH + 10, spawnY)) {
+            setVehicles(prev => prev.map(v => 
+              v.id === firstCar.id ? { ...v, state: 'entering', targetX: QUEUE_AREA_WIDTH + 10, targetY: spawnY } : v
+            ));
+            lastCarSpawnTime.current.east = now;
+          }
+        } else {
+          // Spawn new cars if no queue - always use both lanes during normal
+          const lane = Math.random() < 0.5 ? 1 : 2;
+          const spawnX = QUEUE_AREA_WIDTH + 10;
+          const spawnY = getLaneY('east', lane);
+          
+          if (isSafeToSpawn(spawnX, spawnY)) {
+            setVehicles(prev => [...prev, {
+              id: `car-e-${vehicleIdCounter.current++}`,
+              type: 'car',
+              x: spawnX,
+              y: spawnY,
+              lane,
+              direction: 'east',
+              speed: CAR_SPEED,
+              state: 'tunnel',
+              spawnTime: now
+            }]);
+            lastCarSpawnTime.current.east = now;
+          }
         }
       }
 
@@ -141,8 +230,8 @@ export function HollandTunnelSVG() {
             id: `car-e-${vehicleIdCounter.current++}`,
             type: 'car',
             x: 100 - queuedCars.length * 30,
-            y: getLaneY('east', 1),
-            lane: 1,
+            y: getLaneY('east', 2), // Queue for Lane 2
+            lane: 2,
             direction: 'east',
             speed: CAR_SPEED,
             state: 'queued'
@@ -151,27 +240,26 @@ export function HollandTunnelSVG() {
         lastSpawnTime.current.east = now;
       }
 
-      // Pace car phase - continuous stream of cars following pace car
+      // Pace car phase - release queued cars in lockstep
       if (eastPhase === 'pace-car') {
-        const spawnX = QUEUE_AREA_WIDTH + 10;
-        const spawnY = getLaneY('east', 2);
-        
-        // Check if pace car has left space
-        const paceCar = vehicles.find(v => v.type === 'pace' && v.direction === 'east');
-        const canSpawn = !paceCar || paceCar.x > spawnX + MIN_GAP;
-        
-        if (canSpawn && isSafeToSpawn(spawnX, spawnY, 'east')) {
-          setVehicles(prev => [...prev, {
-            id: `car-e-${vehicleIdCounter.current++}`,
-            type: 'car',
-            x: spawnX,
-            y: spawnY,
-            lane: 2,
-            direction: 'east',
-            speed: CAR_SPEED,
-            state: 'tunnel',
-            spawnTime: now
-          }]);
+        // Release queued cars behind pace car
+        const eastPaceCar = vehicles.find(v => v.type === 'pace' && v.direction === 'east');
+        const queuedCars = vehicles.filter(v => v.direction === 'east' && v.type === 'car' && v.state === 'queued');
+        if (queuedCars.length > 0 && eastPaceCar && eastPaceCar.state === 'tunnel') {
+          const firstCar = queuedCars[0];
+          const spawnY = getLaneY('east', 2);
+          const minGap = VEHICLE_LENGTH * minGapMultiplier;
+          
+          // Check if pace car or last car has left enough space
+          const lastVehicle = vehicles
+            .filter(v => v.direction === 'east' && v.lane === 2 && v.state === 'tunnel')
+            .sort((a, b) => a.x - b.x)[0];
+          
+          if (lastVehicle && lastVehicle.x > QUEUE_AREA_WIDTH + 10 + minGap) {
+            setVehicles(prev => prev.map(v => 
+              v.id === firstCar.id ? { ...v, state: 'entering', targetX: QUEUE_AREA_WIDTH + 10, targetY: spawnY } : v
+            ));
+          }
         }
       }
 
@@ -180,40 +268,50 @@ export function HollandTunnelSVG() {
         const spawnX = QUEUE_AREA_WIDTH + 10;
         const spawnY = getLaneY('east', 2);
         
-        if (isSafeToSpawn(spawnX, spawnY, 'east')) {
-          // Find the bike closest to entrance
-          setVehicles(prev => {
-            const queuedBikes = prev.filter(v => v.direction === 'east' && v.type === 'bike' && v.state === 'queued');
-            if (queuedBikes.length > 0) {
-              // Sort by distance to entrance
-              queuedBikes.sort((a, b) => a.x - b.x);
-              const bike = queuedBikes[0];
-              bike.state = 'entering';
-              bike.targetX = spawnX;
-              bike.targetY = spawnY;
-            }
-            return [...prev];
-          });
+        if (isSafeToSpawn(spawnX, spawnY)) {
+          // Find the first queued bike and move it
+          const queuedBikes = vehicles.filter(v => v.direction === 'east' && v.type === 'bike' && v.state === 'queued');
+          if (queuedBikes.length > 0) {
+            const bike = queuedBikes[0];
+            setVehicles(prev => prev.map(v => 
+              v.id === bike.id ? { ...v, state: 'entering', targetX: spawnX, targetY: spawnY } : v
+            ));
+          }
         }
       }
 
-      // Westbound spawning
-      if (westPhase === 'normal') {
-        const lane = Math.random() < 0.5 ? 1 : 2;
-        const spawnX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH - 10;
-        const spawnY = getLaneY('west', lane);
-        
-        if (isSafeToSpawn(spawnX, spawnY, 'west')) {
-          setVehicles(prev => [...prev, {
-            id: `car-w-${vehicleIdCounter.current++}`,
-            type: 'car',
-            x: spawnX,
-            y: spawnY,
-            lane,
-            direction: 'west',
-            speed: CAR_SPEED,
-            state: 'tunnel'
-          }]);
+      // Westbound spawning - cars per minute rate during normal phase
+      if (westPhase === 'normal' && (lastCarSpawnTime.current.west === 0 || now - lastCarSpawnTime.current.west > carSpawnInterval)) {
+        // Check if queued cars should enter
+        const queuedCars = vehicles.filter(v => v.direction === 'west' && v.type === 'car' && v.state === 'queued');
+        if (queuedCars.length > 0) {
+          const firstCar = queuedCars[0];
+          const spawnY = getLaneY('west', 2);
+          if (isSafeToSpawn(TUNNEL_WIDTH + QUEUE_AREA_WIDTH - 10, spawnY)) {
+            setVehicles(prev => prev.map(v => 
+              v.id === firstCar.id ? { ...v, state: 'entering', targetX: TUNNEL_WIDTH + QUEUE_AREA_WIDTH - 10, targetY: spawnY } : v
+            ));
+            lastCarSpawnTime.current.west = now;
+          }
+        } else {
+          // Spawn new cars if no queue - always use both lanes during normal
+          const lane = Math.random() < 0.5 ? 1 : 2;
+          const spawnX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH - 10;
+          const spawnY = getLaneY('west', lane);
+          
+          if (isSafeToSpawn(spawnX, spawnY)) {
+            setVehicles(prev => [...prev, {
+              id: `car-w-${vehicleIdCounter.current++}`,
+              type: 'car',
+              x: spawnX,
+              y: spawnY,
+              lane,
+              direction: 'west',
+              speed: CAR_SPEED,
+              state: 'tunnel'
+            }]);
+            lastCarSpawnTime.current.west = now;
+          }
         }
       }
 
@@ -225,10 +323,10 @@ export function HollandTunnelSVG() {
             id: `car-w-${vehicleIdCounter.current++}`,
             type: 'car',
             x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50 + queuedCars.length * 25,
-            y: getLaneY('west', 1) + 15,
-            lane: 1,
+            y: getLaneY('west', 2), // Queue for Lane 2
+            lane: 2,
             direction: 'west',
-            speed: 2,
+            speed: CAR_SPEED,
             state: 'queued'
           }]);
         }
@@ -240,81 +338,93 @@ export function HollandTunnelSVG() {
         const spawnX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH - 10;
         const spawnY = getLaneY('west', 2);
         
-        if (isSafeToSpawn(spawnX, spawnY, 'west')) {
-          // Find the bike closest to entrance (rightmost for westbound)
-          setVehicles(prev => {
-            const queuedBikes = prev.filter(v => v.direction === 'west' && v.type === 'bike' && v.state === 'queued');
-            if (queuedBikes.length > 0) {
-              // Sort by distance to entrance (rightmost first)
-              queuedBikes.sort((a, b) => b.x - a.x);
-              const bike = queuedBikes[0];
-              bike.state = 'entering';
-              bike.targetX = spawnX;
-              bike.targetY = spawnY;
-            }
-            return [...prev];
-          });
+        if (isSafeToSpawn(spawnX, spawnY)) {
+          // Find the first queued bike and move it
+          const queuedBikes = vehicles.filter(v => v.direction === 'west' && v.type === 'bike' && v.state === 'queued');
+          if (queuedBikes.length > 0) {
+            const bike = queuedBikes[0];
+            setVehicles(prev => prev.map(v => 
+              v.id === bike.id ? { ...v, state: 'entering', targetX: spawnX, targetY: spawnY } : v
+            ));
+          }
         }
       }
 
-      // Spawn sweep vans
-      if (eastPhase === 'sweep' && !vehicles.some(v => v.type === 'sweep' && v.direction === 'east')) {
-        setVehicles(prev => [...prev, {
-          id: `sweep-e-${vehicleIdCounter.current++}`,
-          type: 'sweep',
-          x: QUEUE_AREA_WIDTH - 30,
-          y: getLaneY('east', 2),
-          lane: 2,
-          direction: 'east',
-          speed: 1,
-          state: 'tunnel'
-        }]);
+      // Move sweep van from waiting position
+      const sweepVan = vehicles.find(v => v.type === 'sweep');
+      if (sweepVan && sweepVan.state === 'queued') {
+        if (eastPhase === 'sweep' && sweepVan.direction === 'east') {
+          setVehicles(prev => prev.map(v => 
+            v.id === sweepVan.id ? { 
+              ...v, 
+              state: 'entering', 
+              targetX: QUEUE_AREA_WIDTH + 10, 
+              targetY: getLaneY('east', 2) 
+            } : v
+          ));
+        } else if (westPhase === 'sweep' && sweepVan.direction === 'west') {
+          setVehicles(prev => prev.map(v => 
+            v.id === sweepVan.id ? { 
+              ...v, 
+              state: 'entering', 
+              targetX: TUNNEL_WIDTH + QUEUE_AREA_WIDTH - 10, 
+              targetY: getLaneY('west', 2) 
+            } : v
+          ));
+        }
       }
 
-      if (westPhase === 'sweep' && !vehicles.some(v => v.type === 'sweep' && v.direction === 'west')) {
-        setVehicles(prev => [...prev, {
-          id: `sweep-w-${vehicleIdCounter.current++}`,
-          type: 'sweep',
-          x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 30,
-          y: getLaneY('west', 2),
-          lane: 2,
-          direction: 'west',
-          speed: 1,
-          state: 'tunnel'
-        }]);
+      // Move pace car from waiting position
+      const paceCar = vehicles.find(v => v.type === 'pace');
+      if (paceCar && paceCar.state === 'queued') {
+        if (eastPhase === 'pace-car' && paceCar.direction === 'east') {
+          setVehicles(prev => prev.map(v => 
+            v.id === paceCar.id ? { 
+              ...v, 
+              state: 'entering', 
+              targetX: QUEUE_AREA_WIDTH + 10, 
+              targetY: getLaneY('east', 2) 
+            } : v
+          ));
+        } else if (westPhase === 'pace-car' && paceCar.direction === 'west') {
+          setVehicles(prev => prev.map(v => 
+            v.id === paceCar.id ? { 
+              ...v, 
+              state: 'entering', 
+              targetX: TUNNEL_WIDTH + QUEUE_AREA_WIDTH - 10, 
+              targetY: getLaneY('west', 2) 
+            } : v
+          ));
+        }
       }
-
-      // Spawn pace cars
-      if (eastPhase === 'pace-car' && !vehicles.some(v => v.type === 'pace' && v.direction === 'east')) {
-        setVehicles(prev => [...prev, {
-          id: `pace-e-${vehicleIdCounter.current++}`,
-          type: 'pace',
-          x: QUEUE_AREA_WIDTH - 30,
-          y: getLaneY('east', 2),
-          lane: 2,
-          direction: 'east',
-          speed: 1.5,
-          state: 'tunnel'
-        }]);
-      }
-
-      if (westPhase === 'pace-car' && !vehicles.some(v => v.type === 'pace' && v.direction === 'west')) {
-        setVehicles(prev => [...prev, {
-          id: `pace-w-${vehicleIdCounter.current++}`,
-          type: 'pace',
-          x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 30,
-          y: getLaneY('west', 2),
-          lane: 2,
-          direction: 'west',
-          speed: 1.5,
-          state: 'tunnel'
-        }]);
+      
+      // Westbound pace car phase - release queued cars
+      if (westPhase === 'pace-car') {
+        // Release queued cars behind pace car
+        const westPaceCar = vehicles.find(v => v.type === 'pace' && v.direction === 'west');
+        const queuedCars = vehicles.filter(v => v.direction === 'west' && v.type === 'car' && v.state === 'queued');
+        if (queuedCars.length > 0 && westPaceCar && westPaceCar.state === 'tunnel') {
+          const firstCar = queuedCars[0];
+          const spawnY = getLaneY('west', 2);
+          const minGap = VEHICLE_LENGTH * minGapMultiplier;
+          
+          // Check if pace car or last car has left enough space
+          const lastVehicle = vehicles
+            .filter(v => v.direction === 'west' && v.lane === 2 && v.state === 'tunnel')
+            .sort((a, b) => b.x - a.x)[0];
+          
+          if (lastVehicle && lastVehicle.x < TUNNEL_WIDTH + QUEUE_AREA_WIDTH - 10 - minGap) {
+            setVehicles(prev => prev.map(v => 
+              v.id === firstCar.id ? { ...v, state: 'entering', targetX: TUNNEL_WIDTH + QUEUE_AREA_WIDTH - 10, targetY: spawnY } : v
+            ));
+          }
+        }
       }
 
     }, 100);
 
     return () => clearInterval(spawnInterval);
-  }, [currentMinute, isPaused]);
+  }, [currentMinute, isPaused, carsPerMinute, speed, minGapMultiplier]);
 
   // Add bikes to queue during normal phase
   useEffect(() => {
@@ -331,7 +441,7 @@ export function HollandTunnelSVG() {
           setVehicles(prev => [...prev, {
             id: `bike-e-${vehicleIdCounter.current++}`,
             type: 'bike',
-            x: QUEUE_AREA_WIDTH + 20 + Math.random() * (BIKE_PEN_WIDTH - 40),
+            x: QUEUE_AREA_WIDTH - BIKE_PEN_WIDTH + 20 + Math.random() * (BIKE_PEN_WIDTH - 40),
             y: 280 + Math.random() * (BIKE_PEN_HEIGHT - 30),
             lane: 2,
             direction: 'east',
@@ -348,7 +458,7 @@ export function HollandTunnelSVG() {
           setVehicles(prev => [...prev, {
             id: `bike-w-${vehicleIdCounter.current++}`,
             type: 'bike',
-            x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH - BIKE_PEN_WIDTH + Math.random() * (BIKE_PEN_WIDTH - 40),
+            x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH - BIKE_PEN_WIDTH - 10 + 20 + Math.random() * (BIKE_PEN_WIDTH - 40),
             y: 30 + Math.random() * (BIKE_PEN_HEIGHT - 30),
             lane: 2,
             direction: 'west',
@@ -360,7 +470,7 @@ export function HollandTunnelSVG() {
     }, 1000); // Add bike every second
 
     return () => clearInterval(bikeInterval);
-  }, [currentMinute, vehicles, isPaused]);
+  }, [currentMinute, isPaused]);
 
   // Update vehicle positions
   useEffect(() => {
@@ -371,22 +481,27 @@ export function HollandTunnelSVG() {
         const newVehicle = { ...vehicle };
 
         // Move towards target if entering
-        if (vehicle.state === 'entering' && vehicle.targetX !== undefined) {
+        if (vehicle.state === 'entering' && vehicle.targetX !== undefined && vehicle.targetY !== undefined) {
           const dx = vehicle.targetX - vehicle.x;
-          const dy = vehicle.targetY! - vehicle.y;
+          const dy = vehicle.targetY - vehicle.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           
           if (dist > 5) {
-            newVehicle.x += (dx / dist) * vehicle.speed * speed;
-            newVehicle.y += (dy / dist) * vehicle.speed * speed;
+            const moveSpeed = 10; // pixels per update
+            newVehicle.x += (dx / dist) * moveSpeed;
+            newVehicle.y += (dy / dist) * moveSpeed;
           } else {
+            // Snap to target position and change state
+            newVehicle.x = vehicle.targetX;
+            newVehicle.y = vehicle.targetY;
             newVehicle.state = 'tunnel';
-            newVehicle.targetX = undefined;
-            newVehicle.targetY = undefined;
+            newVehicle.lane = vehicle.direction === 'east' ? 2 : 2; // Always lane 2 for special vehicles
+            delete newVehicle.targetX;
+            delete newVehicle.targetY;
           }
         }
-        // Move through tunnel
-        else if (vehicle.state === 'tunnel' || vehicle.state === 'entering') {
+        // Move through tunnel (only if not entering)
+        else if (vehicle.state === 'tunnel') {
           // Update bike speed based on position
           if (vehicle.type === 'bike') {
             newVehicle.speed = getBikeSpeed(vehicle.x, vehicle.direction);
@@ -401,10 +516,40 @@ export function HollandTunnelSVG() {
 
         return newVehicle;
       }).filter(v => {
-        // Remove vehicles that have exited
-        if (v.direction === 'east' && v.x > TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50) return false;
-        if (v.direction === 'west' && v.x < -50) return false;
+        // Remove only cars that have exited, keep sweep and pace vehicles
+        if (v.type === 'car') {
+          if (v.direction === 'east' && v.x > TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50) return false;
+          if (v.direction === 'west' && v.x < -50) return false;
+        }
         return true;
+      }).map(v => {
+        // Move sweep and pace vehicles to waiting positions after crossing
+        if ((v.type === 'sweep' || v.type === 'pace') && v.state === 'tunnel') {
+          if (v.direction === 'east' && v.x > TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 30) {
+            // Eastbound vehicle reached the end, move to westbound waiting position
+            const yOffset = v.type === 'sweep' ? 70 : 40;
+            return { 
+              ...v, 
+              x: TUNNEL_WIDTH + QUEUE_AREA_WIDTH * 2 - 20, 
+              y: yOffset,
+              direction: 'west' as 'east' | 'west',
+              state: 'queued' as 'queued',
+              lane: 2
+            };
+          } else if (v.direction === 'west' && v.x < QUEUE_AREA_WIDTH - 30) {
+            // Westbound vehicle reached the end, move to eastbound waiting position
+            const yOffset = v.type === 'sweep' ? 330 : 360;
+            return { 
+              ...v, 
+              x: 20, 
+              y: yOffset,
+              direction: 'east' as 'east' | 'west',
+              state: 'queued' as 'queued',
+              lane: 2
+            };
+          }
+        }
+        return v;
       }));
     }, 50);
 
@@ -485,6 +630,30 @@ export function HollandTunnelSVG() {
               />
               {speed}x
             </label>
+            <label>
+              Cars/min: 
+              <input 
+                type="range" 
+                min="0.5" 
+                max="5" 
+                step="0.5" 
+                value={carsPerMinute}
+                onChange={(e) => setCarsPerMinute(Number(e.target.value))}
+              />
+              {carsPerMinute}
+            </label>
+            <label>
+              Gap: 
+              <input 
+                type="range" 
+                min="0.5" 
+                max="3" 
+                step="0.5" 
+                value={minGapMultiplier}
+                onChange={(e) => setMinGapMultiplier(Number(e.target.value))}
+              />
+              {minGapMultiplier}x
+            </label>
             <span className="hint">Press spacebar to play/pause</span>
           </div>
         </div>
@@ -508,14 +677,14 @@ export function HollandTunnelSVG() {
             
             {/* Tunnel lanes */}
             <rect x={QUEUE_AREA_WIDTH} y="100" width={TUNNEL_WIDTH} height={TUNNEL_HEIGHT} fill="#444" rx="4" />
-            <rect x={QUEUE_AREA_WIDTH} y="100" width={TUNNEL_WIDTH} height={LANE_HEIGHT} fill={westPhase === 'normal' ? '#666' : '#666'} />
-            <rect x={QUEUE_AREA_WIDTH} y="130" width={TUNNEL_WIDTH} height={LANE_HEIGHT} 
+            <rect x={QUEUE_AREA_WIDTH} y="100" width={TUNNEL_WIDTH} height={LANE_HEIGHT} 
                   fill={westPhase !== 'normal' ? '#28a745' : '#666'} />
+            <rect x={QUEUE_AREA_WIDTH} y="130" width={TUNNEL_WIDTH} height={LANE_HEIGHT} fill="#666" />
             <line x1={QUEUE_AREA_WIDTH} y1="130" x2={TUNNEL_WIDTH + QUEUE_AREA_WIDTH} y2="130" stroke="#333" strokeWidth="2" />
             
             {/* Lane labels */}
-            <text x={QUEUE_AREA_WIDTH + 10} y="120" fontSize="12" fill="white">Lane 1</text>
-            <text x={QUEUE_AREA_WIDTH + 10} y="150" fontSize="12" fill="white">
+            <text x={QUEUE_AREA_WIDTH + 10} y="150" fontSize="12" fill="white">Lane 1</text>
+            <text x={QUEUE_AREA_WIDTH + 10} y="120" fontSize="12" fill="white">
               Lane 2 {westPhase !== 'normal' ? '(Bike Lane)' : ''}
             </text>
 
@@ -544,18 +713,54 @@ export function HollandTunnelSVG() {
             </text>
 
             {/* Bike pen - positioned below left entrance */}
-            <rect x={QUEUE_AREA_WIDTH + 10} y="270" width={BIKE_PEN_WIDTH} height={BIKE_PEN_HEIGHT} 
+            <rect x={QUEUE_AREA_WIDTH - BIKE_PEN_WIDTH - 10} y="270" width={BIKE_PEN_WIDTH} height={BIKE_PEN_HEIGHT} 
                   fill="#e3f2fd" stroke="#2196f3" strokeWidth="2" strokeDasharray="5,5" rx="4" />
-            <text x={QUEUE_AREA_WIDTH + 15} y="365" fontSize="12" fontWeight="bold">Bike Pen</text>
+            <text x={QUEUE_AREA_WIDTH - BIKE_PEN_WIDTH - 5} y="365" fontSize="12" fontWeight="bold">Bike Pen</text>
           </g>
 
+          {/* Waiting areas for sweep/pace vehicles */}
+          <g id="waiting-areas" opacity="0.3">
+            {/* East waiting area */}
+            <rect x="10" y="320" width="40" height="50" fill="#ffd700" stroke="#333" strokeDasharray="2,2" />
+            <text x="30" y="315" fontSize="10" textAnchor="middle">Wait</text>
+            
+            {/* West waiting area */}
+            <rect x={TUNNEL_WIDTH + QUEUE_AREA_WIDTH * 2 - 50} y="30" width="40" height="50" 
+                  fill="#ffd700" stroke="#333" strokeDasharray="2,2" />
+            <text x={TUNNEL_WIDTH + QUEUE_AREA_WIDTH * 2 - 30} y="25" fontSize="10" textAnchor="middle">Wait</text>
+          </g>
+          
           {/* Render all vehicles */}
-          {vehicles.map(vehicle => (
-            <VehicleEmoji key={vehicle.id} vehicle={vehicle} />
-          ))}
+          {(() => {
+            // Ensure unique vehicles by ID
+            const uniqueVehicles = vehicles.reduce((acc, vehicle) => {
+              if (!acc.some(v => v.id === vehicle.id)) {
+                acc.push(vehicle);
+              }
+              return acc;
+            }, [] as Vehicle[]);
+            
+            return uniqueVehicles.map(vehicle => (
+              <VehicleEmoji key={vehicle.id} vehicle={vehicle} />
+            ));
+          })()}
         </svg>
       </main>
 
+      {/* Debug info */}
+      <div style={{ fontSize: '10px', fontFamily: 'monospace', padding: '10px', background: '#f0f0f0', marginTop: '10px' }}>
+        <div>Vehicles: {vehicles.length}</div>
+        <div>Bikes: {vehicles.filter(v => v.type === 'bike').length} 
+          (E: {vehicles.filter(v => v.type === 'bike' && v.direction === 'east').length}, 
+           W: {vehicles.filter(v => v.type === 'bike' && v.direction === 'west').length})</div>
+        <div>Special vehicles:</div>
+        {vehicles.filter(v => v.type === 'sweep' || v.type === 'pace').map(v => (
+          <div key={v.id} style={{ marginLeft: '10px' }}>
+            {v.type} {v.direction}: state={v.state}, x={Math.round(v.x)}, y={Math.round(v.y)}
+          </div>
+        ))}
+      </div>
+      
       <footer className="legend">
         <div className="timeline-section">
           <h3>Eastbound Timeline (Manhattan →):</h3>
