@@ -50,6 +50,11 @@ pnpm run lint     # Run linter
 pnpm run typecheck # Run TypeScript checks
 ```
 
+## Development Environment Limitations
+- Cannot run dev server (`pnpm run dev`) - it runs continuously
+- Cannot use `open` command to open browsers
+- Cannot take screenshots directly - need to use headless browser tools
+
 ## Key Files
 - `src/components/HollandTunnelDeterministic.tsx` - Main visualization component
 - `src/components/AnalogClock.tsx` - Animated clock display
