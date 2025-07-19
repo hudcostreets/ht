@@ -190,7 +190,36 @@ export function HollandTunnelDeterministic() {
       let phaseStartMin = 0;
       
       if (vehicle.type === 'sweep') {
-        if (currentMin >= 50 || currentMin < 10) {
+        // Add transition from staging to tunnel entrance
+        if (currentMin === 49 && currentSec >= 30) {
+          // Animate from staging to tunnel entrance during last 30 seconds of :49
+          const transitionProgress = (currentSec - 30) / 30; // 0 to 1 over 30 seconds
+          const startX = QUEUE_AREA_WIDTH - 50; // Staging position
+          const endX = QUEUE_AREA_WIDTH; // Tunnel entrance
+          const startY = getLaneY('east', 2) + 35; // Staging Y with offset
+          const endY = getLaneY('east', 2); // Lane Y
+          
+          return {
+            x: startX + (endX - startX) * transitionProgress,
+            y: startY + (endY - startY) * transitionProgress,
+            state: 'staging',
+            opacity: 1
+          };
+        } else if (currentMin === 19 && currentSec >= 30) {
+          // West transition
+          const transitionProgress = (currentSec - 30) / 30;
+          const startX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50;
+          const endX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH;
+          const startY = getLaneY('west', 2) - 35;
+          const endY = getLaneY('west', 2);
+          
+          return {
+            x: startX + (endX - startX) * transitionProgress,
+            y: startY + (endY - startY) * transitionProgress,
+            state: 'staging',
+            opacity: 1
+          };
+        } else if (currentMin >= 50 || currentMin < 10) {
           // East transit or just finished
           if (currentMin >= 50) {
             isActive = true;
@@ -211,7 +240,36 @@ export function HollandTunnelDeterministic() {
           phaseStartMin = 20;
         }
       } else { // pace
-        if (currentMin >= 55 || currentMin < 10) {
+        // Add transition from staging to tunnel entrance
+        if (currentMin === 54 && currentSec >= 30) {
+          // Animate from staging to tunnel entrance during last 30 seconds of :54
+          const transitionProgress = (currentSec - 30) / 30; // 0 to 1 over 30 seconds
+          const startX = QUEUE_AREA_WIDTH - 50; // Staging position
+          const endX = QUEUE_AREA_WIDTH; // Tunnel entrance
+          const startY = getLaneY('east', 2) + 60; // Staging Y with offset
+          const endY = getLaneY('east', 2); // Lane Y
+          
+          return {
+            x: startX + (endX - startX) * transitionProgress,
+            y: startY + (endY - startY) * transitionProgress,
+            state: 'staging',
+            opacity: 1
+          };
+        } else if (currentMin === 24 && currentSec >= 30) {
+          // West transition
+          const transitionProgress = (currentSec - 30) / 30;
+          const startX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50;
+          const endX = TUNNEL_WIDTH + QUEUE_AREA_WIDTH;
+          const startY = getLaneY('west', 2) - 60;
+          const endY = getLaneY('west', 2);
+          
+          return {
+            x: startX + (endX - startX) * transitionProgress,
+            y: startY + (endY - startY) * transitionProgress,
+            state: 'staging',
+            opacity: 1
+          };
+        } else if (currentMin >= 55 || currentMin < 10) {
           // East transit or just finished
           if (currentMin >= 55) {
             isActive = true;
@@ -381,11 +439,23 @@ export function HollandTunnelDeterministic() {
         
         // If still waiting to enter
         if (time < enterTime) {
-          const queuePosition = (vehicle.spawnMinute % 15) * 40; // Space cars in queue
+          // Calculate queue position based on when car will enter
+          let queueIndex = 0;
+          if (vehicle.direction === 'east') {
+            // East: :45 car is first, :46 would be second if it existed
+            queueIndex = vehicle.spawnMinute - 45;
+          } else {
+            // West: :15 car is first, :16-:19 would follow
+            queueIndex = vehicle.spawnMinute >= 15 ? vehicle.spawnMinute - 15 : vehicle.spawnMinute + 45;
+          }
+          
+          const queueSpacing = 50; // More spacing between cars
+          const baseOffset = 60;
+          
           return {
             x: vehicle.direction === 'east' ? 
-              QUEUE_AREA_WIDTH - 50 - queuePosition :
-              TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 50 + queuePosition,
+              QUEUE_AREA_WIDTH - baseOffset - (queueIndex * queueSpacing) :
+              TUNNEL_WIDTH + QUEUE_AREA_WIDTH + baseOffset + (queueIndex * queueSpacing),
             y: getLaneY(vehicle.direction, vehicle.lane),
             state: 'queued',
             opacity: 1
@@ -502,15 +572,20 @@ export function HollandTunnelDeterministic() {
       const releaseTime = (currentHour * 3600) + (releaseMinute * 60);
       
       if (time < releaseTime) {
-        // Still in pen - stack bikes vertically
+        // Still in pen - arrange bikes in a grid
         const penX = vehicle.direction === 'east' ? 70 : TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 70;
         const penY = vehicle.direction === 'east' ? 310 : 60;
-        const stackOffset = (vehicle.spawnMinute % 5) * 15 - 30; // Stack in rows
-        const rowOffset = Math.floor(vehicle.spawnMinute / 5) * 20 - 20;
+        
+        // Arrange in a 3x5 grid (3 columns, 5 rows)
+        const col = vehicle.spawnMinute % 3;
+        const row = Math.floor(vehicle.spawnMinute / 3);
+        
+        const xOffset = col * 25 - 25; // 25px spacing between columns
+        const yOffset = row * 15 - 30; // 15px spacing between rows
         
         return {
-          x: penX + rowOffset,
-          y: penY + stackOffset,
+          x: penX + xOffset,
+          y: penY + yOffset,
           state: 'queued',
           opacity: 1
         };
@@ -535,12 +610,20 @@ export function HollandTunnelDeterministic() {
       const actualReleaseTime = releaseTime + releaseDelay;
       
       if (time < actualReleaseTime) {
-        // Still waiting to be released in pen
+        // Still waiting to be released in pen - arrange in grid
         const penX = vehicle.direction === 'east' ? 70 : TUNNEL_WIDTH + QUEUE_AREA_WIDTH + 70;
         const penY = vehicle.direction === 'east' ? 310 : 60;
+        
+        // Arrange in a 3x5 grid (3 columns, 5 rows)
+        const col = vehicle.spawnMinute % 3;
+        const row = Math.floor(vehicle.spawnMinute / 3);
+        
+        const xOffset = col * 25 - 25; // 25px spacing between columns
+        const yOffset = row * 15 - 30; // 15px spacing between rows
+        
         return {
-          x: penX,
-          y: penY,
+          x: penX + xOffset,
+          y: penY + yOffset,
           state: 'queued',
           opacity: 1
         };
