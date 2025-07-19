@@ -106,11 +106,16 @@ ALL_VEHICLES.push(
 );
 
 export function HollandTunnelDeterministic() {
+  // Check URL parameter for initial time
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlMinute = urlParams.get('t');
+  const initialMinute = urlMinute !== null ? parseInt(urlMinute, 10) % 60 : 0;
+
   const [currentMinute, setCurrentMinute] = useSessionStorageState<number>('ht-current-minute', {
-    defaultValue: 0
+    defaultValue: initialMinute
   });
   const [isPaused, setIsPaused] = useSessionStorageState<boolean>('ht-is-paused', {
-    defaultValue: false
+    defaultValue: urlMinute !== null // Pause if URL param is set
   });
   const [speed, setSpeed] = useSessionStorageState<number>('ht-speed', {
     defaultValue: 1
@@ -312,12 +317,8 @@ export function HollandTunnelDeterministic() {
       const currentHour = Math.floor(time / 3600);
       const spawnTime = (currentHour * 3600) + (vehicle.spawnMinute * 60);
       
-      // Fade-in constants - fade in during the animation to spawn minute
-      const fadeInTime = 0.3; // 300ms animation duration
-      const fadeInDistance = CAR_SPEED * fadeInTime; // Distance traveled in that time
-      
-      // Check if car should be visible yet (start staging fadeInTime before spawn)
-      if (time < spawnTime - fadeInTime) return null;
+      // Check if we're within 1 minute of spawn time
+      if (time < spawnTime - 60) return null; // Don't show cars more than 1 minute early
       
       // Check if lane is open when car arrives
       const phase = getPhase(vehicle.spawnMinute, vehicle.direction);
@@ -326,31 +327,22 @@ export function HollandTunnelDeterministic() {
       // Calculate position
       let enterTime = spawnTime;
       
-      // If we're before spawn time, car is approaching
-      if (time < spawnTime) {
-        // Calculate progress from 0 to 1 as we approach spawn time
+      // If we're before spawn time but within fade-in period, car is fading in
+      if (time < spawnTime && time >= spawnTime - 60) {
+        // Calculate how close we are to spawn time (0 to 1 over the last minute)
         const timeUntilSpawn = spawnTime - time;
-        const progress = 1 - (timeUntilSpawn / fadeInTime);
+        const fadeProgress = 1 - (timeUntilSpawn / 60); // Fade in over 1 minute
         
-        // Start position (one step back from entrance)
-        const startX = vehicle.direction === 'east' ? 
-          QUEUE_AREA_WIDTH - fadeInDistance : 
-          TUNNEL_WIDTH + QUEUE_AREA_WIDTH + fadeInDistance;
-        
-        // End position (tunnel entrance)
-        const endX = vehicle.direction === 'east' ? 
+        // Car appears at tunnel entrance with increasing opacity
+        const x = vehicle.direction === 'east' ? 
           QUEUE_AREA_WIDTH : 
           TUNNEL_WIDTH + QUEUE_AREA_WIDTH;
-        
-        // Interpolate position and opacity based on progress
-        const x = startX + (endX - startX) * progress;
-        const opacity = Math.max(0, progress);
         
         return {
           x,
           y: getLaneY(vehicle.direction, vehicle.lane),
           state: 'approaching',
-          opacity
+          opacity: fadeProgress
         };
       }
       
@@ -358,14 +350,14 @@ export function HollandTunnelDeterministic() {
         // Car needs to queue - find next normal phase
         let nextNormalMinute;
         if (vehicle.direction === 'east') {
-          // East normal phase is :00-:45 (exclusive of :45)
+          // East normal phase is :00-:45 and :56-:59
           // :45 car enters at :56 (after pace car)
           if (vehicle.spawnMinute === 45) {
             nextNormalMinute = 56;
-          } else if (vehicle.spawnMinute < 45) {
+          } else if (vehicle.spawnMinute < 45 || vehicle.spawnMinute >= 56) {
             nextNormalMinute = vehicle.spawnMinute;
           } else {
-            nextNormalMinute = 60; // Next hour
+            nextNormalMinute = 60; // Next hour (for :46-:55 which don't exist)
           }
         } else {
           // West normal phase is :30-:15 (wraps around)
@@ -657,6 +649,11 @@ export function HollandTunnelDeterministic() {
         }
         animate();
         
+        // Update URL parameter when stepping with arrow keys
+        const url = new URL(window.location.href);
+        url.searchParams.set('t', newMinute.toString());
+        window.history.replaceState({}, '', url.toString());
+        
         return newMinute;
       });
     }
@@ -701,6 +698,36 @@ export function HollandTunnelDeterministic() {
   const formatTime = (minute: number) => {
     const mins = minute % 60;
     return `0:${mins.toString().padStart(2, '0')}`;
+  };
+
+  // Calculate yellow distance with variable bike speed
+  const calculateYellowDistance = (timeSincePenClose: number): number => {
+    if (timeSincePenClose <= 0) return 0;
+    
+    const halfwayTime = (TUNNEL_WIDTH / 2) / BIKE_SPEED_DOWNHILL;
+    let distance;
+    
+    if (timeSincePenClose <= halfwayTime) {
+      // First half - downhill speed
+      distance = BIKE_SPEED_DOWNHILL * timeSincePenClose;
+    } else {
+      // Second half - uphill speed
+      distance = (TUNNEL_WIDTH / 2) + BIKE_SPEED_UPHILL * (timeSincePenClose - halfwayTime);
+    }
+    
+    return Math.min(distance, TUNNEL_WIDTH);
+  };
+
+  // Handle timeline clicks
+  const handleTimelineClick = (targetMinute: number) => {
+    setIsPaused(true);
+    setCurrentMinute(targetMinute);
+    setDisplayTime(targetMinute * 60);
+    
+    // Update URL parameter
+    const url = new URL(window.location.href);
+    url.searchParams.set('t', targetMinute.toString());
+    window.history.replaceState({}, '', url.toString());
   };
 
   const eastPhase = getPhase(currentMinute, 'east');
@@ -792,7 +819,7 @@ export function HollandTunnelDeterministic() {
                 // Yellow emanates from pen close at :18
                 const penCloseTime = 18 * 60;
                 const timeSincePenClose = currentTime - penCloseTime;
-                const yellowTrailDistance = timeSincePenClose > 0 ? CAR_SPEED * timeSincePenClose : 0;
+                const yellowTrailDistance = calculateYellowDistance(timeSincePenClose);
                 
                 const layers = [];
                 
@@ -830,7 +857,7 @@ export function HollandTunnelDeterministic() {
                 const timeSincePenClose = currentMin >= 18 ? 
                   currentTime - penCloseTime : 
                   currentTime + (60 * 60) - penCloseTime;
-                const yellowDistance = Math.min(CAR_SPEED * timeSincePenClose, TUNNEL_WIDTH);
+                const yellowDistance = calculateYellowDistance(timeSincePenClose);
                 
                 // Red follows sweep van (starts at :20)
                 const sweepStartTime = 20 * 60;
@@ -887,7 +914,7 @@ export function HollandTunnelDeterministic() {
                 const timeSincePenClose = currentMin >= 18 ? 
                   currentTime - penCloseTime : 
                   currentTime + (60 * 60) - penCloseTime;
-                const yellowDistance = Math.min(CAR_SPEED * timeSincePenClose, TUNNEL_WIDTH);
+                const yellowDistance = calculateYellowDistance(timeSincePenClose);
                 
                 // Red continues from sweep phase (started at :20)
                 const sweepStartTime = 20 * 60;
@@ -1036,7 +1063,7 @@ export function HollandTunnelDeterministic() {
                 
                 const penCloseTime = 48 * 60;
                 const timeSincePenClose = currentTime - penCloseTime;
-                const yellowTrailDistance = timeSincePenClose > 0 ? CAR_SPEED * timeSincePenClose : 0;
+                const yellowTrailDistance = calculateYellowDistance(timeSincePenClose);
                 
                 const layers = [];
                 
@@ -1074,7 +1101,7 @@ export function HollandTunnelDeterministic() {
                 const timeSincePenClose = currentMin >= 48 ? 
                   currentTime - penCloseTime : 
                   currentTime + (60 * 60) - penCloseTime;
-                const yellowDistance = Math.min(CAR_SPEED * timeSincePenClose, TUNNEL_WIDTH);
+                const yellowDistance = calculateYellowDistance(timeSincePenClose);
                 
                 // Red follows sweep van (starts at :50)
                 const sweepStartTime = 50 * 60;
@@ -1131,7 +1158,7 @@ export function HollandTunnelDeterministic() {
                 const timeSincePenClose = currentMin >= 48 ? 
                   currentTime - penCloseTime : 
                   currentTime + (60 * 60) - penCloseTime;
-                const yellowDistance = Math.min(CAR_SPEED * timeSincePenClose, TUNNEL_WIDTH);
+                const yellowDistance = calculateYellowDistance(timeSincePenClose);
                 
                 // Red continues from sweep phase (started at :50)
                 const sweepStartTime = 50 * 60;
@@ -1321,21 +1348,71 @@ export function HollandTunnelDeterministic() {
         <div className="timeline-section">
           <h3>Eastbound Timeline</h3>
           <ul>
-            <li className={eastPhase === 'normal' ? 'current-phase' : ''}>:00-:45 - Normal traffic flow</li>
-            <li className={eastPhase === 'bikes-enter' ? 'current-phase' : ''}>:45-:48 - Bikes enter right lane</li>
-            <li className={eastPhase === 'clearing' ? 'current-phase' : ''}>:48-:50 - Clearing phase</li>
-            <li className={eastPhase === 'sweep' ? 'current-phase' : ''}>:50-:55 - Sweep van</li>
-            <li className={eastPhase === 'pace-car' ? 'current-phase' : ''}>:55-:00 - Pace car + cars resume</li>
+            <li 
+              className={`${eastPhase === 'normal' ? 'current-phase' : ''} timeline-item`}
+              onClick={() => handleTimelineClick(0)}
+            >
+              :00-:45 - Normal traffic flow
+            </li>
+            <li 
+              className={`${eastPhase === 'bikes-enter' ? 'current-phase' : ''} timeline-item`}
+              onClick={() => handleTimelineClick(45)}
+            >
+              :45-:48 - Bikes enter right lane
+            </li>
+            <li 
+              className={`${eastPhase === 'clearing' ? 'current-phase' : ''} timeline-item`}
+              onClick={() => handleTimelineClick(48)}
+            >
+              :48-:50 - Clearing phase
+            </li>
+            <li 
+              className={`${eastPhase === 'sweep' ? 'current-phase' : ''} timeline-item`}
+              onClick={() => handleTimelineClick(50)}
+            >
+              :50-:55 - Sweep van
+            </li>
+            <li 
+              className={`${eastPhase === 'pace-car' ? 'current-phase' : ''} timeline-item`}
+              onClick={() => handleTimelineClick(55)}
+            >
+              :55-:00 - Pace car + cars resume
+            </li>
           </ul>
         </div>
         <div className="timeline-section">
           <h3>Westbound Timeline (30 min offset)</h3>
           <ul>
-            <li className={westPhase === 'normal' ? 'current-phase' : ''}>:30-:15 - Normal traffic flow</li>
-            <li className={westPhase === 'bikes-enter' ? 'current-phase' : ''}>:15-:18 - Bikes enter right lane</li>
-            <li className={westPhase === 'clearing' ? 'current-phase' : ''}>:18-:20 - Clearing phase</li>
-            <li className={westPhase === 'sweep' ? 'current-phase' : ''}>:20-:25 - Sweep van</li>
-            <li className={westPhase === 'pace-car' ? 'current-phase' : ''}>:25-:30 - Pace car + cars resume</li>
+            <li 
+              className={`${westPhase === 'normal' ? 'current-phase' : ''} timeline-item`}
+              onClick={() => handleTimelineClick(30)}
+            >
+              :30-:15 - Normal traffic flow
+            </li>
+            <li 
+              className={`${westPhase === 'bikes-enter' ? 'current-phase' : ''} timeline-item`}
+              onClick={() => handleTimelineClick(15)}
+            >
+              :15-:18 - Bikes enter right lane
+            </li>
+            <li 
+              className={`${westPhase === 'clearing' ? 'current-phase' : ''} timeline-item`}
+              onClick={() => handleTimelineClick(18)}
+            >
+              :18-:20 - Clearing phase
+            </li>
+            <li 
+              className={`${westPhase === 'sweep' ? 'current-phase' : ''} timeline-item`}
+              onClick={() => handleTimelineClick(20)}
+            >
+              :20-:25 - Sweep van
+            </li>
+            <li 
+              className={`${westPhase === 'pace-car' ? 'current-phase' : ''} timeline-item`}
+              onClick={() => handleTimelineClick(25)}
+            >
+              :25-:30 - Pace car + cars resume
+            </li>
           </ul>
         </div>
       </div>

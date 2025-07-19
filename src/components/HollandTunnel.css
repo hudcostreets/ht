@@ -346,6 +346,16 @@
 .legend li.current-phase {
   font-weight: bold;
   color: #333;
+}
+
+.legend li.timeline-item {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.legend li.timeline-item:hover {
+  background-color: #f0f0f0;
+  border-radius: 4px;
   background: #fff3cd;
   padding: 2px 6px;
   border-radius: 3px;
