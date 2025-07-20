@@ -135,23 +135,33 @@ export class Tunnel {
     }
 
     // Populate rcars' spawnQueue elems
+    // Instead of checking phase at spawn time, check if tunnel is blocked when car arrives
     let queueIdx = 0
     for (const rcar of rcars) {
-      const phase = this.getPhase(rcar.spawnMin)
+      // Tunnel is blocked from minute 0 (bikes enter) until pace car starts at minute 10
+      const tunnelBlockedStart = 0
+      const tunnelBlockedEnd = paceCarStartMin
       
-      if (phase === 'normal' || phase === 'pace-car') {
-        // Car flows normally, no queueing
-        // Leave spawnQueue undefined
-      } else {
-        // Car needs to queue during bike phases
+      // Check if this car would arrive during blocked period
+      const arrivalMin = rcar.spawnMin
+      
+      // Handle period wrapping - if car arrives in blocked period of this or next cycle
+      let needsQueue = false
+      if (arrivalMin >= tunnelBlockedStart && arrivalMin < tunnelBlockedEnd) {
+        needsQueue = true
+      }
+      
+      if (needsQueue) {
+        // Car needs to queue
         const queueOffset = queueIdx * queuedCarWidthPx
-        const dequeueStartMin = paceCarStartMin - rcar.spawnMin
+        const dequeueStartMin = tunnelBlockedEnd - arrivalMin
         rcar.spawnQueue = { 
           offsetPx: queueOffset, 
           minsBeforeDequeueStart: dequeueStartMin > 0 ? dequeueStartMin : 0 
         }
         queueIdx++
       }
+      // else: Car flows normally, leave spawnQueue undefined
     }
   }
 

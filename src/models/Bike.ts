@@ -101,29 +101,27 @@ export class Bike {
   }
 
   getPos(absMins: number): { x: number, y: number, state: string, opacity: number } | null {
+    if (this.timePositions.length === 0) return null
+    
+    const period = this.tunnel.config.period
     const tunnelRelMins = this.tunnel.relMins(absMins)
     
-    // Calculate time since this bike spawned
-    const timeSinceSpawn = tunnelRelMins - this.spawnMin
-
-    if (this.timePositions.length === 0) return null
-
+    // Calculate position within the repeating cycle
+    // Bikes repeat their pattern every period minutes
+    let cycleTime = (tunnelRelMins - this.spawnMin) % period
+    if (cycleTime < 0) cycleTime += period
+    
     // Special case for early bikes that spawn before pen opens
-    if (this.spawnMin < 0 && tunnelRelMins >= 0 && timeSinceSpawn < 0) {
+    if (this.spawnMin < 0 && tunnelRelMins >= 0 && cycleTime > period - 10) {
       // Early bike waiting in pen during pen open time
       const first = this.timePositions[0]
       return { ...first }
     }
 
-    // Check if we're before the bike's spawn time
-    if (timeSinceSpawn < 0) {
-      return null
-    }
-
     // Check if we're before the first time position
     const first = this.timePositions[0]
-    if (timeSinceSpawn < first.mins) {
-      // Still before first position
+    if (cycleTime < first.mins) {
+      // Still before first position in this cycle
       return null
     }
 
@@ -132,9 +130,9 @@ export class Bike {
       const current = this.timePositions[i]
       const next = this.timePositions[i + 1]
 
-      if (timeSinceSpawn >= current.mins && timeSinceSpawn < next.mins) {
+      if (cycleTime >= current.mins && cycleTime < next.mins) {
         // Interpolate between current and next
-        const t = (timeSinceSpawn - current.mins) / (next.mins - current.mins)
+        const t = (cycleTime - current.mins) / (next.mins - current.mins)
 
         return {
           x: current.x + (next.x - current.x) * t,
@@ -147,9 +145,9 @@ export class Bike {
 
     // Check if we're past the last time position
     const last = this.timePositions[this.timePositions.length - 1]
-    if (timeSinceSpawn >= last.mins) {
-      if (last.opacity <= 0) return null // Fully faded out
-      return { ...last }
+    if (cycleTime >= last.mins) {
+      // We're at the end of the cycle, waiting to respawn
+      return null
     }
 
     return null
