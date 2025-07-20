@@ -59,7 +59,7 @@ describe('Tunnel', () => {
         
         // Second bike should still be in pen at :45:00
         const secondPos = secondBike.getPos(45)
-        expect(secondPos!.state).toBe('pen')
+        expect(secondPos!.state).toBe('queue')
         
         // Second bike should be released later (bikes are released 5 per minute = 0.2 minutes apart)
         // But bike needs to reach the tunnel entrance position first
@@ -105,7 +105,7 @@ describe('Tunnel', () => {
           // L lane car spawning at :46 should flow normally
           const position = carAt46.getPos(46)
           expect(position).toBeTruthy()
-          expect(position!.state).toBe('tunnel')
+          expect(position!.state).toBe('transiting')
         }
       })
     })
@@ -119,7 +119,7 @@ describe('Tunnel', () => {
           // R lane car spawning at :46 should be queued
           const position = carAt46.getPos(46)
           expect(position).toBeTruthy()
-          expect(position!.state).toBe('pen')
+          expect(position!.state).toBe('queued')
           expect(position!.x).toBeLessThan(0) // In queue area (negative x)
         }
       })
@@ -131,11 +131,11 @@ describe('Tunnel', () => {
         if (carAt45) {
           // At :45, car should be queued
           const queuedPosition = carAt45.getPos(45)
-          expect(queuedPosition!.state).toBe('pen')
+          expect(queuedPosition!.state).toBe('queued')
           
           // At :55 (pace car starts), car should be moving
           const movingPosition = carAt45.getPos(55)
-          expect(movingPosition!.state).toBe('tunnel')
+          expect(movingPosition!.state).toBe('transiting')
           expect(movingPosition!.x).toBeGreaterThan(-50) // Should have moved from initial queue position
         }
       })

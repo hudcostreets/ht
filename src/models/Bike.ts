@@ -27,7 +27,7 @@ export class Bike {
       // Bike arrives during pen window - can join traveling group immediately
       releaseRelMins = this.spawnMin - offsetMin
     } else {
-      // Late arrival - waits for next cycle (60 minutes later)
+      // Late arrival - waits for next cycle
       const lateArrivalOrder = Math.floor((this.spawnMin - (offsetMin + penCloseMin)) / 4)
       releaseRelMins = period + (lateArrivalOrder * 12)
     }
@@ -92,7 +92,7 @@ export class Bike {
         opacity: 0
       },
       {
-        mins: 59,
+        mins: period - 1,
         ...origin,
         state: 'origin',
         opacity: 0

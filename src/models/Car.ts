@@ -62,7 +62,7 @@ export class Car {
       { mins:    exitingMin    , ...lane.exit    , state:    'exiting', opacity: 1, },
       { mins:    exitingMin + 1, ...lane.dest    , state:       'done', opacity: 0, },
       { mins:    exitingMin + 2, ...origin       , state:     'origin', opacity: 0, },
-      { mins:                59, ...origin       , state:     'origin', opacity: 0, },
+      { mins: tunnel.config.period - 1, ...origin       , state:     'origin', opacity: 0, },
     ]
   }
 

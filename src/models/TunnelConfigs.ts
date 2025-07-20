@@ -1,4 +1,4 @@
-import { LAYOUT, SPEEDS } from './Vehicle'
+import { LAYOUT, SPEEDS } from './Constants'
 import type { TunnelsConfig } from './Tunnels'
 
 export const Common = {

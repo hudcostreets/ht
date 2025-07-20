@@ -1,5 +1,5 @@
 import React, { type FC } from 'react'
-import { LAYOUT } from '../models/Vehicle'
+import { LAYOUT } from '../models/Constants'
 
 interface TunnelViewProps {
   direction: 'east' | 'west'

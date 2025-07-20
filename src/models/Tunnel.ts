@@ -59,7 +59,7 @@ export class Tunnel {
     const { bikesPerMin, carsPerMin, laneWidthPx, laneHeightPx, direction, paceCarStartMin, carMph, lengthMi, queuedCarWidthPx, } = config
     this.dir = direction
     this.d = direction === 'east' ? 1 : -1
-    this.nbikes = 60 * bikesPerMin
+    this.nbikes = config.period * bikesPerMin
 
     // Create lanes
     const exitFadeDistance = config.fadeDistance * this.d
@@ -80,16 +80,16 @@ export class Tunnel {
 
     // Create bikes
     for (let i = 0; i < this.nbikes; i++) {
-      const spawn = 60 * i / this.nbikes
+      const spawn = config.period * i / this.nbikes
       this.bikes.push(new Bike(this, spawn, spawn))
     }
 
     // Create cars
-    this.ncars = 60 * carsPerMin
+    this.ncars = config.period * carsPerMin
     const rcars: Car[] = []
     for (let i = 0; i < this.ncars; i++) {
-      this.cars.push(new Car({ tunnel: this, laneId: 'L', spawnMin: 60 * (i + .5) / this.ncars, }))
-      const rcar = new Car({ tunnel: this, laneId: 'R', spawnMin: 60 * i / this.ncars, })
+      this.cars.push(new Car({ tunnel: this, laneId: 'L', spawnMin: config.period * (i + .5) / this.ncars, }))
+      const rcar = new Car({ tunnel: this, laneId: 'R', spawnMin: config.period * i / this.ncars, })
       rcars.push(rcar)
       this.cars.push(rcar)
     }
@@ -98,7 +98,7 @@ export class Tunnel {
     this.nQueueCars0 = 0
     this.nQueueCars1 = 0
     this.nQueueCars = 0
-    const carPxPerMin = carMph * laneWidthPx / lengthMi * 60
+    const carPxPerMin = carMph * laneWidthPx / lengthMi / 60 // Convert from mph to px/min
     let dequeueEndMin = paceCarStartMin
     let carIdx = 0
     let nQueueCars = 0
@@ -117,6 +117,12 @@ export class Tunnel {
         nQueueCars++
         carIdx++
       } else {
+        // If there are no cars to dequeue, just move to the next car
+        if (nQueueCars === 0) {
+          carIdx++
+          continue
+        }
+        
         // Dequeue cars until we reach the next spawn time
         const queueEndPx = nQueueCars * queuedCarWidthPx
         dequeueEndMin += queueEndPx / carPxPerMin

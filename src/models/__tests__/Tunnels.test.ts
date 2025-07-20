@@ -99,7 +99,7 @@ describe('Tunnels', () => {
       
       const queuedCar = eastboundCars.find(v => v.metadata.spawnMinute === 45)
       if (queuedCar) {
-        expect(queuedCar.position.state).toBe('tunnel')
+        expect(queuedCar.position.state).toBe('transiting')
         expect(queuedCar.position.x).toBeGreaterThan(-50) // Should have moved from initial queue position
       }
     })
@@ -119,7 +119,7 @@ describe('Tunnels', () => {
       
       const queuedCar = westboundCars.find(v => v.metadata.spawnMinute === 15)
       if (queuedCar) {
-        expect(queuedCar.position.state).toBe('tunnel')
+        expect(queuedCar.position.state).toBe('transiting')
       }
     })
   })
@@ -173,7 +173,7 @@ describe('Tunnels', () => {
       const westboundBikesAt59 = vehiclesAt59.filter(v => 
         v.type === 'bike' && 
         v.direction === 'west' && 
-        v.position.state === 'pen'
+        v.position.state === 'queue'
       )
       
       // At :00, should have westbound bikes in pen (including new :00 bike)
@@ -181,7 +181,7 @@ describe('Tunnels', () => {
       const westboundBikesAt00 = vehiclesAt00.filter(v => 
         v.type === 'bike' && 
         v.direction === 'west' && 
-        v.position.state === 'pen'
+        v.position.state === 'queue'
       )
       
       // Should have at least as many bikes at :00 (new bike spawned)
