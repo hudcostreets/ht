@@ -55,9 +55,7 @@ const createVehicles = (): SpecialVehicle[] => {
     // Set queue position for eastbound cars that queue
     if (minute >= 45 && minute <= 57) {
       eastCar2.queuePosition = minute - 45
-      if (minute === 56 || minute === 57) {
-        eastCar2.paceCarStartTime = 55 // Pace car starts at :55
-      }
+      eastCar2.paceCarStartTime = 55 // Pace car starts at :55
     }
     
     const westCar2: CarData = { 
@@ -71,9 +69,7 @@ const createVehicles = (): SpecialVehicle[] => {
     // Set queue position for westbound cars that queue
     if (minute >= 15 && minute <= 27) {
       westCar2.queuePosition = minute - 15
-      if (minute === 26 || minute === 27) {
-        westCar2.paceCarStartTime = 25 // Pace car starts at :25
-      }
+      westCar2.paceCarStartTime = 25 // Pace car starts at :25
     }
     
     vehicles.push(
