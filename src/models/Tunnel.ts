@@ -9,6 +9,7 @@ export interface TunnelConfig {
   direction: Direction
   offsetMin: number
   lengthMi: number
+  period: number
   carMph: number
   bikeUpMph: number
   bikeDownMph: number
@@ -87,8 +88,8 @@ export class Tunnel {
     this.ncars = 60 * carsPerMin
     const rcars: Car[] = []
     for (let i = 0; i < this.ncars; i++) {
-      this.cars.push(new Car(this, 60 * (i + .5) / this.ncars, 'L'))
-      const rcar = new Car(this, 60 * i / this.ncars, 'R')
+      this.cars.push(new Car({ tunnel: this, laneId: 'L', spawnMin: 60 * (i + .5) / this.ncars, }))
+      const rcar = new Car({ tunnel: this, laneId: 'R', spawnMin: 60 * i / this.ncars, })
       rcars.push(rcar)
       this.cars.push(rcar)
     }
@@ -118,13 +119,23 @@ export class Tunnel {
       } else {
         // Dequeue cars until we reach the next spawn time
         const queueEndPx = nQueueCars * queuedCarWidthPx
-        let dequeueStartMin = dequeueEndMin
         dequeueEndMin += queueEndPx / carPxPerMin
 
         // Update nQueueCars and reset for next iteration
         this.nQueueCars += nQueueCars
         nQueueCars = 0
         carQueueStartIdx = carIdx
+      }
+    }
+
+    // Populate rcars' spawnQueue elems
+    for (const rcar of rcars) {
+      if (rcar.spawnMin < paceCarStartMin) {
+        // Before pace car departs, all R lane cars queue
+        rcar.spawnQueue = { offsetPx: 0, minsBeforeDequeueStart: 0 }
+      } else {
+        // After pace car departs, R lane cars dequeue immediately
+        rcar.spawnQueue = { offsetPx: queuedCarWidthPx, minsBeforeDequeueStart: 0 }
       }
     }
   }
@@ -135,24 +146,15 @@ export class Tunnel {
 
   // Convert absolute time to tunnel-relative time
   relMins(absMins: number): number {
-    const relMins = absMins - Math.floor(absMins / 60) * 60
-    
+    const { offsetMin, period } = this.config
+
     // Shift time so that our offset minute becomes "minute 0"
-    const shiftedMins = relMins - this.config.offsetMin
+    const shiftedMins = absMins - offsetMin
     
     // Handle negative wrap-around (e.g. if we're at :10 and offset is :15)
-    return (shiftedMins < 0) ? shiftedMins + 60 : shiftedMins
+    return (shiftedMins < 0) ? shiftedMins + period : shiftedMins
   }
-  
-  // Convert tunnel-relative time back to absolute
-  // absMins(relMins: number, hourBaseMins: number): number {
-  //   const hourInMins = Math.floor(hourBaseMins / 60) * 60
-  //   const absMins = hourInMins + relMins + this.config.offsetMin
-  //
-  //   // Handle overflow
-  //   return (absMins >= hourInMins + 60) ? absMins - 60 : absMins
-  // }
-  
+
   // Get phase at relative time (0 = pen opens)
   getPhase(relMins: number): 'normal' | 'bikes-enter' | 'clearing' | 'sweep' | 'pace-car' {
     const minute = Math.floor(relMins)

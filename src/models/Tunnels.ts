@@ -78,11 +78,11 @@ export class Tunnels {
       const position = car.getPos(absMins)
       if (position) {
         vehicles.push({
-          id: `car-e-${car.getLane()}-${car.getId()}`,
+          id: `car-e-${car.laneId}-${car.id}`,
           type: 'car',
           position,
           direction: 'east',
-          metadata: { spawnMinute: car.getSpawnMinute(), lane: car.getLane() }
+          metadata: { spawnMinute: car.spawnMin, lane: car.laneId }
         })
       }
     })
@@ -105,11 +105,11 @@ export class Tunnels {
       const position = car.getPos(absMins)
       if (position) {
         vehicles.push({
-          id: `car-w-${car.getLane()}-${car.getId()}`,
+          id: `car-w-${car.laneId}-${car.id}`,
           type: 'car',
           position,
           direction: 'west',
-          metadata: { spawnMinute: car.getSpawnMinute(), lane: car.getLane() }
+          metadata: { spawnMinute: car.spawnMin, lane: car.laneId }
         })
       }
     })

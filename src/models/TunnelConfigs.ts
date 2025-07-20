@@ -2,6 +2,7 @@ import { LAYOUT, SPEEDS } from './Vehicle'
 import type { TunnelsConfig } from './Tunnels'
 
 export const Common = {
+  period: 60,
   lengthMi: 2,
   carMph: 24,      // mph
   bikeUpMph: SPEEDS.BIKE_UPHILL,
@@ -19,7 +20,7 @@ export const Common = {
   penWidthPx: LAYOUT.BIKE_PEN_WIDTH,
   penHeightPx: LAYOUT.BIKE_PEN_HEIGHT,
   queuedCarWidthPx: 30,   // Queued car spacing
-  exitFadeDistance: 100,  // Pixels to travel while fading out
+  fadeDistance: 100,  // Pixels to travel while fading out
 }
 
 // Default configuration for Holland Tunnel

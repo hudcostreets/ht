@@ -98,8 +98,8 @@ describe('Tunnel', () => {
     
     describe('Cars in L lane (always flow)', () => {
       it('should allow L lane cars to flow during bike phases', () => {
-        const lCars = eastbound.cars.filter(car => car.getLane() === 'L')
-        const carAt46 = lCars.find(car => car.getSpawnMinute() === 46)
+        const lCars = eastbound.cars.filter(car => car.laneId === 'L')
+        const carAt46 = lCars.find(car => car.spawnMin === 46)
         
         if (carAt46) {
           // L lane car spawning at :46 should flow normally
@@ -109,11 +109,11 @@ describe('Tunnel', () => {
         }
       })
     })
-    
+
     describe('Cars in R lane (may queue)', () => {
       it('should queue R lane cars during bike phases', () => {
-        const rCars = eastbound.cars.filter(car => car.getLane() === 'R')
-        const carAt46 = rCars.find(car => car.getSpawnMinute() === 46)
+        const rCars = eastbound.cars.filter(car => car.laneId === 'R')
+        const carAt46 = rCars.find(car => car.spawnMin === 46)
         
         if (carAt46) {
           // R lane car spawning at :46 should be queued
@@ -123,10 +123,10 @@ describe('Tunnel', () => {
           expect(position!.x).toBeLessThan(0) // In queue area (negative x)
         }
       })
-      
+
       it('should release queued cars when pace car starts', () => {
-        const rCars = eastbound.cars.filter(car => car.getLane() === 'R')
-        const carAt45 = rCars.find(car => car.getSpawnMinute() === 45)
+        const rCars = eastbound.cars.filter(car => car.laneId === 'R')
+        const carAt45 = rCars.find(car => car.spawnMin === 45)
         
         if (carAt45) {
           // At :45, car should be queued

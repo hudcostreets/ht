@@ -15,7 +15,7 @@ export class Bike {
     this.spawnMin = spawnMinute
 
     // Calculate the full trajectory for this bike
-    const { penCloseMin, offsetMin, laneWidthPx, bikesReleasedPerMin, lengthMi, bikeDownMph, bikeUpMph, penRelativeX, penRelativeY } = this.tunnel.config
+    const { penCloseMin, period, offsetMin, laneWidthPx, bikesReleasedPerMin, lengthMi, bikeDownMph, bikeUpMph, penRelativeX, penRelativeY } = this.tunnel.config
 
     // Determine when this bike should be released from pen
     let releaseRelMins: number
@@ -28,9 +28,8 @@ export class Bike {
       releaseRelMins = this.spawnMin - offsetMin
     } else {
       // Late arrival - waits for next cycle (60 minutes later)
-      const nextCycleStart = 60 // Next hour
       const lateArrivalOrder = Math.floor((this.spawnMin - (offsetMin + penCloseMin)) / 4)
-      releaseRelMins = nextCycleStart + (lateArrivalOrder * 12)
+      releaseRelMins = period + (lateArrivalOrder * 12)
     }
 
     // Calculate tunnel transit time

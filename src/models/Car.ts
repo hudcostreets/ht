@@ -21,12 +21,14 @@ export class Car {
   public laneId: LaneId
   public lane: Lane
   public id: number
+  public spawnMin: number
   public spawnQueue?: SpawnQueue
   public timePositions: TimePos[] = []
 
   constructor({ tunnel, laneId, spawnMin, spawnQueue }: Props) {
     this.tunnel = tunnel
     this.id = spawnMin
+    this.spawnMin = spawnMin
     this.spawnQueue = spawnQueue
     this.laneId = laneId
     this.lane = laneId === 'L' ? tunnel.l : tunnel.r
@@ -102,17 +104,5 @@ export class Car {
     }
 
     return null
-  }
-
-  getId(): number {
-    return this.id
-  }
-
-  getSpawnMinute(): number {
-    return this.spawnMin
-  }
-
-  getLane(): 'L' | 'R' {
-    return this.laneId
   }
 }
