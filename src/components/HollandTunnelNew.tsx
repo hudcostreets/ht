@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
 import { AnalogClock } from './AnalogClock'
-import { Vehicle } from './Vehicle'
-import { ColorRectangle } from './ColorRectangle'
+import { TunnelViewSimple } from './TunnelViewSimple'
 import { Tunnels } from '../models/Tunnels'
 import { HOLLAND_TUNNEL_CONFIG } from '../models/TunnelConfigs'
 import { LAYOUT } from '../models/Vehicle'
@@ -207,50 +206,20 @@ export function HollandTunnelNew() {
 
       <div className="tunnel-visualization-svg">
         <svg width="1100" height="400" viewBox="0 0 1100 400">
-          {/* Tunnel structure */}
-          <g>
-            {/* Westbound */}
-            <text x={20} y={80} fontSize="16" fontWeight="bold">Westbound (← NJ) - 14th St</text>
-            <text x={20} y={100} fontSize="12" fill="#666">Phase: {phases.west}</text>
-            
-            {/* Lanes */}
-            <rect x={LAYOUT.QUEUE_AREA_WIDTH} y={100} width={LAYOUT.TUNNEL_WIDTH} height={LAYOUT.LANE_HEIGHT} fill="#666" stroke="#333" />
-            <rect x={LAYOUT.QUEUE_AREA_WIDTH} y={130} width={LAYOUT.TUNNEL_WIDTH} height={LAYOUT.LANE_HEIGHT} fill="#666" stroke="#333" />
-            
-            {/* Bike pen */}
-            <rect x={LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + 20} y={40} width={LAYOUT.BIKE_PEN_WIDTH} height={LAYOUT.BIKE_PEN_HEIGHT} fill="#e3f2fd" stroke="#2196f3" strokeWidth="2" strokeDasharray="5,5" rx="6" />
-            <text x={LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + 80} y={30} fontSize="12" textAnchor="middle">Bike Pen</text>
-            
-            {/* Eastbound */}
-            <text x={20} y={180} fontSize="16" fontWeight="bold">Eastbound (Manhattan →) - 12th St</text>
-            <text x={20} y={200} fontSize="12" fill="#666">Phase: {phases.east}</text>
-            
-            {/* Lanes */}
-            <rect x={LAYOUT.QUEUE_AREA_WIDTH} y={200} width={LAYOUT.TUNNEL_WIDTH} height={LAYOUT.LANE_HEIGHT} fill="#666" stroke="#333" />
-            <rect x={LAYOUT.QUEUE_AREA_WIDTH} y={230} width={LAYOUT.TUNNEL_WIDTH} height={LAYOUT.LANE_HEIGHT} fill="#666" stroke="#333" />
-            
-            {/* Bike pen */}
-            <rect x={20} y={290} width={LAYOUT.BIKE_PEN_WIDTH} height={LAYOUT.BIKE_PEN_HEIGHT} fill="#e3f2fd" stroke="#2196f3" strokeWidth="2" strokeDasharray="5,5" rx="6" />
-            <text x={80} y={280} fontSize="12" textAnchor="middle">Bike Pen</text>
-            
-            {/* Lane markers */}
-            <text x={LAYOUT.QUEUE_AREA_WIDTH + 10} y={120} fontSize="12" fill="white">R Lane</text>
-            <text x={LAYOUT.QUEUE_AREA_WIDTH + 10} y={150} fontSize="12" fill="white">L Lane (Cars Only)</text>
-            <text x={LAYOUT.QUEUE_AREA_WIDTH + 10} y={220} fontSize="12" fill="white">L Lane (Cars Only)</text>
-            <text x={LAYOUT.QUEUE_AREA_WIDTH + 10} y={250} fontSize="12" fill="white">R Lane</text>
-          </g>
+          {/* Both tunnels */}
+          <TunnelViewSimple 
+            direction="west" 
+            phase={phases.west} 
+            vehicles={vehicles} 
+            colorRectangles={colorRectangles} 
+          />
           
-          {/* Color rectangles */}
-          {colorRectangles.map((rect, index) => (
-            <ColorRectangle key={`color-rect-${index}`} {...rect} />
-          ))}
-          
-          {/* Vehicles */}
-          <g>
-            {vehicles.map(vehicle => (
-              <Vehicle key={vehicle.id} {...vehicle} />
-            ))}
-          </g>
+          <TunnelViewSimple 
+            direction="east" 
+            phase={phases.east} 
+            vehicles={vehicles} 
+            colorRectangles={colorRectangles} 
+          />
         </svg>
       </div>
 

@@ -54,8 +54,13 @@ describe('Tunnels', () => {
       // First eastbound bike should be entering tunnel
       const firstBike = eastboundBikes.find(v => v.metadata.index === 0)
       expect(firstBike).toBeTruthy()
-      expect(firstBike!.position.state).toBe('tunnel')
-      expect(firstBike!.position.x).toBe(0) // At tunnel entrance
+      expect(firstBike!.position.state).toBe('staging') // In transition
+      
+      // After transition, should be at tunnel entrance
+      const vehiclesAfterTransition = tunnels.getAllVehicles(45 * 60 + 3)
+      const firstBikeAfter = vehiclesAfterTransition.find(v => v.type === 'bike' && v.direction === 'east' && v.metadata.index === 0)
+      expect(firstBikeAfter!.position.state).toBe('tunnel')
+      expect(firstBikeAfter!.position.x).toBeLessThan(5) // Near tunnel entrance
     })
     
     it('should handle westbound bike pen opening at :15', () => {
@@ -65,7 +70,12 @@ describe('Tunnels', () => {
       // First westbound bike should be entering tunnel
       const firstBike = westboundBikes.find(v => v.metadata.index === 0)
       expect(firstBike).toBeTruthy()
-      expect(firstBike!.position.state).toBe('tunnel')
+      expect(firstBike!.position.state).toBe('staging') // In transition
+      
+      // After transition, should be in tunnel
+      const vehiclesAfterTransition = tunnels.getAllVehicles(15 * 60 + 3)
+      const firstBikeAfter = vehiclesAfterTransition.find(v => v.type === 'bike' && v.direction === 'west' && v.metadata.index === 0)
+      expect(firstBikeAfter!.position.state).toBe('tunnel')
     })
     
     it('should handle :16 westbound bike joining traveling group', () => {

@@ -45,8 +45,12 @@ describe('Tunnel', () => {
         // At pen opening (:45), first bike should be released immediately
         const position = firstBike.getPosition(45 * 60)
         expect(position).toBeTruthy()
-        expect(position!.x).toBe(0) // At tunnel entrance
-        expect(position!.state).toBe('tunnel')
+        expect(position!.state).toBe('staging') // Now in staging state during transition
+        
+        // After 3 second transition, should be at tunnel entrance
+        const positionAfterTransition = firstBike.getPosition(45 * 60 + 3)
+        expect(positionAfterTransition!.x).toBe(0) // At tunnel entrance
+        expect(positionAfterTransition!.state).toBe('tunnel')
       })
       
       it('should stagger bike releases correctly', () => {
@@ -55,7 +59,7 @@ describe('Tunnel', () => {
         
         // First bike should be released at :45:00
         const firstPos = firstBike.getPosition(45 * 60)
-        expect(firstPos!.state).toBe('tunnel')
+        expect(firstPos!.state).toBe('staging') // In transition
         
         // Second bike should still be in pen at :45:00
         const secondPos = secondBike.getPosition(45 * 60)
@@ -63,7 +67,13 @@ describe('Tunnel', () => {
         
         // Second bike should be released 12 seconds later (at :45:12)
         const secondPosLater = secondBike.getPosition(45 * 60 + 12)
-        expect(secondPosLater!.state).toBe('tunnel')
+        expect(secondPosLater!.state).toBe('staging') // Also in transition
+        
+        // After transitions complete, both should be in tunnel
+        const firstPosInTunnel = firstBike.getPosition(45 * 60 + 3)
+        const secondPosInTunnel = secondBike.getPosition(45 * 60 + 12 + 3)
+        expect(firstPosInTunnel!.state).toBe('tunnel')
+        expect(secondPosInTunnel!.state).toBe('tunnel')
       })
     })
     

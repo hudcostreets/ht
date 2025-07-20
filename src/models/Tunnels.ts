@@ -152,20 +152,36 @@ export class Tunnels {
       // At eastbound staging (facing east, preparing for eastbound sweep)
       return {
         x: -this.sweepConfig.stagingOffset,
-        y: eastConfig.lanePixelHeight / 2,
+        y: eastConfig.lanePixelHeight + eastConfig.lanePixelHeight / 2, // R lane (bottom) for eastbound
         state: 'staging',
         opacity: 1,
         direction: 'east'
       }
     } else if (minuteInHour >= 50 && minuteInHour < 55) {
       // Sweeping eastbound tunnel
-      const sweepProgress = ((minuteInHour - 50) * 60 + secondInMinute) / (5 * 60)
-      return {
-        x: sweepProgress * tunnelWidth,
-        y: eastConfig.lanePixelHeight / 2,
-        state: 'tunnel',
-        opacity: 1,
-        direction: 'east'
+      const totalSweepSeconds = (minuteInHour - 50) * 60 + secondInMinute
+      const transitionTime = 5 // 5 seconds to move from staging to tunnel entrance
+      
+      if (totalSweepSeconds < transitionTime) {
+        // Transitioning from staging to tunnel entrance
+        const transitionProgress = totalSweepSeconds / transitionTime
+        return {
+          x: -this.sweepConfig.stagingOffset * (1 - transitionProgress),
+          y: eastConfig.lanePixelHeight + eastConfig.lanePixelHeight / 2, // R lane (bottom) for eastbound
+          state: 'staging',
+          opacity: 1,
+          direction: 'east'
+        }
+      } else {
+        // Sweeping through tunnel
+        const sweepProgress = (totalSweepSeconds - transitionTime) / (5 * 60 - transitionTime)
+        return {
+          x: sweepProgress * tunnelWidth,
+          y: eastConfig.lanePixelHeight + eastConfig.lanePixelHeight / 2, // R lane (bottom) for eastbound
+          state: 'tunnel',
+          opacity: 1,
+          direction: 'east'
+        }
       }
     } else if (minuteInHour >= 55 || minuteInHour < 5) {
       // Traveling to westbound staging
@@ -176,7 +192,7 @@ export class Tunnels {
         // At westbound staging
         return {
           x: tunnelWidth + this.sweepConfig.stagingOffset,
-          y: westConfig.lanePixelHeight / 2,
+          y: westConfig.lanePixelHeight / 2, // R lane (top) for westbound
           state: 'staging',
           opacity: 1,
           direction: 'west'
@@ -185,7 +201,7 @@ export class Tunnels {
         // In transition
         return {
           x: tunnelWidth + (this.sweepConfig.stagingOffset * transitionProgress),
-          y: eastConfig.lanePixelHeight / 2,
+          y: eastConfig.lanePixelHeight + eastConfig.lanePixelHeight / 2, // R lane (bottom) for eastbound
           state: 'exiting',
           opacity: 1,
           direction: 'east'
@@ -195,20 +211,36 @@ export class Tunnels {
       // At westbound staging (facing west, preparing for westbound sweep)
       return {
         x: tunnelWidth + this.sweepConfig.stagingOffset,
-        y: westConfig.lanePixelHeight / 2,
+        y: westConfig.lanePixelHeight / 2, // R lane (top) for westbound
         state: 'staging',
         opacity: 1,
         direction: 'west'
       }
     } else if (minuteInHour >= 20 && minuteInHour < 25) {
       // Sweeping westbound tunnel
-      const sweepProgress = ((minuteInHour - 20) * 60 + secondInMinute) / (5 * 60)
-      return {
-        x: tunnelWidth - (sweepProgress * tunnelWidth),
-        y: westConfig.lanePixelHeight / 2,
-        state: 'tunnel',
-        opacity: 1,
-        direction: 'west'
+      const totalSweepSeconds = (minuteInHour - 20) * 60 + secondInMinute
+      const transitionTime = 5 // 5 seconds to move from staging to tunnel entrance
+      
+      if (totalSweepSeconds < transitionTime) {
+        // Transitioning from staging to tunnel entrance
+        const transitionProgress = totalSweepSeconds / transitionTime
+        return {
+          x: tunnelWidth + this.sweepConfig.stagingOffset * (1 - transitionProgress),
+          y: westConfig.lanePixelHeight / 2, // R lane (top) for westbound
+          state: 'staging',
+          opacity: 1,
+          direction: 'west'
+        }
+      } else {
+        // Sweeping through tunnel
+        const sweepProgress = (totalSweepSeconds - transitionTime) / (5 * 60 - transitionTime)
+        return {
+          x: tunnelWidth - (sweepProgress * tunnelWidth),
+          y: westConfig.lanePixelHeight / 2, // R lane (top) for westbound
+          state: 'tunnel',
+          opacity: 1,
+          direction: 'west'
+        }
       }
     } else {
       // minuteInHour >= 25 && minuteInHour < 35
@@ -220,7 +252,7 @@ export class Tunnels {
         // Back at eastbound staging
         return {
           x: -this.sweepConfig.stagingOffset,
-          y: eastConfig.lanePixelHeight / 2,
+          y: eastConfig.lanePixelHeight + eastConfig.lanePixelHeight / 2, // R lane (bottom) for eastbound
           state: 'staging',
           opacity: 1,
           direction: 'east'
@@ -229,7 +261,7 @@ export class Tunnels {
         // In transition
         return {
           x: -this.sweepConfig.stagingOffset * transitionProgress,
-          y: westConfig.lanePixelHeight / 2,
+          y: westConfig.lanePixelHeight / 2, // R lane (top) for westbound
           state: 'exiting',
           opacity: 1,
           direction: 'west'
@@ -258,20 +290,36 @@ export class Tunnels {
       // At westbound staging (facing west, preparing for westbound pace)
       return {
         x: tunnelWidth + this.paceConfig.stagingOffset,
-        y: westConfig.lanePixelHeight / 2,
+        y: westConfig.lanePixelHeight / 2, // R lane (top) for westbound
         state: 'staging',
         opacity: 1,
         direction: 'west'
       }
     } else if (minuteInHour >= 25 && minuteInHour < 30) {
       // Leading cars through westbound tunnel
-      const paceProgress = ((minuteInHour - 25) * 60 + secondInMinute) / (5 * 60)
-      return {
-        x: tunnelWidth - (paceProgress * tunnelWidth),
-        y: westConfig.lanePixelHeight / 2,
-        state: 'tunnel',
-        opacity: 1,
-        direction: 'west'
+      const totalPaceSeconds = (minuteInHour - 25) * 60 + secondInMinute
+      const transitionTime = 5 // 5 seconds to move from staging to tunnel entrance
+      
+      if (totalPaceSeconds < transitionTime) {
+        // Transitioning from staging to tunnel entrance
+        const transitionProgress = totalPaceSeconds / transitionTime
+        return {
+          x: tunnelWidth + this.paceConfig.stagingOffset * (1 - transitionProgress),
+          y: westConfig.lanePixelHeight / 2, // R lane (top) for westbound
+          state: 'staging',
+          opacity: 1,
+          direction: 'west'
+        }
+      } else {
+        // Leading through tunnel
+        const paceProgress = (totalPaceSeconds - transitionTime) / (5 * 60 - transitionTime)
+        return {
+          x: tunnelWidth - (paceProgress * tunnelWidth),
+          y: westConfig.lanePixelHeight / 2, // R lane (top) for westbound
+          state: 'tunnel',
+          opacity: 1,
+          direction: 'west'
+        }
       }
     } else if (minuteInHour >= 30 && minuteInHour < 34) {
       // Traveling to eastbound staging
@@ -282,7 +330,7 @@ export class Tunnels {
         // At eastbound staging
         return {
           x: -this.paceConfig.stagingOffset,
-          y: eastConfig.lanePixelHeight / 2,
+          y: eastConfig.lanePixelHeight + eastConfig.lanePixelHeight / 2, // R lane (bottom) for eastbound
           state: 'staging',
           opacity: 1,
           direction: 'east'
@@ -291,7 +339,7 @@ export class Tunnels {
         // In transition
         return {
           x: -this.paceConfig.stagingOffset * transitionProgress,
-          y: westConfig.lanePixelHeight / 2,
+          y: westConfig.lanePixelHeight / 2, // R lane (top) for westbound
           state: 'exiting',
           opacity: 1,
           direction: 'west'
@@ -301,7 +349,7 @@ export class Tunnels {
       // At eastbound staging (facing east, preparing for eastbound pace)
       return {
         x: -this.paceConfig.stagingOffset,
-        y: eastConfig.lanePixelHeight / 2,
+        y: eastConfig.lanePixelHeight + eastConfig.lanePixelHeight / 2, // R lane (bottom) for eastbound
         state: 'staging',
         opacity: 1,
         direction: 'east'
@@ -309,13 +357,29 @@ export class Tunnels {
     } else if (minuteInHour >= 55 || minuteInHour < 0) {
       // Leading cars through eastbound tunnel
       const paceMinute = minuteInHour >= 55 ? minuteInHour - 55 : 60 + minuteInHour
-      const paceProgress = (paceMinute * 60 + secondInMinute) / (5 * 60)
-      return {
-        x: paceProgress * tunnelWidth,
-        y: eastConfig.lanePixelHeight / 2,
-        state: 'tunnel',
-        opacity: 1,
-        direction: 'east'
+      const totalPaceSeconds = paceMinute * 60 + secondInMinute
+      const transitionTime = 5 // 5 seconds to move from staging to tunnel entrance
+      
+      if (totalPaceSeconds < transitionTime) {
+        // Transitioning from staging to tunnel entrance
+        const transitionProgress = totalPaceSeconds / transitionTime
+        return {
+          x: -this.paceConfig.stagingOffset * (1 - transitionProgress),
+          y: eastConfig.lanePixelHeight + eastConfig.lanePixelHeight / 2, // R lane (bottom) for eastbound
+          state: 'staging',
+          opacity: 1,
+          direction: 'east'
+        }
+      } else {
+        // Leading through tunnel
+        const paceProgress = (totalPaceSeconds - transitionTime) / (5 * 60 - transitionTime)
+        return {
+          x: paceProgress * tunnelWidth,
+          y: eastConfig.lanePixelHeight + eastConfig.lanePixelHeight / 2, // R lane (bottom) for eastbound
+          state: 'tunnel',
+          opacity: 1,
+          direction: 'east'
+        }
       }
     } else {
       // minuteInHour >= 0 && minuteInHour < 4
@@ -327,7 +391,7 @@ export class Tunnels {
         // Back at westbound staging
         return {
           x: tunnelWidth + this.paceConfig.stagingOffset,
-          y: westConfig.lanePixelHeight / 2,
+          y: westConfig.lanePixelHeight / 2, // R lane (top) for westbound
           state: 'staging',
           opacity: 1,
           direction: 'west'
@@ -336,7 +400,7 @@ export class Tunnels {
         // In transition
         return {
           x: tunnelWidth + (this.paceConfig.stagingOffset * transitionProgress),
-          y: eastConfig.lanePixelHeight / 2,
+          y: eastConfig.lanePixelHeight + eastConfig.lanePixelHeight / 2, // R lane (bottom) for eastbound
           state: 'exiting',
           opacity: 1,
           direction: 'east'
@@ -403,7 +467,7 @@ export class Tunnels {
           color: 'green',
           x: 0,
           width: progress * tunnelWidth,
-          y: 0,
+          y: laneHeight,  // R lane for eastbound (bottom lane)
           height: laneHeight
         })
         rectangles.push({
@@ -411,7 +475,7 @@ export class Tunnels {
           color: 'red',
           x: progress * tunnelWidth,
           width: (1 - progress) * tunnelWidth,
-          y: 0,
+          y: laneHeight,  // R lane for eastbound (bottom lane)
           height: laneHeight
         })
       }
@@ -430,7 +494,7 @@ export class Tunnels {
           color: 'green',
           x: tunnelWidth - (progress * tunnelWidth),
           width: progress * tunnelWidth,
-          y: laneHeight,
+          y: 0,  // R lane for westbound (top lane)
           height: laneHeight
         })
         rectangles.push({
@@ -438,7 +502,7 @@ export class Tunnels {
           color: 'red',
           x: 0,
           width: tunnelWidth - (progress * tunnelWidth),
-          y: laneHeight,
+          y: 0,  // R lane for westbound (top lane)
           height: laneHeight
         })
       }
