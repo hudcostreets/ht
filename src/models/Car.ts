@@ -36,45 +36,61 @@ export class Car {
     const { d } = tunnel
 
     const { laneWidthPx, lengthMi, carMph, fadeDistance, } = tunnel.config
-    const tunnelMins = lengthMi / carMph * 60
-    const { offsetPx = 0, minsBeforeDequeueStart = 0 } = spawnQueue ?? {}
-    const x = lane.entrance.x - offsetPx * d
-    const y = lane.entrance.y
-    const origin = { x: x - fadeDistance * d, y, }
-    const queuePos: TimePos[] =
-      minsBeforeDequeueStart
-        ? [{ mins: 0, x, y, state: 'queued', opacity: 1, }]
-        : []
-
-    const dequeuePos: TimePos[] =
-      offsetPx
-        ? [{ mins: minsBeforeDequeueStart, x, y, state: 'dequeueing', opacity: 1, }]
-        : []
-
-    const pxPerMin = laneWidthPx / tunnelMins
-    const transitingMin = offsetPx / pxPerMin
-    const exitingMin = transitingMin + tunnelMins
-
-    this.timePositions = [
-      ...queuePos,
-      ...dequeuePos,
-      { mins: transitingMin    , ...lane.entrance, state: 'transiting', opacity: 1, },
-      { mins:    exitingMin    , ...lane.exit    , state:    'exiting', opacity: 1, },
-      { mins:    exitingMin + 1, ...lane.dest    , state:       'done', opacity: 0, },
-      { mins:    exitingMin + 2, ...origin       , state:     'origin', opacity: 0, },
-      { mins: tunnel.config.period - 1, ...origin       , state:     'origin', opacity: 0, },
-    ]
+    const tunnelMins = (lengthMi / carMph) * 60 // Convert hours to minutes
+    if (spawnQueue) {
+      // Car needs to queue
+      const { offsetPx, minsBeforeDequeueStart } = spawnQueue
+      const queueX = lane.entrance.x - offsetPx * d
+      const y = lane.entrance.y
+      const origin = { x: queueX - fadeDistance * d, y }
+      
+      const pxPerMin = laneWidthPx / tunnelMins
+      const transitingMin = minsBeforeDequeueStart + (offsetPx / pxPerMin)
+      const exitingMin = transitingMin + tunnelMins
+      
+      this.timePositions = [
+        { mins: 0, x: queueX, y, state: 'queued', opacity: 1 },
+        { mins: minsBeforeDequeueStart, x: queueX, y, state: 'dequeueing', opacity: 1 },
+        { mins: transitingMin, ...lane.entrance, state: 'transiting', opacity: 1 },
+        { mins: exitingMin, ...lane.exit, state: 'exiting', opacity: 1 },
+        { mins: exitingMin + 1, ...lane.dest, state: 'done', opacity: 0 },
+        { mins: exitingMin + 2, ...origin, state: 'origin', opacity: 0 },
+        { mins: tunnel.config.period - 1, ...origin, state: 'origin', opacity: 0 },
+      ]
+    } else {
+      // Car flows normally (no queueing)
+      const x = lane.entrance.x
+      const y = lane.entrance.y
+      const origin = { x: x - fadeDistance * d, y }
+      
+      this.timePositions = [
+        { mins: 0, ...lane.entrance, state: 'transiting', opacity: 1 },
+        { mins: tunnelMins, ...lane.exit, state: 'exiting', opacity: 1 },
+        { mins: tunnelMins + 1, ...lane.dest, state: 'done', opacity: 0 },
+        { mins: tunnelMins + 2, ...origin, state: 'origin', opacity: 0 },
+        { mins: tunnel.config.period - 1, ...origin, state: 'origin', opacity: 0 },
+      ]
+    }
   }
 
   getPos(absMins: number): { x: number, y: number, state: string, opacity: number } | null {
-    const relMins = this.tunnel.relMins(absMins)
-
+    const tunnelRelMins = this.tunnel.relMins(absMins)
+    
+    // Calculate time since this car spawned
+    const timeSinceSpawn = tunnelRelMins - this.spawnMin
+    
     if (this.timePositions.length === 0) return null
+
+    // Check if we're before the car's spawn time
+    if (timeSinceSpawn < 0) {
+      // Car hasn't spawned yet
+      return null
+    }
 
     // Check if we're before the first time position
     const first = this.timePositions[0]
-    if (relMins < first.mins) {
-      // Car hasn't spawned yet
+    if (timeSinceSpawn < first.mins) {
+      // Still before first position
       return null
     }
 
@@ -83,9 +99,9 @@ export class Car {
       const current = this.timePositions[i]
       const next = this.timePositions[i + 1]
 
-      if (relMins >= current.mins && relMins < next.mins) {
+      if (timeSinceSpawn >= current.mins && timeSinceSpawn < next.mins) {
         // Interpolate between current and next
-        const t = (relMins - current.mins) / (next.mins - current.mins)
+        const t = (timeSinceSpawn - current.mins) / (next.mins - current.mins)
 
         return {
           x: current.x + (next.x - current.x) * t,
@@ -98,7 +114,7 @@ export class Car {
 
     // Check if we're past the last time position
     const last = this.timePositions[this.timePositions.length - 1]
-    if (relMins >= last.mins) {
+    if (timeSinceSpawn >= last.mins) {
       if (last.opacity <= 0) return null // Fully faded out
       return { ...last }
     }

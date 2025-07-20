@@ -101,19 +101,29 @@ export class Bike {
   }
 
   getPos(absMins: number): { x: number, y: number, state: string, opacity: number } | null {
-    const relMins = this.tunnel.relMins(absMins)
+    const tunnelRelMins = this.tunnel.relMins(absMins)
+    
+    // Calculate time since this bike spawned
+    const timeSinceSpawn = tunnelRelMins - this.spawnMin
 
     if (this.timePositions.length === 0) return null
 
+    // Special case for early bikes that spawn before pen opens
+    if (this.spawnMin < 0 && tunnelRelMins >= 0 && timeSinceSpawn < 0) {
+      // Early bike waiting in pen during pen open time
+      const first = this.timePositions[0]
+      return { ...first }
+    }
+
+    // Check if we're before the bike's spawn time
+    if (timeSinceSpawn < 0) {
+      return null
+    }
+
     // Check if we're before the first time position
     const first = this.timePositions[0]
-    if (relMins < first.mins) {
-      // For early bikes that haven't been released yet, check if they should be visible
-      if (this.spawnMin < this.tunnel.config.offsetMin && relMins >= 0) {
-        // Early bike waiting in pen during pen open time
-        return { ...first }
-      }
-      // Otherwise not visible yet
+    if (timeSinceSpawn < first.mins) {
+      // Still before first position
       return null
     }
 
@@ -122,9 +132,9 @@ export class Bike {
       const current = this.timePositions[i]
       const next = this.timePositions[i + 1]
 
-      if (relMins >= current.mins && relMins < next.mins) {
+      if (timeSinceSpawn >= current.mins && timeSinceSpawn < next.mins) {
         // Interpolate between current and next
-        const t = (relMins - current.mins) / (next.mins - current.mins)
+        const t = (timeSinceSpawn - current.mins) / (next.mins - current.mins)
 
         return {
           x: current.x + (next.x - current.x) * t,
@@ -137,7 +147,7 @@ export class Bike {
 
     // Check if we're past the last time position
     const last = this.timePositions[this.timePositions.length - 1]
-    if (relMins >= last.mins) {
+    if (timeSinceSpawn >= last.mins) {
       if (last.opacity <= 0) return null // Fully faded out
       return { ...last }
     }

@@ -70,6 +70,7 @@ export class Tunnels {
     }> = []
     
     // Eastbound vehicles
+    
     this.e.bikes.forEach(bike => {
       const position = bike.getPos(absMins)
       if (position) {

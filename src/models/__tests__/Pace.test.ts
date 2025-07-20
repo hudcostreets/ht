@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { Pace } from '../Pace'
 import { Tunnels } from '../Tunnels'
 import { HOLLAND_TUNNEL_CONFIG } from '../TunnelConfigs'

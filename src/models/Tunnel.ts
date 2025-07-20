@@ -81,7 +81,7 @@ export class Tunnel {
     // Create bikes
     for (let i = 0; i < this.nbikes; i++) {
       const spawn = config.period * i / this.nbikes
-      this.bikes.push(new Bike(this, spawn, spawn))
+      this.bikes.push(new Bike(this, i, spawn))
     }
 
     // Create cars
@@ -135,13 +135,22 @@ export class Tunnel {
     }
 
     // Populate rcars' spawnQueue elems
+    let queueIdx = 0
     for (const rcar of rcars) {
-      if (rcar.spawnMin < paceCarStartMin) {
-        // Before pace car departs, all R lane cars queue
-        rcar.spawnQueue = { offsetPx: 0, minsBeforeDequeueStart: 0 }
+      const phase = this.getPhase(rcar.spawnMin)
+      
+      if (phase === 'normal' || phase === 'pace-car') {
+        // Car flows normally, no queueing
+        // Leave spawnQueue undefined
       } else {
-        // After pace car departs, R lane cars dequeue immediately
-        rcar.spawnQueue = { offsetPx: queuedCarWidthPx, minsBeforeDequeueStart: 0 }
+        // Car needs to queue during bike phases
+        const queueOffset = queueIdx * queuedCarWidthPx
+        const dequeueStartMin = paceCarStartMin - rcar.spawnMin
+        rcar.spawnQueue = { 
+          offsetPx: queueOffset, 
+          minsBeforeDequeueStart: dequeueStartMin > 0 ? dequeueStartMin : 0 
+        }
+        queueIdx++
       }
     }
   }
@@ -157,8 +166,11 @@ export class Tunnel {
     // Shift time so that our offset minute becomes "minute 0"
     const shiftedMins = absMins - offsetMin
     
-    // Handle negative wrap-around (e.g. if we're at :10 and offset is :15)
-    return (shiftedMins < 0) ? shiftedMins + period : shiftedMins
+    // Normalize to [0, period)
+    let relMins = shiftedMins % period
+    if (relMins < 0) relMins += period
+    
+    return relMins
   }
 
   // Get phase at relative time (0 = pen opens)
