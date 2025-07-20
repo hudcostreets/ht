@@ -47,7 +47,6 @@ pnpm install      # Install dependencies
 pnpm run dev      # Start dev server (Note: this runs continuously, don't use in Claude)
 pnpm run build    # Build for production
 pnpm run lint     # Run linter
-pnpm run typecheck # Run TypeScript checks
 ```
 
 ## Development Environment Limitations

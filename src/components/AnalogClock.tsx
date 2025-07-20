@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from 'framer-motion'
 
 interface AnalogClockProps {
   minute: number;
@@ -8,7 +8,7 @@ interface AnalogClockProps {
 export function AnalogClock({ minute, size = 80 }: AnalogClockProps) {
   // Calculate minute hand angle (6 degrees per minute)
   // Use fractional minutes for smooth animation
-  const minuteAngle = (minute * 6) - 90; // -90 to start from top
+  const minuteAngle = (minute * 6) - 90 // -90 to start from top
   
   return (
     <svg 
@@ -29,12 +29,12 @@ export function AnalogClock({ minute, size = 80 }: AnalogClockProps) {
       
       {/* Hour markers */}
       {[...Array(12)].map((_, i) => {
-        const angle = (i * 30) - 90;
-        const isMainHour = i % 3 === 0;
-        const x1 = 40 + (isMainHour ? 30 : 32) * Math.cos(angle * Math.PI / 180);
-        const y1 = 40 + (isMainHour ? 30 : 32) * Math.sin(angle * Math.PI / 180);
-        const x2 = 40 + 35 * Math.cos(angle * Math.PI / 180);
-        const y2 = 40 + 35 * Math.sin(angle * Math.PI / 180);
+        const angle = (i * 30) - 90
+        const isMainHour = i % 3 === 0
+        const x1 = 40 + (isMainHour ? 30 : 32) * Math.cos(angle * Math.PI / 180)
+        const y1 = 40 + (isMainHour ? 30 : 32) * Math.sin(angle * Math.PI / 180)
+        const x2 = 40 + 35 * Math.cos(angle * Math.PI / 180)
+        const y2 = 40 + 35 * Math.sin(angle * Math.PI / 180)
         
         return (
           <line
@@ -46,7 +46,7 @@ export function AnalogClock({ minute, size = 80 }: AnalogClockProps) {
             stroke="#333"
             strokeWidth={isMainHour ? 2 : 1}
           />
-        );
+        )
       })}
       
       {/* Numbers */}
@@ -82,5 +82,5 @@ export function AnalogClock({ minute, size = 80 }: AnalogClockProps) {
       {/* Center dot */}
       <circle cx="40" cy="40" r="3" fill="#333" />
     </svg>
-  );
+  )
 }

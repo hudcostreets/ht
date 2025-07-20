@@ -16,14 +16,17 @@ const page = await browser.newPage();
 // Set viewport for consistent screenshots
 await page.setViewportSize({ width: 1400, height: 800 });
 
-// Screenshots to take
-const screenshots = [
-  { time: 0, desc: 'Normal traffic' },
-  { time: 45, desc: 'Bikes entering eastbound' },
-  { time: 46, desc: 'Bikes in pen' },
-  { time: 50, desc: 'Sweep vehicle eastbound' },
-  { time: 55, desc: 'Pace car with queued cars' }
-];
+// Screenshots to take - either from command line args or defaults
+const times = process.argv.slice(2).map(t => parseInt(t));
+const screenshots = times.length > 0 
+  ? times.map(t => ({ time: t, desc: `t=${t}` }))
+  : [
+    { time: 0, desc: 'Normal traffic' },
+    { time: 45, desc: 'Bikes entering eastbound' },
+    { time: 46, desc: 'Bikes in pen' },
+    { time: 50, desc: 'Sweep vehicle eastbound' },
+    { time: 55, desc: 'Pace car with queued cars' }
+  ];
 
 for (const { time, desc } of screenshots) {
   console.log(`Taking screenshot at t=${time} - ${desc}`);
@@ -32,7 +35,7 @@ for (const { time, desc } of screenshots) {
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(1000); // Wait for animations to settle
   
-  const filename = join(tmpDir, `ht_t${time}.png`);
+  const filename = join(tmpDir, `${time}.png`);
   await page.screenshot({ path: filename, fullPage: true });
   console.log(`  Saved to ${filename}`);
 }
