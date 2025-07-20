@@ -120,7 +120,9 @@ export class Car extends BaseCar {
     
     // Check if lane is blocked
     const phase = getPhase(this.data.spawnMinute, this.data.direction)
-    const isLane2Blocked = this.data.lane === 2 && phase !== 'normal'
+    // R lane is blocked during bike phases: lane 2 for eastbound, lane 1 for westbound
+    const rLane = this.data.direction === 'east' ? 2 : 1
+    const isRLaneBlocked = this.data.lane === rLane && phase !== 'normal'
     
     let enterTime = spawnTime
     
@@ -162,7 +164,7 @@ export class Car extends BaseCar {
     }
     
     // Normal blocked car logic
-    if (isLane2Blocked && !this.isLateArrival()) {
+    if (isRLaneBlocked && !this.isLateArrival()) {
       // Calculate when car can enter
       const nextNormalMinute = this.calculateNextNormalMinute()
       const nextNormalTime = (spawnHour * 3600) + (nextNormalMinute * 60)

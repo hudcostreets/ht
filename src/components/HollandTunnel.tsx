@@ -34,7 +34,7 @@ const createVehicles = (): SpecialVehicle[] => {
       id: `car-w1-${minute}`, 
       type: 'car' as const, 
       spawnMinute: minute, 
-      lane: 1, 
+      lane: 2, 
       direction: 'west' as const 
     }
     
@@ -43,7 +43,7 @@ const createVehicles = (): SpecialVehicle[] => {
       { ...westCar1, instance: new Car(westCar1) }
     )
     
-    // Lane 2 (R lane) cars - need to handle queue positions
+    // Lane 2 (R lane for eastbound, L lane for westbound) cars - need to handle queue positions
     const eastCar2: CarData = { 
       id: `car-e2-${minute}`, 
       type: 'car' as const, 
@@ -64,7 +64,7 @@ const createVehicles = (): SpecialVehicle[] => {
       id: `car-w2-${minute}`, 
       type: 'car' as const, 
       spawnMinute: minute, 
-      lane: 2, 
+      lane: 1, 
       direction: 'west' as const 
     }
     
@@ -95,7 +95,7 @@ const createVehicles = (): SpecialVehicle[] => {
       id: `bike-w-${i}`, 
       type: 'bike' as const, 
       spawnMinute: i, 
-      lane: 2, 
+      lane: 1, 
       direction: 'west' as const 
     }
     
@@ -171,7 +171,7 @@ export function HollandTunnel() {
           const startX = LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH
           const endX = LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + 50
           const startY = getLaneY('east', 2)
-          const endY = getLaneY('west', 2) - stagingOffset
+          const endY = getLaneY('west', 1) - stagingOffset
           
           return {
             x: startX + (endX - startX) * progress,
@@ -183,7 +183,7 @@ export function HollandTunnel() {
           // Staging west :06-:09
           return {
             x: LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + 50,
-            y: getLaneY('west', 2) - stagingOffset,
+            y: getLaneY('west', 1) - stagingOffset,
             state: 'staging',
             opacity: 1
           }
@@ -194,7 +194,7 @@ export function HollandTunnel() {
         const distance = LAYOUT.TUNNEL_WIDTH * progress
         return { 
           x: LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH - distance, 
-          y: getLaneY('west', 2), 
+          y: getLaneY('west', 1), 
           state: 'tunnel', 
           opacity: 1 
         }
@@ -203,7 +203,7 @@ export function HollandTunnel() {
         const progress = (currentMin - 30) / 5
         const startX = LAYOUT.QUEUE_AREA_WIDTH
         const endX = LAYOUT.QUEUE_AREA_WIDTH - 50
-        const startY = getLaneY('west', 2)
+        const startY = getLaneY('west', 1)
         const endY = getLaneY('east', 2) + stagingOffset
         
         return {
@@ -216,7 +216,7 @@ export function HollandTunnel() {
         // Staging west :10-:19
         return {
           x: LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + 50,
-          y: getLaneY('west', 2) - stagingOffset,
+          y: getLaneY('west', 1) - stagingOffset,
           state: 'staging',
           opacity: 1
         }
@@ -245,7 +245,7 @@ export function HollandTunnel() {
         const startX = LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH
         const endX = LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + 50
         const startY = getLaneY('east', 2)
-        const endY = getLaneY('west', 2) - stagingOffset
+        const endY = getLaneY('west', 1) - stagingOffset
         
         return {
           x: startX + (endX - startX) * progress,
@@ -259,7 +259,7 @@ export function HollandTunnel() {
         const distance = LAYOUT.TUNNEL_WIDTH * progress
         return { 
           x: LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH - distance, 
-          y: getLaneY('west', 2), 
+          y: getLaneY('west', 1), 
           state: 'tunnel', 
           opacity: 1 
         }
@@ -268,7 +268,7 @@ export function HollandTunnel() {
         const progress = (currentMin - 30) / 5
         const startX = LAYOUT.QUEUE_AREA_WIDTH
         const endX = LAYOUT.QUEUE_AREA_WIDTH - 50
-        const startY = getLaneY('west', 2)
+        const startY = getLaneY('west', 1)
         const endY = getLaneY('east', 2) + stagingOffset
         
         return {
@@ -281,7 +281,7 @@ export function HollandTunnel() {
         // Staging west :06-:24
         return {
           x: LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + 50,
-          y: getLaneY('west', 2) - stagingOffset,
+          y: getLaneY('west', 1) - stagingOffset,
           state: 'staging',
           opacity: 1
         }
@@ -449,7 +449,7 @@ export function HollandTunnel() {
   const renderVehicle = (vehicle: SpecialVehicle, position: VehiclePosition) => {
     let emoji = '🚗'
     if (vehicle.type === 'bike') emoji = '🚴'
-    else if (vehicle.type === 'sweep') emoji = '🚜'
+    else if (vehicle.type === 'sweep') emoji = '🚐'
     else if (vehicle.type === 'pace') emoji = '🚓'
 
     // Generate tooltip content
@@ -467,8 +467,48 @@ export function HollandTunnel() {
       tooltip = `Pace car - ${dir}`
     }
 
-    // Flip eastbound vehicles to face right
-    const transform = vehicle.direction === 'east' ? `translate(${position.x * 2},0) scale(-1,1)` : undefined
+    // Determine direction for special vehicles based on their phase and staging area
+    let actualDirection = vehicle.direction
+    if (vehicle.type === 'sweep' || vehicle.type === 'pace') {
+      const currentMin = Math.floor(boundedDisplayTime / 60) % 60
+      
+      if (vehicle.type === 'sweep') {
+        // Sweep: east :50-:59, west :20-:29
+        if (currentMin >= 50) {
+          actualDirection = 'east'
+        } else if (currentMin >= 20 && currentMin < 30) {
+          actualDirection = 'west'
+        } else if (currentMin >= 35) {
+          // After arriving at eastbound staging (:35+), face east
+          actualDirection = 'east'
+        } else if (currentMin >= 6) {
+          // At westbound staging (:06-:34), face west
+          actualDirection = 'west'
+        } else {
+          // Moving to westbound staging (:00-:05), still face east
+          actualDirection = 'east'
+        }
+      } else if (vehicle.type === 'pace') {
+        // Pace: east :55-:59, west :25-:29
+        if (currentMin >= 55) {
+          actualDirection = 'east'
+        } else if (currentMin >= 25 && currentMin < 30) {
+          actualDirection = 'west'
+        } else if (currentMin >= 35) {
+          // After arriving at eastbound staging (:35+), face east
+          actualDirection = 'east'
+        } else if (currentMin >= 6) {
+          // At westbound staging (:06-:34), face west
+          actualDirection = 'west'
+        } else {
+          // Moving to westbound staging (:00-:05), still face east
+          actualDirection = 'east'
+        }
+      }
+    }
+
+    // Only flip eastbound vehicles to face right (emojis face left by default)
+    const transform = actualDirection === 'east' ? `translate(${position.x * 2},0) scale(-1,1)` : undefined
 
     return (
       <text
@@ -567,17 +607,16 @@ export function HollandTunnel() {
   const renderColorRectangles = () => {
     const rects = []
     
-    // Eastbound markers
+    // Eastbound markers (removed bike marker to eliminate yellow)
     const eastMarker1 = calculateMarkerPosition(45, SPEEDS.CAR, boundedDisplayTime, 'east')
-    const eastMarker2 = calculateBikeMarkerPosition(48, boundedDisplayTime, 'east')
     const eastMarker3 = calculateMarkerPosition(50, SPEEDS.SWEEP, boundedDisplayTime, 'east')
     const eastMarker4 = calculateMarkerPosition(55, SPEEDS.CAR, boundedDisplayTime, 'east')
     
-    // Green rectangle between marker 2 (trailing) and marker 1 (leading)
-    // Clamp start to tunnel entrance
-    if (eastMarker1 > eastMarker2 && eastMarker2 >= LAYOUT.QUEUE_AREA_WIDTH) {
-      const startX = Math.max(eastMarker2, LAYOUT.QUEUE_AREA_WIDTH)
-      const endX = eastMarker1
+    // Green rectangle between marker 3 (trailing) and marker 1 (leading)
+    // Clamp both start and end to tunnel boundaries
+    if (eastMarker1 > eastMarker3 && eastMarker3 >= LAYOUT.QUEUE_AREA_WIDTH) {
+      const startX = Math.max(eastMarker3, LAYOUT.QUEUE_AREA_WIDTH)
+      const endX = Math.min(eastMarker1, LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH)
       if (endX > startX) {
         rects.push(
           <rect
@@ -590,20 +629,6 @@ export function HollandTunnel() {
           />
         )
       }
-    }
-    
-    // Yellow rectangle between marker 3 (trailing) and marker 2 (leading)
-    if (eastMarker2 > eastMarker3 && eastMarker3 >= LAYOUT.QUEUE_AREA_WIDTH) {
-      rects.push(
-        <rect
-          key="east-yellow"
-          x={eastMarker3}
-          y={230}
-          width={eastMarker2 - eastMarker3}
-          height={LAYOUT.LANE_HEIGHT}
-          fill="#ffc107"
-        />
-      )
     }
     
     // Red rectangle between marker 4 (trailing) and marker 3 (leading)
@@ -620,24 +645,23 @@ export function HollandTunnel() {
       )
     }
     
-    // Westbound markers (30 minute offset)
+    // Westbound markers (removed bike marker to eliminate yellow)
     const westMarker1 = calculateMarkerPosition(15, SPEEDS.CAR, boundedDisplayTime, 'west')
-    const westMarker2 = calculateBikeMarkerPosition(18, boundedDisplayTime, 'west')
     const westMarker3 = calculateMarkerPosition(20, SPEEDS.SWEEP, boundedDisplayTime, 'west')
     const westMarker4 = calculateMarkerPosition(25, SPEEDS.CAR, boundedDisplayTime, 'west')
     
-    // Green rectangle between marker 2 (trailing) and marker 1 (leading)
-    // For westbound, marker1 < marker2 when marker1 is ahead
+    // Green rectangle between marker 3 (trailing) and marker 1 (leading)
+    // For westbound, marker1 < marker3 when marker1 is ahead
     // Clamp both start and end to tunnel boundaries
-    if (westMarker1 < westMarker2 && westMarker2 <= LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH) {
+    if (westMarker1 < westMarker3 && westMarker3 <= LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH) {
       const startX = Math.max(westMarker1, LAYOUT.QUEUE_AREA_WIDTH) // Don't extend past left tunnel entrance
-      const endX = Math.min(westMarker2, LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH)
+      const endX = Math.min(westMarker3, LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH)
       if (endX > startX) {
         rects.push(
           <rect
             key="west-green"
             x={startX}
-            y={130}
+            y={100}
             width={endX - startX}
             height={LAYOUT.LANE_HEIGHT}
             fill="#28a745"
@@ -646,27 +670,13 @@ export function HollandTunnel() {
       }
     }
     
-    // Yellow rectangle between marker 3 (trailing) and marker 2 (leading)
-    if (westMarker2 < westMarker3 && westMarker3 <= LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH) {
-      rects.push(
-        <rect
-          key="west-yellow"
-          x={westMarker2}
-          y={130}
-          width={westMarker3 - westMarker2}
-          height={LAYOUT.LANE_HEIGHT}
-          fill="#ffc107"
-        />
-      )
-    }
-    
     // Red rectangle between marker 4 (trailing) and marker 3 (leading)
     if (westMarker3 < westMarker4 && westMarker4 <= LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH) {
       rects.push(
         <rect
           key="west-red"
           x={westMarker3}
-          y={130}
+          y={100}
           width={westMarker4 - westMarker3}
           height={LAYOUT.LANE_HEIGHT}
           fill="#dc3545"

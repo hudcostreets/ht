@@ -60,7 +60,7 @@ pnpm run lint     # Run linter
 - Screenshots are saved to `tmp/XX.png` where XX is the minute
 
 ## Key Files
-- `src/components/HollandTunnelDeterministic.tsx` - Main visualization component
+- `src/components/HollandTunnel.tsx` - Main visualization component
 - `src/components/AnalogClock.tsx` - Animated clock display
 - `src/components/HollandTunnel.css` - Styling
 - `src/models/Vehicle.ts` - Contains Car and Bike classes that encapsulate vehicle position logic
