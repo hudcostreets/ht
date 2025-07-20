@@ -1,8 +1,8 @@
-import { HollandTunnel } from './components/HollandTunnel'
+import { HollandTunnelNew } from './components/HollandTunnelNew'
 import './App.css'
 
 function App() {
-  return <HollandTunnel />
+  return <HollandTunnelNew />
 }
 
 export default App
