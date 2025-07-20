@@ -1,105 +1,105 @@
-import {type TimePosition, Tunnel} from "./Tunnel.ts";
+import {type TimePos, Tunnel} from "./Tunnel"
 
 export class Bike {
-  private tunnel: Tunnel
-  private index: number
-  private spawnMinute: number
-  private timePositions: TimePosition[] = []
+  public tunnel: Tunnel
+  public index: number
+  public spawnMin: number
+  public timePositions: TimePos[] = []
 
   constructor(tunnel: Tunnel, index: number, spawnMinute: number) {
     this.tunnel = tunnel
     this.index = index
-    this.spawnMinute = spawnMinute
-    this.calculateTimePositions()
-  }
+    this.spawnMin = spawnMinute
 
-  private calculateTimePositions() {
     // Calculate the full trajectory for this bike
-    const config = this.tunnel.getConfig()
+    const { penOpenMinutes, offsetMinute, laneWidthPx, bikesReleasedPerMin, lengthMiles, bikeDownhillSpeed, bikeUphillSpeed, penRelativeX, penRelativeY } = this.tunnel.config
 
     // Determine when this bike should be released from pen
-    let releaseRelativeTime: number
+    let releaseReltime: number
 
-    if (this.spawnMinute < config.offsetMinute) {
+    if (this.spawnMin < offsetMinute) {
       // Early bike - released at pen opening (relative time 0)
-      releaseRelativeTime = this.index * 12 // 5 bikes per minute = 12 seconds apart
-    } else if (this.spawnMinute >= config.offsetMinute && this.spawnMinute < config.offsetMinute + config.penOpenMinutes) {
+      releaseReltime = this.index / bikesReleasedPerMin
+    } else if (this.spawnMin >= offsetMinute && this.spawnMin < offsetMinute + penOpenMinutes) {
       // Bike arrives during pen window - can join traveling group immediately
-      const spawnRelativeTime = (this.spawnMinute - config.offsetMinute) * 60
-      releaseRelativeTime = spawnRelativeTime
+      releaseReltime = this.spawnMin - offsetMinute
     } else {
       // Late arrival - waits for next cycle (60 minutes later)
-      const nextCycleStart = 60 * 60 // Next hour
-      const lateArrivalOrder = Math.floor((this.spawnMinute - (config.offsetMinute + config.penOpenMinutes)) / 4)
-      releaseRelativeTime = nextCycleStart + (lateArrivalOrder * 12)
+      const nextCycleStart = 60 // Next hour
+      const lateArrivalOrder = Math.floor((this.spawnMin - (offsetMinute + penOpenMinutes)) / 4)
+      releaseReltime = nextCycleStart + (lateArrivalOrder * 12)
     }
 
     // Calculate tunnel transit time
-    const tunnelWidthPixels = config.lanePixelWidth
-    const tunnelLengthMiles = config.lengthMiles
-    const pixelsPerMile = tunnelWidthPixels / tunnelLengthMiles
+    const tunnelWidthPixels = laneWidthPx
+    const pixelsPerMile = tunnelWidthPixels / lengthMiles
 
     // Variable speed through tunnel (downhill first half, uphill second half)
     const halfwayPoint = tunnelWidthPixels / 2
-    const downhillTime = (halfwayPoint / pixelsPerMile) / config.bikeDownhillSpeed * 3600 // Convert to seconds
-    const uphillTime = (halfwayPoint / pixelsPerMile) / config.bikeUphillSpeed * 3600
+    const downhillTime = (halfwayPoint / pixelsPerMile) / bikeDownhillSpeed * 60
+    const uphillTime = (halfwayPoint / pixelsPerMile) / bikeUphillSpeed * 60
     const totalTransitTime = downhillTime + uphillTime
 
-    // Time to move from pen to tunnel entrance (3 seconds)
-    const penToTunnelTransitionTime = 3
+    const penPos = {
+      x: penRelativeX + (this.index % bikesReleasedPerMin) * 20,
+      y: penRelativeY + Math.floor(this.index / bikesReleasedPerMin) * 15
+    }
+    const originPos = {
+      x: penPos.x + 100,
+      y: penPos.y,
+    }
 
     this.timePositions = [
-      // In pen before release
+      // Spawn in pen
       {
-        time: releaseRelativeTime - 1,
-        x: config.penRelativeX + (this.index % 5) * 20,
-        y: config.penRelativeY + Math.floor(this.index / 5) * 15,
+        time: 0,
+        ...penPos,
         state: 'pen',
         opacity: 1
       },
-      // Moving from pen to tunnel
+      // In pen before release
       {
-        time: releaseRelativeTime,
-        x: config.penRelativeX + (this.index % 5) * 20,
-        y: config.penRelativeY + Math.floor(this.index / 5) * 15,
-        state: 'staging',
+        time: releaseReltime - 1,
+        ...penPos,
+        state: 'pen',
         opacity: 1
       },
       // Arrive at tunnel entrance
       {
-        time: releaseRelativeTime + penToTunnelTransitionTime,
-        x: config.direction === 'east' ? 0 : tunnelWidthPixels, // Tunnel entrance
-        y: config.direction === 'east' ? 
-          config.lanePixelHeight + config.lanePixelHeight / 2 : // Eastbound R lane (bottom)
-          config.lanePixelHeight / 2, // Westbound R lane (top)
+        time: releaseReltime,
+        ...tunnel.r.entrance,
         state: 'tunnel',
         opacity: 1
       },
-      // End of tunnel
       {
-        time: releaseRelativeTime + penToTunnelTransitionTime + totalTransitTime,
-        x: config.direction === 'east' ? tunnelWidthPixels : 0,
-        y: config.direction === 'east' ? 
-          config.lanePixelHeight + config.lanePixelHeight / 2 : // Eastbound R lane (bottom)
-          config.lanePixelHeight / 2, // Westbound R lane (top)
+        time: releaseReltime + totalTransitTime,
+        ...tunnel.r.exit,
         state: 'exiting',
         opacity: 1
       },
-      // Fully exited
       {
-        time: releaseRelativeTime + penToTunnelTransitionTime + totalTransitTime + 60, // 1 minute fade
-        x: config.direction === 'east' ? tunnelWidthPixels + config.exitFadeDistance : -config.exitFadeDistance,
-        y: config.direction === 'east' ? 
-          config.lanePixelHeight + config.lanePixelHeight / 2 : // Eastbound R lane (bottom)
-          config.lanePixelHeight / 2, // Westbound R lane (top)
-        state: 'exiting',
+        time: releaseReltime + totalTransitTime + 1,
+        ...tunnel.r.dest,
+        state: 'done',
         opacity: 0
-      }
+      },
+      {
+        time: releaseReltime + totalTransitTime + 2,
+        ...originPos,
+        state: 'origin',
+        opacity: 0
+      },
+      {
+        time: 59,
+        ...originPos,
+        state: 'origin',
+        opacity: 0
+      },
     ]
   }
 
-  getPosition(absoluteTime: number): { x: number, y: number, state: string, opacity: number } | null {
-    const relativeTime = this.tunnel.getRelativeTime(absoluteTime)
+  getPos(abstime: number): { x: number, y: number, state: string, opacity: number } | null {
+    const relativeTime = this.tunnel.reltime(abstime)
 
     if (this.timePositions.length === 0) return null
 
@@ -107,7 +107,7 @@ export class Bike {
     const first = this.timePositions[0]
     if (relativeTime < first.time) {
       // For early bikes that haven't been released yet, check if they should be visible
-      if (this.spawnMinute < this.tunnel.getConfig().offsetMinute && relativeTime >= 0) {
+      if (this.spawnMin < this.tunnel.config.offsetMinute && relativeTime >= 0) {
         // Early bike waiting in pen during pen open time
         return { ...first }
       }
@@ -141,13 +141,5 @@ export class Bike {
     }
 
     return null
-  }
-
-  getIndex(): number {
-    return this.index
-  }
-
-  getSpawnMinute(): number {
-    return this.spawnMinute
   }
 }

@@ -1,96 +1,127 @@
 import {Car} from "./Car"
 import {Bike} from "./Bike"
+import {Lane} from "./Lane"
+import {pos} from "./Pos"
+
+export type Direction = 'east' | 'west'
 
 export interface TunnelConfig {
-  direction: 'east' | 'west'
-  offsetMinute: number  // When pen opens (:45 for E, :15 for W)
-  lengthMiles: number   // 2 miles
-  carSpeed: number      // mph
+  direction: Direction
+  offsetMinute: number
+  lengthMiles: number
+  carSpeed: number
   bikeUphillSpeed: number
   bikeDownhillSpeed: number
-  penOpenMinutes: number // 3 minutes
-  bikesPerMinute: number // 0.25
-  carsPerMinute: number  // 1
-  
+  penOpenMinutes: number
+  bikesPerMinute: number
+  carsPerMinute: number
+  bikesReleasedPerMin: number
+  paceCarStartTime: number
+
   // Layout
-  lanePixelWidth: number
-  lanePixelHeight: number
+  laneWidthPx: number
+  laneHeightPx: number
   penRelativeX: number   // Relative to R lane start
   penRelativeY: number   // Relative to R lane start
-  penPixelWidth: number
-  penPixelHeight: number
-  
-  // Exit behavior
+  penWidthPx: number
+  penHeightPx: number
   exitFadeDistance: number  // Distance to travel while fading out after tunnel exit
 }
 
-export interface TimePosition {
+// export type Phase = 'cars' | 'pen-open' | 'pen-closed' | 'sweep' | 'pace-car'
+
+export type State = 'origin' | 'pen' | 'staging' | 'tunnel' | 'exiting' | 'done'
+
+export interface TimePos {
   time: number
   x: number
   y: number
-  state: 'pen' | 'staging' | 'tunnel' | 'exiting' | 'queued'
+  state: State
   opacity: number
 }
 
 export class Tunnel {
-  private config: TunnelConfig
-  private bikes: Bike[] = []
-  private cars: Car[] = []
+  public config: TunnelConfig
+  public dir: Direction
+  public d: number
+  public bikes: Bike[] = []
+  public nbikes: number
+  public cars: Car[] = []
+  public ncars: number
+  public l: Lane
+  public r: Lane
   
   constructor(config: TunnelConfig) {
     this.config = config
-    this.initializeVehicles()
-  }
-  
-  private initializeVehicles() {
-    // Create bikes (spawn every 4 minutes)
-    for (let i = 0; i < 15; i++) {
-      const spawnMinute = i * 4
-      this.bikes.push(new Bike(this, i, spawnMinute))
+    const { bikesPerMinute, carsPerMinute, laneWidthPx, laneHeightPx, direction } = config
+    this.dir = direction
+    this.d = direction === 'east' ? 1 : -1
+    this.nbikes = 60 * bikesPerMinute
+
+    // Create lanes
+    const exitFadeDistance = config.exitFadeDistance * this.d
+    const start = direction === 'east' ? 0 : laneWidthPx
+    const end = direction === 'east' ? laneWidthPx : 0
+    this.l = new Lane({
+      id: 'L',
+      entrance: pos(start, laneHeightPx * (1 - this.d * .5)),
+      exit: pos(end, laneHeightPx * (1 - this.d * .5)),
+      exitFadeDistance,
+    })
+    this.r = new Lane({
+      id: 'R',
+      entrance: pos(start, laneHeightPx * (1 + this.d * .5)),
+      exit: pos(end, laneHeightPx * (1 + this.d * .5)),
+      exitFadeDistance,
+    })
+
+    // Create bikes
+    for (let i = 0; i < this.nbikes; i++) {
+      const spawn = 60 * i / this.nbikes
+      this.bikes.push(new Bike(this, spawn, spawn))
     }
-    
-    // Create cars (spawn every minute)
-    for (let minute = 0; minute < 60; minute++) {
-      // L lane cars (always flow)
-      this.cars.push(new Car(this, minute, minute, 'L'))
-      
-      // R lane cars (may queue during bike phases)
-      this.cars.push(new Car(this, minute, minute, 'R'))
+
+    // Create cars
+    this.ncars = 60 * carsPerMinute
+    for (let i = 0; i < this.ncars; i++) {
+      const spawn = 60 * (i + .5) / this.ncars
+      this.cars.push(new Car(this, spawn, spawn, 'L'))
+      this.cars.push(new Car(this, spawn, spawn, 'R'))
     }
+
+    // const { penOpenMinutes } = config
+    // const phases = [
+    //   { start: 0, phase: 'bikes-enter' },
+    //   { start: penOpenMinutes, phase: 'clearing' },
+    //   { start: 5, phase: 'sweep' },
+    //   { start: 10, phase: 'pace-car' },
+    //   { start: 15, phase: 'cars' }
+    // ]
   }
   
   // Convert absolute time to tunnel-relative time
-  getRelativeTime(absoluteTime: number): number {
-    const hourInSeconds = Math.floor(absoluteTime / 3600) * 3600
-    const relativeTime = absoluteTime - hourInSeconds
+  reltime(abstime: number): number {
+    const reltime = abstime - Math.floor(abstime / 60) * 60
     
     // Shift time so that our offset minute becomes "minute 0"
-    const shiftedTime = relativeTime - (this.config.offsetMinute * 60)
+    const shiftedTime = reltime - this.config.offsetMinute
     
     // Handle negative wrap-around (e.g. if we're at :10 and offset is :15)
-    if (shiftedTime < 0) {
-      return shiftedTime + 3600 // Add an hour
-    }
-    
-    return shiftedTime
+    return (shiftedTime < 0) ? shiftedTime + 60 : shiftedTime
   }
   
   // Convert tunnel-relative time back to absolute
-  getAbsoluteTime(relativeTime: number, hourBase: number): number {
-    const hourInSeconds = Math.floor(hourBase / 3600) * 3600
-    const absoluteTime = hourInSeconds + relativeTime + (this.config.offsetMinute * 60)
+  abstime(reltime: number, hourBase: number): number {
+    const hourInMins = Math.floor(hourBase / 60) * 60
+    const abstime = hourInMins + reltime + this.config.offsetMinute
     
     // Handle overflow
-    if (absoluteTime >= hourInSeconds + 3600) {
-      return absoluteTime - 3600
-    }
-    
-    return absoluteTime
+    return (abstime >= hourInMins + 60) ? abstime - 60 : abstime
   }
   
   // Get phase at relative time (0 = pen opens)
-  getPhase(relativeTime: number): 'normal' | 'bikes-enter' | 'clearing' | 'sweep' | 'pace-car' {
-    const minute = Math.floor(relativeTime / 60)
+  getPhase(relTime: number): 'normal' | 'bikes-enter' | 'clearing' | 'sweep' | 'pace-car' {
+    const minute = Math.floor(relTime)
     
     if (minute >= 0 && minute < this.config.penOpenMinutes) {
       return 'bikes-enter'
@@ -103,17 +134,5 @@ export class Tunnel {
     } else {
       return 'normal'
     }
-  }
-  
-  getBikes(): Bike[] {
-    return this.bikes
-  }
-  
-  getCars(): Car[] {
-    return this.cars
-  }
-  
-  getConfig(): TunnelConfig {
-    return this.config
   }
 }
