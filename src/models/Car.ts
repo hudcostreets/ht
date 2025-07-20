@@ -50,10 +50,7 @@ export class Car {
     }
 
     // Calculate tunnel transit time
-    const tunnelWidthPixels = laneWidthPx
-    const tunnelLengthMiles = lengthMiles
-    const speedMph = carSpeed
-    const transitTimeSeconds = (tunnelLengthMiles / speedMph) * 3600
+    const transitTime = lengthMiles / carSpeed * 60
 
     // Lane Y position based on direction
     const laneY = direction === 'east' ?
@@ -85,23 +82,23 @@ export class Car {
         // Arrive at tunnel entrance
         {
           time: releaseRelTime,
-          x: direction === 'east' ? 0 : tunnelWidthPixels,
+          x: direction === 'east' ? 0 : laneWidthPx,
           y: laneY,
           state: 'tunnel',
           opacity: 1
         },
         // End of tunnel
         {
-          time: releaseRelTime + transitTimeSeconds,
-          x: direction === 'east' ? tunnelWidthPixels : 0,
+          time: releaseRelTime + transitTime,
+          x: direction === 'east' ? laneWidthPx : 0,
           y: laneY,
           state: 'exiting',
           opacity: 1
         },
         // Fully exited
         {
-          time: releaseRelTime + transitTimeSeconds + 60,
-          x: direction === 'east' ? tunnelWidthPixels + exitFadeDistance : -exitFadeDistance,
+          time: releaseRelTime + transitTime + 1,
+          x: direction === 'east' ? laneWidthPx + exitFadeDistance : -exitFadeDistance,
           y: laneY,
           state: 'exiting',
           opacity: 0
@@ -119,16 +116,16 @@ export class Car {
         },
         // End of tunnel
         {
-          time: releaseRelTime + transitTimeSeconds,
-          x: direction === 'east' ? tunnelWidthPixels : 0,
+          time: releaseRelTime + transitTime,
+          x: direction === 'east' ? laneWidthPx : 0,
           y: laneY,
           state: 'exiting',
           opacity: 1
         },
         // Fully exited
         {
-          time: releaseRelTime + transitTimeSeconds + 60, // 1 minute fade
-          x: direction === 'east' ? tunnelWidthPixels + exitFadeDistance : -exitFadeDistance,
+          time: releaseRelTime + transitTime + 1,
+          x: direction === 'east' ? laneWidthPx + exitFadeDistance : -exitFadeDistance,
           y: laneY,
           state: 'exiting',
           opacity: 0

@@ -36,8 +36,8 @@ export class Bike {
 
     // Variable speed through tunnel (downhill first half, uphill second half)
     const halfwayPoint = tunnelWidthPixels / 2
-    const downhillTime = (halfwayPoint / pixelsPerMile) / bikeDownhillSpeed * 60
-    const uphillTime = (halfwayPoint / pixelsPerMile) / bikeUphillSpeed * 60
+    const downhillTime = (halfwayPoint / pixelsPerMile) / bikeDownhillSpeed
+    const uphillTime = (halfwayPoint / pixelsPerMile) / bikeUphillSpeed
     const totalTransitTime = downhillTime + uphillTime
 
     const penPos = {

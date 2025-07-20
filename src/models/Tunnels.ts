@@ -181,7 +181,7 @@ export class Tunnels {
         }
       } else {
         // Sweeping through tunnel
-        const sweepProgress = (totalSweepSeconds - transitionTime) / (5 * 60 - transitionTime)
+        const sweepProgress = (totalSweepSeconds - transitionTime) / (5 - transitionTime)
         return {
           x: sweepProgress * tunnelWidth,
           y: eastConfig.laneHeightPx + eastConfig.laneHeightPx / 2, // R lane (bottom) for eastbound
@@ -240,7 +240,7 @@ export class Tunnels {
         }
       } else {
         // Sweeping through tunnel
-        const sweepProgress = (totalSweepSeconds - transitionTime) / (5 * 60 - transitionTime)
+        const sweepProgress = (totalSweepSeconds - transitionTime) / (5 - transitionTime)
         return {
           x: tunnelWidth - (sweepProgress * tunnelWidth),
           y: westConfig.laneHeightPx / 2, // R lane (top) for westbound
@@ -286,8 +286,7 @@ export class Tunnels {
     // - Back to westbound staging at :04
     
     const minuteInHour = Math.floor(absoluteTime / 60) % 60
-    const secondInMinute = absoluteTime % 60
-    
+
     const eastConfig = this.e.config
     const westConfig = this.w.config
     const tunnelWidth = eastConfig.laneWidthPx
@@ -304,7 +303,7 @@ export class Tunnels {
       }
     } else if (minuteInHour >= 25 && minuteInHour < 30) {
       // Leading cars through westbound tunnel
-      const totalPaceSeconds = (minuteInHour - 25) * 60 + secondInMinute
+      const totalPaceSeconds = minuteInHour - 25
       const transitionTime = 5 // 5 seconds to move from staging to tunnel entrance
       
       if (totalPaceSeconds < transitionTime) {
@@ -319,7 +318,7 @@ export class Tunnels {
         }
       } else {
         // Leading through tunnel
-        const paceProgress = (totalPaceSeconds - transitionTime) / (5 * 60 - transitionTime)
+        const paceProgress = (totalPaceSeconds - transitionTime) / (5 - transitionTime)
         return {
           x: tunnelWidth - (paceProgress * tunnelWidth),
           y: westConfig.laneHeightPx / 2, // R lane (top) for westbound
@@ -331,7 +330,7 @@ export class Tunnels {
     } else if (minuteInHour >= 30 && minuteInHour < 34) {
       // Traveling to eastbound staging
       const transitionMinute = minuteInHour - 30
-      const transitionProgress = (transitionMinute * 60 + secondInMinute) / (4 * 60)
+      const transitionProgress = transitionMinute / 4
       
       if (transitionProgress >= 1) {
         // At eastbound staging
@@ -364,12 +363,11 @@ export class Tunnels {
     } else if (minuteInHour >= 55 || minuteInHour < 0) {
       // Leading cars through eastbound tunnel
       const paceMinute = minuteInHour >= 55 ? minuteInHour - 55 : 60 + minuteInHour
-      const totalPaceSeconds = paceMinute * 60 + secondInMinute
       const transitionTime = 5 // 5 seconds to move from staging to tunnel entrance
       
-      if (totalPaceSeconds < transitionTime) {
+      if (paceMinute < transitionTime) {
         // Transitioning from staging to tunnel entrance
-        const transitionProgress = totalPaceSeconds / transitionTime
+        const transitionProgress = paceMinute / transitionTime
         return {
           x: -this.paceConfig.stagingOffset * (1 - transitionProgress),
           y: eastConfig.laneHeightPx + eastConfig.laneHeightPx / 2, // R lane (bottom) for eastbound
@@ -379,7 +377,7 @@ export class Tunnels {
         }
       } else {
         // Leading through tunnel
-        const paceProgress = (totalPaceSeconds - transitionTime) / (5 * 60 - transitionTime)
+        const paceProgress = (paceMinute - transitionTime) / (5 - transitionTime)
         return {
           x: paceProgress * tunnelWidth,
           y: eastConfig.laneHeightPx + eastConfig.laneHeightPx / 2, // R lane (bottom) for eastbound
@@ -391,8 +389,7 @@ export class Tunnels {
     } else {
       // minuteInHour >= 0 && minuteInHour < 4
       // Traveling back to westbound staging
-      const transitionMinute = minuteInHour
-      const transitionProgress = (transitionMinute * 60 + secondInMinute) / (4 * 60)
+      const transitionProgress = minuteInHour / 4
       
       if (transitionProgress >= 1) {
         // Back at westbound staging
