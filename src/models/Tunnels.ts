@@ -45,7 +45,7 @@ export class Tunnels {
   }
 
   // Get all vehicles for rendering
-  getAllVehicles(absoluteTime: number): Array<{
+  getAllVehicles(absMins: number): Array<{
     id: string
     type: 'bike' | 'car' | 'sweep' | 'pace'
     position: { x: number, y: number, state: string, opacity: number }
@@ -62,7 +62,7 @@ export class Tunnels {
     
     // Eastbound vehicles
     this.e.bikes.forEach(bike => {
-      const position = bike.getPos(absoluteTime)
+      const position = bike.getPos(absMins)
       if (position) {
         vehicles.push({
           id: `bike-e-${bike.index}`,
@@ -75,7 +75,7 @@ export class Tunnels {
     })
     
     this.e.cars.forEach(car => {
-      const position = car.getPos(absoluteTime)
+      const position = car.getPos(absMins)
       if (position) {
         vehicles.push({
           id: `car-e-${car.getLane()}-${car.getId()}`,
@@ -89,7 +89,7 @@ export class Tunnels {
     
     // Westbound vehicles
     this.w.bikes.forEach(bike => {
-      const position = bike.getPos(absoluteTime)
+      const position = bike.getPos(absMins)
       if (position) {
         vehicles.push({
           id: `bike-w-${bike.index}`,
@@ -102,7 +102,7 @@ export class Tunnels {
     })
     
     this.w.cars.forEach(car => {
-      const position = car.getPos(absoluteTime)
+      const position = car.getPos(absMins)
       if (position) {
         vehicles.push({
           id: `car-w-${car.getLane()}-${car.getId()}`,
@@ -115,7 +115,7 @@ export class Tunnels {
     })
     
     // Global vehicles (sweep and pace)
-    const sweepPosition = this.getSweepPosition(absoluteTime)
+    const sweepPosition = this.getSweepPosition(absMins)
     if (sweepPosition) {
       vehicles.push({
         id: 'sweep',
@@ -126,7 +126,7 @@ export class Tunnels {
       })
     }
     
-    const pacePosition = this.getPacePosition(absoluteTime)
+    const pacePosition = this.getPacePosition(absMins)
     if (pacePosition) {
       vehicles.push({
         id: 'pace',
@@ -140,7 +140,7 @@ export class Tunnels {
     return vehicles
   }
   
-  private getSweepPosition(absoluteTime: number): GlobalVehiclePosition | null {
+  private getSweepPosition(absMins: number): GlobalVehiclePosition | null {
     // Sweep follows this pattern:
     // - Starts at eastbound staging at :35 (facing east)
     // - Sweeps through tunnel eastbound during sweep phase (:50-:55)
@@ -148,7 +148,7 @@ export class Tunnels {
     // - Sweeps through tunnel westbound during sweep phase (:20-:25)
     // - Back to eastbound staging at :35
     
-    const minuteInHour = Math.floor(absoluteTime) % 60
+    const minuteInHour = Math.floor(absMins) % 60
 
     const eastConfig = this.e.config
     const westConfig = this.w.config
@@ -167,11 +167,11 @@ export class Tunnels {
     } else if (minuteInHour >= 50 && minuteInHour < 55) {
       // Sweeping eastbound tunnel
       const totalSweepMinutes = (minuteInHour - 50)
-      const transitionTime = 5
+      const transitionMins = 5
       
-      if (totalSweepMinutes < transitionTime) {
+      if (totalSweepMinutes < transitionMins) {
         // Transitioning from staging to tunnel entrance
-        const transitionProgress = totalSweepMinutes / transitionTime
+        const transitionProgress = totalSweepMinutes / transitionMins
         return {
           x: -this.sweepConfig.stagingOffset * (1 - transitionProgress),
           y: eastConfig.laneHeightPx + eastConfig.laneHeightPx / 2, // R lane (bottom) for eastbound
@@ -181,7 +181,7 @@ export class Tunnels {
         }
       } else {
         // Sweeping through tunnel
-        const sweepProgress = (totalSweepMinutes - transitionTime) / (5 - transitionTime)
+        const sweepProgress = (totalSweepMinutes - transitionMins) / (5 - transitionMins)
         return {
           x: sweepProgress * tunnelWidth,
           y: eastConfig.laneHeightPx + eastConfig.laneHeightPx / 2, // R lane (bottom) for eastbound
@@ -226,11 +226,11 @@ export class Tunnels {
     } else if (minuteInHour >= 20 && minuteInHour < 25) {
       // Sweeping westbound tunnel
       const totalSweepMinutes = minuteInHour - 20
-      const transitionTime = 5
+      const transitionMins = 5
       
-      if (totalSweepMinutes < transitionTime) {
+      if (totalSweepMinutes < transitionMins) {
         // Transitioning from staging to tunnel entrance
-        const transitionProgress = totalSweepMinutes / transitionTime
+        const transitionProgress = totalSweepMinutes / transitionMins
         return {
           x: tunnelWidth + this.sweepConfig.stagingOffset * (1 - transitionProgress),
           y: westConfig.laneHeightPx / 2, // R lane (top) for westbound
@@ -240,7 +240,7 @@ export class Tunnels {
         }
       } else {
         // Sweeping through tunnel
-        const sweepProgress = (totalSweepMinutes - transitionTime) / (5 - transitionTime)
+        const sweepProgress = (totalSweepMinutes - transitionMins) / (5 - transitionMins)
         return {
           x: tunnelWidth - (sweepProgress * tunnelWidth),
           y: westConfig.laneHeightPx / 2, // R lane (top) for westbound
@@ -277,7 +277,7 @@ export class Tunnels {
     }
   }
   
-  private getPacePosition(absoluteTime: number): GlobalVehiclePosition | null {
+  private getPacePosition(absMins: number): GlobalVehiclePosition | null {
     // Pace follows this pattern:
     // - Starts at westbound staging at :04 (facing west)
     // - Leads cars through tunnel westbound during pace-car phase (:25-:30)
@@ -285,7 +285,7 @@ export class Tunnels {
     // - Leads cars through tunnel eastbound during pace-car phase (:55-:00)
     // - Back to westbound staging at :04
     
-    const minuteInHour = Math.floor(absoluteTime) % 60
+    const minuteInHour = Math.floor(absMins) % 60
 
     const eastConfig = this.e.config
     const westConfig = this.w.config
@@ -303,12 +303,12 @@ export class Tunnels {
       }
     } else if (minuteInHour >= 25 && minuteInHour < 30) {
       // Leading cars through westbound tunnel
-      const totalPaceSeconds = minuteInHour - 25
-      const transitionTime = 5
+      const totalPaceMins = minuteInHour - 25
+      const transitionMins = 5
       
-      if (totalPaceSeconds < transitionTime) {
+      if (totalPaceMins < transitionMins) {
         // Transitioning from staging to tunnel entrance
-        const transitionProgress = totalPaceSeconds / transitionTime
+        const transitionProgress = totalPaceMins / transitionMins
         return {
           x: tunnelWidth + this.paceConfig.stagingOffset * (1 - transitionProgress),
           y: westConfig.laneHeightPx / 2, // R lane (top) for westbound
@@ -318,7 +318,7 @@ export class Tunnels {
         }
       } else {
         // Leading through tunnel
-        const paceProgress = (totalPaceSeconds - transitionTime) / (5 - transitionTime)
+        const paceProgress = (totalPaceMins - transitionMins) / (5 - transitionMins)
         return {
           x: tunnelWidth - (paceProgress * tunnelWidth),
           y: westConfig.laneHeightPx / 2, // R lane (top) for westbound
@@ -363,11 +363,11 @@ export class Tunnels {
     } else if (minuteInHour >= 55 || minuteInHour < 0) {
       // Leading cars through eastbound tunnel
       const paceMinute = minuteInHour >= 55 ? minuteInHour - 55 : 60 + minuteInHour
-      const transitionTime = 5
+      const transitionMins = 5
       
-      if (paceMinute < transitionTime) {
+      if (paceMinute < transitionMins) {
         // Transitioning from staging to tunnel entrance
-        const transitionProgress = paceMinute / transitionTime
+        const transitionProgress = paceMinute / transitionMins
         return {
           x: -this.paceConfig.stagingOffset * (1 - transitionProgress),
           y: eastConfig.laneHeightPx + eastConfig.laneHeightPx / 2, // R lane (bottom) for eastbound
@@ -377,7 +377,7 @@ export class Tunnels {
         }
       } else {
         // Leading through tunnel
-        const paceProgress = (paceMinute - transitionTime) / (5 - transitionTime)
+        const paceProgress = (paceMinute - transitionMins) / (5 - transitionMins)
         return {
           x: paceProgress * tunnelWidth,
           y: eastConfig.laneHeightPx + eastConfig.laneHeightPx / 2, // R lane (bottom) for eastbound
@@ -414,9 +414,9 @@ export class Tunnels {
   }
 
   // Get current phase for each direction
-  getPhases(absoluteTime: number): { east: string, west: string } {
-    const eastRelativeTime = this.e.reltime(absoluteTime)
-    const westRelativeTime = this.w.reltime(absoluteTime)
+  getPhases(absMins: number): { east: string, west: string } {
+    const eastRelativeTime = this.e.relMins(absMins)
+    const westRelativeTime = this.w.relMins(absMins)
     
     return {
       east: this.e.getPhase(eastRelativeTime),
@@ -425,7 +425,7 @@ export class Tunnels {
   }
   
   // Get color rectangles for rendering
-  getColorRectangles(absoluteTime: number): Array<{
+  getColorRectangles(absMins: number): Array<{
     direction: 'east' | 'west'
     color: 'green' | 'red'
     x: number
@@ -448,16 +448,16 @@ export class Tunnels {
     const laneHeight = eastConfig.laneHeightPx
     
     // Get phases
-    const phases = this.getPhases(absoluteTime)
+    const phases = this.getPhases(absMins)
     
     // Eastbound rectangles
     if (phases.east === 'bikes-enter' || phases.east === 'clearing' || phases.east === 'sweep') {
       // Calculate how far the green zone has progressed
-      const eastRelativeTime = this.e.reltime(absoluteTime)
-      const minuteInPhase = Math.floor(eastRelativeTime / 60)
+      const eastRelMins = this.e.relMins(absMins)
+      const minuteInPhase = Math.floor(eastRelMins)
       
       if (minuteInPhase < 5) { // During bikes-enter, clearing, and sweep
-        const progress = (eastRelativeTime % (5 * 60)) / (5 * 60)
+        const progress = (eastRelMins % 5) / 5
         rectangles.push({
           direction: 'east',
           color: 'green',
@@ -480,11 +480,11 @@ export class Tunnels {
     // Westbound rectangles
     if (phases.west === 'bikes-enter' || phases.west === 'clearing' || phases.west === 'sweep') {
       // Calculate how far the green zone has progressed
-      const westRelativeTime = this.w.reltime(absoluteTime)
-      const minuteInPhase = Math.floor(westRelativeTime / 60)
+      const westRelMins = this.w.relMins(absMins)
+      const minuteInPhase = Math.floor(westRelMins)
       
       if (minuteInPhase < 5) { // During bikes-enter, clearing, and sweep
-        const progress = (westRelativeTime % (5 * 60)) / (5 * 60)
+        const progress = (westRelMins % 5) / 5
         rectangles.push({
           direction: 'west',
           color: 'green',

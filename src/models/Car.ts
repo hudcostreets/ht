@@ -21,51 +21,51 @@ export class Car {
     const { paceCarStartTime, offsetMinute, direction, laneWidthPx, laneHeightPx, lengthMiles, carSpeed, exitFadeDistance, } = tunnel.config
 
     // Calculate spawn relative time (handle negative values)
-    let spawnReltime = this.spawnMinute - offsetMinute
-    if (spawnReltime < 0) {
-      spawnReltime += 60 // Wrap around hour
+    let spawnRelMins = this.spawnMinute - offsetMinute
+    if (spawnRelMins < 0) {
+      spawnRelMins += 60 // Wrap around hour
     }
 
     // Get phase at spawn time
-    const phase = this.tunnel.getPhase(spawnReltime)
+    const phase = this.tunnel.getPhase(spawnRelMins)
 
     // Determine if this car needs to queue
     const needsToQueue = this.laneId === 'R' && phase !== 'normal' && phase !== 'pace-car'
 
-    let releaseRelTime: number
+    let releaseRelMins: number
     let startX: number
 
     if (needsToQueue) {
       // Car queues during bike phases
-      const queuePosition = Math.floor(spawnReltime)
+      const queuePosition = Math.floor(spawnRelMins)
 
-      releaseRelTime = Math.max(spawnReltime, paceCarStartTime)
+      releaseRelMins = Math.max(spawnRelMins, paceCarStartTime)
       startX = direction === 'east' ?
         -50 - (queuePosition * 30) : // Eastbound queue on left
         laneWidthPx + 50 + (queuePosition * 30) // Westbound queue on right
     } else {
       // Car flows normally
-      releaseRelTime = spawnReltime
+      releaseRelMins = spawnRelMins
       startX = direction === 'east' ? 0 : laneWidthPx // Tunnel entrance
     }
 
-    // Calculate tunnel transit time
-    const transitTime = lengthMiles / carSpeed * 60
+    // Calculate tunnel transit time in minutes
+    const transitMins = lengthMiles / carSpeed * 60
 
     // Lane Y position based on direction
     const laneY = direction === 'east' ?
       (this.laneId === 'L' ? laneHeightPx / 2 : laneHeightPx + laneHeightPx / 2) : // Eastbound: L top, R bottom
       (this.laneId === 'R' ? laneHeightPx / 2 : laneHeightPx + laneHeightPx / 2)   // Westbound: R top, L bottom
 
-    // Time for cars to move from queue to tunnel entrance (2 seconds)
-    const queueToTunnelTransitionTime = 2
+    // Time for cars to move from queue to tunnel entrance
+    const queueToTunnelTransitionMins = 2/60
 
     if (needsToQueue) {
       // Car queues, then moves through tunnel
       this.timePositions = [
         // Queued position (from spawn until just before pace car)
         {
-          time: spawnReltime,
+          time: spawnRelMins,
           x: startX,
           y: laneY,
           state: 'pen',
@@ -73,7 +73,7 @@ export class Car {
         },
         // Start moving from queue to tunnel
         {
-          time: releaseRelTime - queueToTunnelTransitionTime,
+          time: releaseRelMins - queueToTunnelTransitionMins,
           x: startX,
           y: laneY,
           state: 'pen',
@@ -81,7 +81,7 @@ export class Car {
         },
         // Arrive at tunnel entrance
         {
-          time: releaseRelTime,
+          time: releaseRelMins,
           x: direction === 'east' ? 0 : laneWidthPx,
           y: laneY,
           state: 'tunnel',
@@ -89,7 +89,7 @@ export class Car {
         },
         // End of tunnel
         {
-          time: releaseRelTime + transitTime,
+          time: releaseRelMins + transitMins,
           x: direction === 'east' ? laneWidthPx : 0,
           y: laneY,
           state: 'exiting',
@@ -97,7 +97,7 @@ export class Car {
         },
         // Fully exited
         {
-          time: releaseRelTime + transitTime + 1,
+          time: releaseRelMins + transitMins + 1,
           x: direction === 'east' ? laneWidthPx + exitFadeDistance : -exitFadeDistance,
           y: laneY,
           state: 'exiting',
@@ -109,14 +109,14 @@ export class Car {
       this.timePositions = [
         // Start position
         {
-          time: releaseRelTime,
+          time: releaseRelMins,
           ...lane.entrance,
           state: 'tunnel',
           opacity: 1
         },
         // End of tunnel
         {
-          time: releaseRelTime + transitTime,
+          time: releaseRelMins + transitMins,
           x: direction === 'east' ? laneWidthPx : 0,
           y: laneY,
           state: 'exiting',
@@ -124,7 +124,7 @@ export class Car {
         },
         // Fully exited
         {
-          time: releaseRelTime + transitTime + 1,
+          time: releaseRelMins + transitMins + 1,
           x: direction === 'east' ? laneWidthPx + exitFadeDistance : -exitFadeDistance,
           y: laneY,
           state: 'exiting',
@@ -134,14 +134,14 @@ export class Car {
     }
   }
 
-  getPos(abstime: number): { x: number, y: number, state: string, opacity: number } | null {
-    const reltime = this.tunnel.reltime(abstime)
+  getPos(absMins: number): { x: number, y: number, state: string, opacity: number } | null {
+    const relMins = this.tunnel.relMins(absMins)
 
     if (this.timePositions.length === 0) return null
 
     // Check if we're before the first time position
     const first = this.timePositions[0]
-    if (reltime < first.time) {
+    if (relMins < first.time) {
       // Car hasn't spawned yet
       return null
     }
@@ -151,9 +151,9 @@ export class Car {
       const current = this.timePositions[i]
       const next = this.timePositions[i + 1]
 
-      if (reltime >= current.time && reltime < next.time) {
+      if (relMins >= current.time && relMins < next.time) {
         // Interpolate between current and next
-        const t = (reltime - current.time) / (next.time - current.time)
+        const t = (relMins - current.time) / (next.time - current.time)
 
         return {
           x: current.x + (next.x - current.x) * t,
@@ -166,7 +166,7 @@ export class Car {
 
     // Check if we're past the last time position
     const last = this.timePositions[this.timePositions.length - 1]
-    if (reltime >= last.time) {
+    if (relMins >= last.time) {
       if (last.opacity <= 0) return null // Fully faded out
       return { ...last }
     }

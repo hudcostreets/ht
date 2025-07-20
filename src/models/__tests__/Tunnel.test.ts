@@ -13,16 +13,16 @@ describe('Tunnel', () => {
     describe('Time conversion', () => {
       it('should convert absolute time to relative time correctly', () => {
         // At 45 minutes (pen opens), relative time should be 0
-        expect(eastbound.reltime(45)).toBe(0)
+        expect(eastbound.relMins(45)).toBe(0)
         
         // At 46 minutes, relative time should be 1
-        expect(eastbound.reltime(46)).toBe(1)
+        expect(eastbound.relMins(46)).toBe(1)
         
         // At 44 minutes (before pen opens), should wrap around
-        expect(eastbound.reltime(44)).toBe(59) // 59 minutes later in relative time
+        expect(eastbound.relMins(44)).toBe(59) // 59 minutes later in relative time
         
         // Hour boundaries
-        expect(eastbound.reltime(60 + 45)).toBe(0) // Next hour, minute 45
+        expect(eastbound.relMins(60 + 45)).toBe(0) // Next hour, minute 45
       })
     })
     
@@ -151,13 +151,13 @@ describe('Tunnel', () => {
     describe('Time conversion', () => {
       it('should convert absolute time to relative time correctly', () => {
         // At 15 minutes (pen opens), relative time should be 0
-        expect(westbound.reltime(15 * 60)).toBe(0)
+        expect(westbound.relMins(15 * 60)).toBe(0)
         
         // At 16 minutes, relative time should be 60 seconds
-        expect(westbound.reltime(16 * 60)).toBe(60)
+        expect(westbound.relMins(16 * 60)).toBe(60)
         
         // At 14 minutes (before pen opens), should wrap around
-        expect(westbound.reltime(14 * 60)).toBe(59 * 60) // 59 minutes later in relative time
+        expect(westbound.relMins(14 * 60)).toBe(59 * 60) // 59 minutes later in relative time
       })
     })
     
@@ -184,12 +184,12 @@ describe('Tunnel', () => {
       const westbound = new Tunnel(HOLLAND_TUNNEL_CONFIG.westbound)
       
       // At absolute time :15, eastbound should be in normal phase, westbound in bikes-enter
-      expect(eastbound.getPhase(eastbound.reltime(15 * 60))).toBe('normal')
-      expect(westbound.getPhase(westbound.reltime(15 * 60))).toBe('bikes-enter')
+      expect(eastbound.getPhase(eastbound.relMins(15 * 60))).toBe('normal')
+      expect(westbound.getPhase(westbound.relMins(15 * 60))).toBe('bikes-enter')
       
       // At absolute time :45, eastbound should be in bikes-enter, westbound in normal
-      expect(eastbound.getPhase(eastbound.reltime(45 * 60))).toBe('bikes-enter')
-      expect(westbound.getPhase(westbound.reltime(45 * 60))).toBe('normal')
+      expect(eastbound.getPhase(eastbound.relMins(45 * 60))).toBe('bikes-enter')
+      expect(westbound.getPhase(westbound.relMins(45 * 60))).toBe('normal')
     })
   })
 })

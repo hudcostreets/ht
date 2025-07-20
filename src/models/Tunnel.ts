@@ -100,28 +100,28 @@ export class Tunnel {
   }
   
   // Convert absolute time to tunnel-relative time
-  reltime(abstime: number): number {
-    const reltime = abstime - Math.floor(abstime / 60) * 60
+  relMins(absMins: number): number {
+    const relMins = absMins - Math.floor(absMins / 60) * 60
     
     // Shift time so that our offset minute becomes "minute 0"
-    const shiftedTime = reltime - this.config.offsetMinute
+    const shiftedMins = relMins - this.config.offsetMinute
     
     // Handle negative wrap-around (e.g. if we're at :10 and offset is :15)
-    return (shiftedTime < 0) ? shiftedTime + 60 : shiftedTime
+    return (shiftedMins < 0) ? shiftedMins + 60 : shiftedMins
   }
   
   // Convert tunnel-relative time back to absolute
-  abstime(reltime: number, hourBase: number): number {
-    const hourInMins = Math.floor(hourBase / 60) * 60
-    const abstime = hourInMins + reltime + this.config.offsetMinute
+  absMins(relMins: number, hourBaseMins: number): number {
+    const hourInMins = Math.floor(hourBaseMins / 60) * 60
+    const absMins = hourInMins + relMins + this.config.offsetMinute
     
     // Handle overflow
-    return (abstime >= hourInMins + 60) ? abstime - 60 : abstime
+    return (absMins >= hourInMins + 60) ? absMins - 60 : absMins
   }
   
   // Get phase at relative time (0 = pen opens)
-  getPhase(relTime: number): 'normal' | 'bikes-enter' | 'clearing' | 'sweep' | 'pace-car' {
-    const minute = Math.floor(relTime)
+  getPhase(relMins: number): 'normal' | 'bikes-enter' | 'clearing' | 'sweep' | 'pace-car' {
+    const minute = Math.floor(relMins)
     
     if (minute >= 0 && minute < this.config.penOpenMinutes) {
       return 'bikes-enter'
