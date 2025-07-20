@@ -3,7 +3,7 @@ import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
 import { AnalogClock } from './AnalogClock'
 import { Car } from '../models/EnhancedVehicle'
-import { Bike, Vehicle as VehicleClass, LAYOUT, getPhase, getLaneY } from '../models/Vehicle'
+import { Bike, Vehicle as VehicleClass, LAYOUT, SPEEDS, getPhase, getLaneY } from '../models/Vehicle'
 import type { CarData } from '../models/EnhancedVehicle'
 import type { VehicleData, VehiclePosition } from '../models/Vehicle'
 import './HollandTunnel.css'
@@ -116,7 +116,7 @@ const createVehicles = (): SpecialVehicle[] => {
 
 const ALL_VEHICLES = createVehicles()
 
-export function HollandTunnelDeterministic() {
+export function HollandTunnel() {
   // Check URL parameter for initial time
   const urlParams = new URLSearchParams(window.location.search)
   const urlMinute = urlParams.get('t')
@@ -142,7 +142,9 @@ export function HollandTunnelDeterministic() {
   
   // Update current minute when display time changes
   useEffect(() => {
-    const newMinute = Math.floor(displayTime / 60) % 60
+    // Ensure displayTime stays within bounds
+    const boundedTime = displayTime % 3600
+    const newMinute = Math.floor(boundedTime / 60) % 60
     if (newMinute !== currentMinute) {
       setCurrentMinute(newMinute)
     }
@@ -307,7 +309,7 @@ export function HollandTunnelDeterministic() {
     // For special vehicles, interpolate between minute positions
     const currentSec = time % 60
     const currentMinuteTime = Math.floor(time / 60) * 60
-    const nextMinuteTime = currentMinuteTime + 60
+    const nextMinuteTime = (currentMinuteTime + 60) % 3600
     
     const currentPos = getSpecialVehiclePosition(vehicle, currentMinuteTime)
     const nextPos = getSpecialVehiclePosition(vehicle, nextMinuteTime)
@@ -336,17 +338,33 @@ export function HollandTunnelDeterministic() {
     } else if (isTransitioning) {
       // Smooth transition for arrow key navigation
       setDisplayTime(prevTime => {
-        const diff = targetTime - prevTime
+        let diff = targetTime - prevTime
+        
+        // Handle wraparound at hour boundaries
+        // If diff is very large, we're wrapping around
+        if (diff > 1800) { // More than 30 minutes backward, must be :59→:00
+          diff = diff - 3600 // Convert to small forward step
+        } else if (diff < -1800) { // More than 30 minutes forward, must be :00→:59
+          diff = diff + 3600 // Convert to small backward step
+        }
+        
         if (Math.abs(diff) < 0.5) {
           setIsTransitioning(false)
           return targetTime
         }
+        
         // Linear transition: move at constant speed
         const step = 8 // Seconds per frame (moderate transition speed)
         if (diff > 0) {
-          return Math.min(prevTime + step, targetTime)
+          let newTime = prevTime + Math.min(step, diff) // Don't overshoot
+          // Handle wraparound during animation
+          if (newTime >= 3600) newTime -= 3600
+          return newTime
         } else {
-          return Math.max(prevTime - step, targetTime)
+          let newTime = prevTime - Math.min(step, -diff) // Don't overshoot
+          // Handle wraparound during animation
+          if (newTime < 0) newTime += 3600
+          return newTime
         }
       })
     }
@@ -419,10 +437,12 @@ export function HollandTunnelDeterministic() {
   }
 
   // Get all visible vehicles
+  // Ensure displayTime is properly bounded to avoid edge cases
+  const boundedDisplayTime = displayTime % 3600
   const visibleVehicles = ALL_VEHICLES
     .map(vehicle => ({
       vehicle,
-      position: getVehiclePosition(vehicle, displayTime)
+      position: getVehiclePosition(vehicle, boundedDisplayTime)
     }))
     .filter(({ position }) => position !== null)
 
@@ -469,35 +489,102 @@ export function HollandTunnelDeterministic() {
     )
   }
 
-  // Color rectangles with interpolation
-  const renderColorRectangles = () => {
-    const rects = []
-    const currentSec = displayTime % 60
-    const interpolationFactor = currentSec / 60
+  // Calculate marker position based on speed and time
+  const calculateMarkerPosition = (startMinute: number, speed: number, currentTime: number, direction: 'east' | 'west'): number => {
+    const currentHour = Math.floor(currentTime / 3600)
+    const startTime = (currentHour * 3600) + (startMinute * 60)
     
-    // Eastbound rectangles
-    const eastPhase = getPhase(currentMinute, 'east')
-    const eastNextPhase = getPhase((currentMinute + 1) % 60, 'east')
-    
-    // Green rectangle for bikes
-    if (eastPhase === 'bikes-enter' || eastPhase === 'clearing' || 
-        eastNextPhase === 'bikes-enter' || eastNextPhase === 'clearing') {
-      let startProgress = 0
-      let endProgress = 0
+    // Check if marker hasn't started yet
+    if (currentTime < startTime) {
+      // Check if it might be from previous hour
+      const prevStartTime = ((currentHour - 1) * 3600) + (startMinute * 60)
+      const timeSincePrevStart = currentTime - prevStartTime
       
-      if (currentMinute >= 45 && currentMinute < 50) {
-        startProgress = Math.max(0, currentMinute - 45) / 5
-        endProgress = Math.min(1, (currentMinute + 1 - 45) / 5)
+      // If it's been too long since previous hour start, marker hasn't started
+      if (timeSincePrevStart > 600) { // 10 minutes max transit
+        return direction === 'east' ? LAYOUT.QUEUE_AREA_WIDTH : LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH
       }
       
-      const width = LAYOUT.TUNNEL_WIDTH * (startProgress + (endProgress - startProgress) * interpolationFactor)
-      if (width > 0) {
+      // Use previous hour timing
+      const distance = speed * timeSincePrevStart
+      return direction === 'east' ? 
+        LAYOUT.QUEUE_AREA_WIDTH + distance : 
+        LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH - distance
+    }
+    
+    const elapsedTime = currentTime - startTime
+    const distance = speed * elapsedTime
+    
+    return direction === 'east' ? 
+      LAYOUT.QUEUE_AREA_WIDTH + distance : 
+      LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH - distance
+  }
+  
+  // Calculate bike marker position (variable speed)
+  const calculateBikeMarkerPosition = (startMinute: number, currentTime: number, direction: 'east' | 'west'): number => {
+    const currentHour = Math.floor(currentTime / 3600)
+    const startTime = (currentHour * 3600) + (startMinute * 60)
+    
+    // Check if marker hasn't started yet
+    if (currentTime < startTime) {
+      // Check if it might be from previous hour
+      const prevStartTime = ((currentHour - 1) * 3600) + (startMinute * 60)
+      const timeSincePrevStart = currentTime - prevStartTime
+      
+      // If it's been too long since previous hour start, marker hasn't started
+      if (timeSincePrevStart > 600) { // 10 minutes max transit
+        return direction === 'east' ? LAYOUT.QUEUE_AREA_WIDTH : LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH
+      }
+      
+      // Use previous hour timing
+      return calculateBikeDistance(timeSincePrevStart, direction)
+    }
+    
+    const elapsedTime = currentTime - startTime
+    return calculateBikeDistance(elapsedTime, direction)
+  }
+  
+  // Helper to calculate bike distance with variable speed
+  const calculateBikeDistance = (elapsedTime: number, direction: 'east' | 'west'): number => {
+    const halfwayTime = (LAYOUT.TUNNEL_WIDTH / 2) / SPEEDS.BIKE_DOWNHILL
+    let distance
+    
+    if (elapsedTime <= halfwayTime) {
+      distance = SPEEDS.BIKE_DOWNHILL * elapsedTime
+    } else {
+      distance = (LAYOUT.TUNNEL_WIDTH / 2) + SPEEDS.BIKE_UPHILL * (elapsedTime - halfwayTime)
+    }
+    
+    const x = direction === 'east' ? 
+      LAYOUT.QUEUE_AREA_WIDTH + distance : 
+      LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH - distance
+    
+    // Clamp to tunnel bounds
+    return Math.max(LAYOUT.QUEUE_AREA_WIDTH, Math.min(LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH, x))
+  }
+
+  // Color rectangles as fills between markers
+  const renderColorRectangles = () => {
+    const rects = []
+    
+    // Eastbound markers
+    const eastMarker1 = calculateMarkerPosition(45, SPEEDS.CAR, boundedDisplayTime, 'east')
+    const eastMarker2 = calculateBikeMarkerPosition(48, boundedDisplayTime, 'east')
+    const eastMarker3 = calculateMarkerPosition(50, SPEEDS.SWEEP, boundedDisplayTime, 'east')
+    const eastMarker4 = calculateMarkerPosition(55, SPEEDS.CAR, boundedDisplayTime, 'east')
+    
+    // Green rectangle between marker 2 (trailing) and marker 1 (leading)
+    // Clamp start to tunnel entrance
+    if (eastMarker1 > eastMarker2 && eastMarker2 >= LAYOUT.QUEUE_AREA_WIDTH) {
+      const startX = Math.max(eastMarker2, LAYOUT.QUEUE_AREA_WIDTH)
+      const endX = eastMarker1
+      if (endX > startX) {
         rects.push(
           <rect
             key="east-green"
-            x={LAYOUT.QUEUE_AREA_WIDTH}
+            x={startX}
             y={230}
-            width={width}
+            width={endX - startX}
             height={LAYOUT.LANE_HEIGHT}
             fill="#28a745"
           />
@@ -505,69 +592,53 @@ export function HollandTunnelDeterministic() {
       }
     }
     
-    // Yellow rectangle for clearing zone behind bikes
-    // Shows the "clearing" zone that must be kept clear before sweep enters
-    if (currentMinute >= 48 && currentMinute < 50) {
-      // At :48-:49, show yellow zone that will become red at :50
-      // This represents the area being cleared for the sweep
-      const clearingProgress = (currentMinute + interpolationFactor - 48) / 2 // 2 minutes of clearing
-      const yellowWidth = LAYOUT.TUNNEL_WIDTH * 0.3 * clearingProgress // Up to 30% of tunnel for clearing zone
-      
-      if (yellowWidth > 0) {
-        rects.push(
-          <rect
-            key="east-yellow"
-            x={LAYOUT.QUEUE_AREA_WIDTH}
-            y={230}
-            width={yellowWidth}
-            height={LAYOUT.LANE_HEIGHT}
-            fill="#ffc107"
-          />
-        )
-      }
+    // Yellow rectangle between marker 3 (trailing) and marker 2 (leading)
+    if (eastMarker2 > eastMarker3 && eastMarker3 >= LAYOUT.QUEUE_AREA_WIDTH) {
+      rects.push(
+        <rect
+          key="east-yellow"
+          x={eastMarker3}
+          y={230}
+          width={eastMarker2 - eastMarker3}
+          height={LAYOUT.LANE_HEIGHT}
+          fill="#ffc107"
+        />
+      )
     }
     
-    // Red rectangle for sweep DMZ
-    if (currentMinute >= 50) {
-      const sweepProgress = (currentMinute - 50 + interpolationFactor) / 10
-      const width = LAYOUT.TUNNEL_WIDTH * sweepProgress
-      if (width > 0) {
-        rects.push(
-          <rect
-            key="east-red"
-            x={LAYOUT.QUEUE_AREA_WIDTH}
-            y={230}
-            width={width}
-            height={LAYOUT.LANE_HEIGHT}
-            fill="#dc3545"
-          />
-        )
-      }
+    // Red rectangle between marker 4 (trailing) and marker 3 (leading)
+    if (eastMarker3 > eastMarker4 && eastMarker4 >= LAYOUT.QUEUE_AREA_WIDTH) {
+      rects.push(
+        <rect
+          key="east-red"
+          x={eastMarker4}
+          y={230}
+          width={eastMarker3 - eastMarker4}
+          height={LAYOUT.LANE_HEIGHT}
+          fill="#dc3545"
+        />
+      )
     }
     
-    // Westbound rectangles (30 minute offset)
-    const westPhase = getPhase(currentMinute, 'west')
-    const westNextPhase = getPhase((currentMinute + 1) % 60, 'west')
+    // Westbound markers (30 minute offset)
+    const westMarker1 = calculateMarkerPosition(15, SPEEDS.CAR, boundedDisplayTime, 'west')
+    const westMarker2 = calculateBikeMarkerPosition(18, boundedDisplayTime, 'west')
+    const westMarker3 = calculateMarkerPosition(20, SPEEDS.SWEEP, boundedDisplayTime, 'west')
+    const westMarker4 = calculateMarkerPosition(25, SPEEDS.CAR, boundedDisplayTime, 'west')
     
-    // Green rectangle for bikes
-    if (westPhase === 'bikes-enter' || westPhase === 'clearing' || 
-        westNextPhase === 'bikes-enter' || westNextPhase === 'clearing') {
-      let startProgress = 0
-      let endProgress = 0
-      
-      if (currentMinute >= 15 && currentMinute < 20) {
-        startProgress = Math.max(0, currentMinute - 15) / 5
-        endProgress = Math.min(1, (currentMinute + 1 - 15) / 5)
-      }
-      
-      const width = LAYOUT.TUNNEL_WIDTH * (startProgress + (endProgress - startProgress) * interpolationFactor)
-      if (width > 0) {
+    // Green rectangle between marker 2 (trailing) and marker 1 (leading)
+    // For westbound, marker1 < marker2 when marker1 is ahead
+    // Clamp both start and end to tunnel boundaries
+    if (westMarker1 < westMarker2 && westMarker2 <= LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH) {
+      const startX = Math.max(westMarker1, LAYOUT.QUEUE_AREA_WIDTH) // Don't extend past left tunnel entrance
+      const endX = Math.min(westMarker2, LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH)
+      if (endX > startX) {
         rects.push(
           <rect
             key="west-green"
-            x={LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH - width}
+            x={startX}
             y={130}
-            width={width}
+            width={endX - startX}
             height={LAYOUT.LANE_HEIGHT}
             fill="#28a745"
           />
@@ -575,44 +646,32 @@ export function HollandTunnelDeterministic() {
       }
     }
     
-    // Yellow rectangle for clearing zone behind bikes
-    // Shows the "clearing" zone that must be kept clear before sweep enters
-    if (currentMinute >= 18 && currentMinute < 20) {
-      // At :18-:19, show yellow zone that will become red at :20
-      // This represents the area being cleared for the sweep
-      const clearingProgress = (currentMinute + interpolationFactor - 18) / 2 // 2 minutes of clearing
-      const yellowWidth = LAYOUT.TUNNEL_WIDTH * 0.3 * clearingProgress // Up to 30% of tunnel for clearing zone
-      
-      if (yellowWidth > 0) {
-        rects.push(
-          <rect
-            key="west-yellow"
-            x={LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH - yellowWidth}
-            y={130}
-            width={yellowWidth}
-            height={LAYOUT.LANE_HEIGHT}
-            fill="#ffc107"
-          />
-        )
-      }
+    // Yellow rectangle between marker 3 (trailing) and marker 2 (leading)
+    if (westMarker2 < westMarker3 && westMarker3 <= LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH) {
+      rects.push(
+        <rect
+          key="west-yellow"
+          x={westMarker2}
+          y={130}
+          width={westMarker3 - westMarker2}
+          height={LAYOUT.LANE_HEIGHT}
+          fill="#ffc107"
+        />
+      )
     }
     
-    // Red rectangle for sweep DMZ
-    if (currentMinute >= 20 && currentMinute < 30) {
-      const sweepProgress = (currentMinute - 20 + interpolationFactor) / 10
-      const width = LAYOUT.TUNNEL_WIDTH * sweepProgress
-      if (width > 0) {
-        rects.push(
-          <rect
-            key="west-red"
-            x={LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH - width}
-            y={130}
-            width={width}
-            height={LAYOUT.LANE_HEIGHT}
-            fill="#dc3545"
-          />
-        )
-      }
+    // Red rectangle between marker 4 (trailing) and marker 3 (leading)
+    if (westMarker3 < westMarker4 && westMarker4 <= LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH) {
+      rects.push(
+        <rect
+          key="west-red"
+          x={westMarker3}
+          y={130}
+          width={westMarker4 - westMarker3}
+          height={LAYOUT.LANE_HEIGHT}
+          fill="#dc3545"
+        />
+      )
     }
     
     return rects
@@ -627,7 +686,20 @@ export function HollandTunnelDeterministic() {
         <div className="header-left">
           <h1>Holland Tunnel Bike Lane Concept</h1>
           <div className="controls">
-            <button onClick={() => setIsPaused(!isPaused)}>
+            <button onClick={() => {
+              setIsPaused(!isPaused)
+              // Update URL when pausing
+              if (!isPaused) {
+                const url = new URL(window.location.href)
+                url.searchParams.set('t', currentMinute.toString())
+                window.history.replaceState({}, '', url.toString())
+              } else {
+                // Clear URL param when playing
+                const url = new URL(window.location.href)
+                url.searchParams.delete('t')
+                window.history.replaceState({}, '', url.toString())
+              }
+            }}>
               {isPaused ? 'Play' : 'Pause'}
             </button>
             <label>

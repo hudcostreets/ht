@@ -1,8 +1,8 @@
-import { HollandTunnelDeterministic } from './components/HollandTunnelDeterministic'
+import { HollandTunnel } from './components/HollandTunnel'
 import './App.css'
 
 function App() {
-  return <HollandTunnelDeterministic />
+  return <HollandTunnel />
 }
 
 export default App

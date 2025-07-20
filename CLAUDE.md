@@ -54,6 +54,11 @@ pnpm run lint     # Run linter
 - Cannot use `open` command to open browsers
 - Cannot take screenshots directly - need to use headless browser tools
 
+## Taking Screenshots
+- Use `node take-screenshots.mjs <minute1> <minute2> ...` to capture specific minutes
+- Assumes dev server is already running at localhost:5173
+- Screenshots are saved to `tmp/XX.png` where XX is the minute
+
 ## Key Files
 - `src/components/HollandTunnelDeterministic.tsx` - Main visualization component
 - `src/components/AnalogClock.tsx` - Animated clock display
