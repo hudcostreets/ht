@@ -7,16 +7,16 @@ export type Direction = 'east' | 'west'
 
 export interface TunnelConfig {
   direction: Direction
-  offsetMinute: number
-  lengthMiles: number
-  carSpeed: number
-  bikeUphillSpeed: number
-  bikeDownhillSpeed: number
-  penOpenMinutes: number
-  bikesPerMinute: number
-  carsPerMinute: number
+  offsetMin: number
+  lengthMi: number
+  carMph: number
+  bikeUpMph: number
+  bikeDownMph: number
+  penCloseMin: number
+  bikesPerMin: number
+  carsPerMin: number
   bikesReleasedPerMin: number
-  paceCarStartTime: number
+  paceCarStartMin: number
 
   // Layout
   laneWidthPx: number
@@ -25,18 +25,17 @@ export interface TunnelConfig {
   penRelativeY: number   // Relative to R lane start
   penWidthPx: number
   penHeightPx: number
-  exitFadeDistance: number  // Distance to travel while fading out after tunnel exit
+  fadeDistance: number  // Distance to travel while fading out after tunnel exit
+  queuedCarWidthPx: number
 }
 
 // export type Phase = 'cars' | 'pen-open' | 'pen-closed' | 'sweep' | 'pace-car'
 
-export type State = 'origin' | 'pen' | 'staging' | 'tunnel' | 'exiting' | 'done'
-
-export interface TimePos {
-  time: number
+export interface TimePos<S extends String> {
+  mins: number
   x: number
   y: number
-  state: State
+  state: S
   opacity: number
 }
 
@@ -50,16 +49,19 @@ export class Tunnel {
   public ncars: number
   public l: Lane
   public r: Lane
+  public nQueueCars0: number  // Number of cars that queue on spawn before pace car departs
+  public nQueueCars1: number  // Number of cars that queue on spawn after pace car departs
+  public nQueueCars: number   // Number of cars that queue on spawn (total, before and after pace car)
   
   constructor(config: TunnelConfig) {
     this.config = config
-    const { bikesPerMinute, carsPerMinute, laneWidthPx, laneHeightPx, direction } = config
+    const { bikesPerMin, carsPerMin, laneWidthPx, laneHeightPx, direction, paceCarStartMin, carMph, lengthMi, queuedCarWidthPx, } = config
     this.dir = direction
     this.d = direction === 'east' ? 1 : -1
-    this.nbikes = 60 * bikesPerMinute
+    this.nbikes = 60 * bikesPerMin
 
     // Create lanes
-    const exitFadeDistance = config.exitFadeDistance * this.d
+    const exitFadeDistance = config.fadeDistance * this.d
     const start = direction === 'east' ? 0 : laneWidthPx
     const end = direction === 'east' ? laneWidthPx : 0
     this.l = new Lane({
@@ -82,49 +84,82 @@ export class Tunnel {
     }
 
     // Create cars
-    this.ncars = 60 * carsPerMinute
+    this.ncars = 60 * carsPerMin
+    const rcars: Car[] = []
     for (let i = 0; i < this.ncars; i++) {
       this.cars.push(new Car(this, 60 * (i + .5) / this.ncars, 'L'))
-      this.cars.push(new Car(this, 60 * i / this.ncars, 'R'))
+      const rcar = new Car(this, 60 * i / this.ncars, 'R')
+      rcars.push(rcar)
+      this.cars.push(rcar)
     }
 
-    // const { penOpenMinutes } = config
-    // const phases = [
-    //   { start: 0, phase: 'bikes-enter' },
-    //   { start: penOpenMinutes, phase: 'clearing' },
-    //   { start: 5, phase: 'sweep' },
-    //   { start: 10, phase: 'pace-car' },
-    //   { start: 15, phase: 'cars' }
-    // ]
+    // Compute nQueueCars{0,1} by iteratively dequeueing rcars, and enqueueing any that would have spawned during the time that took
+    this.nQueueCars0 = 0
+    this.nQueueCars1 = 0
+    this.nQueueCars = 0
+    const carPxPerMin = carMph * laneWidthPx / lengthMi * 60
+    let dequeueEndMin = paceCarStartMin
+    let carIdx = 0
+    let nQueueCars = 0
+    let carQueueStartIdx = 0
+    while (carIdx < rcars.length) {
+      const rcar = rcars[carIdx]
+
+      // If the car spawns before the dequeue end, it is queued
+      if (rcar.spawnMin < dequeueEndMin) {
+        // If this is the first car in the queue, set nQueueCars0
+        if (carQueueStartIdx === 0) {
+          this.nQueueCars0++
+        } else {
+          this.nQueueCars1++
+        }
+        nQueueCars++
+        carIdx++
+      } else {
+        // Dequeue cars until we reach the next spawn time
+        const queueEndPx = nQueueCars * queuedCarWidthPx
+        let dequeueStartMin = dequeueEndMin
+        dequeueEndMin += queueEndPx / carPxPerMin
+
+        // Update nQueueCars and reset for next iteration
+        this.nQueueCars += nQueueCars
+        nQueueCars = 0
+        carQueueStartIdx = carIdx
+      }
+    }
   }
-  
+
+  public get offset(): number {
+    return this.config.offsetMin
+  }
+
   // Convert absolute time to tunnel-relative time
   relMins(absMins: number): number {
     const relMins = absMins - Math.floor(absMins / 60) * 60
     
     // Shift time so that our offset minute becomes "minute 0"
-    const shiftedMins = relMins - this.config.offsetMinute
+    const shiftedMins = relMins - this.config.offsetMin
     
     // Handle negative wrap-around (e.g. if we're at :10 and offset is :15)
     return (shiftedMins < 0) ? shiftedMins + 60 : shiftedMins
   }
   
   // Convert tunnel-relative time back to absolute
-  absMins(relMins: number, hourBaseMins: number): number {
-    const hourInMins = Math.floor(hourBaseMins / 60) * 60
-    const absMins = hourInMins + relMins + this.config.offsetMinute
-    
-    // Handle overflow
-    return (absMins >= hourInMins + 60) ? absMins - 60 : absMins
-  }
+  // absMins(relMins: number, hourBaseMins: number): number {
+  //   const hourInMins = Math.floor(hourBaseMins / 60) * 60
+  //   const absMins = hourInMins + relMins + this.config.offsetMin
+  //
+  //   // Handle overflow
+  //   return (absMins >= hourInMins + 60) ? absMins - 60 : absMins
+  // }
   
   // Get phase at relative time (0 = pen opens)
   getPhase(relMins: number): 'normal' | 'bikes-enter' | 'clearing' | 'sweep' | 'pace-car' {
     const minute = Math.floor(relMins)
     
-    if (minute >= 0 && minute < this.config.penOpenMinutes) {
+    if (minute >= 0 && minute < this.config.penCloseMin) {
       return 'bikes-enter'
-    } else if (minute >= this.config.penOpenMinutes && minute < 5) {
+    } else if (minute >= this.config.penCloseMin && minute < 5) {
       return 'clearing'
     } else if (minute >= 5 && minute < 10) {
       return 'sweep'
