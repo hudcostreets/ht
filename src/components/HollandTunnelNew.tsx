@@ -70,7 +70,7 @@ export function HollandTunnelNew() {
         }
         
         // Linear transition: move at constant speed
-        const step = 8 // Seconds per frame (moderate transition speed)
+        const step = 8
         if (diff > 0) {
           let newTime = prevTime + Math.min(step, diff) // Don't overshoot
           // Handle wraparound during animation
@@ -138,9 +138,11 @@ export function HollandTunnelNew() {
   }, [isPaused, isTransitioning, targetTime, displayTime, setIsPaused])
 
   // Get current vehicles and phases
-  const vehicles = tunnels.getAllVehicles(displayTime)
-  const phases = tunnels.getPhases(displayTime)
-  const colorRectangles = tunnels.getColorRectangles(displayTime)
+  // Convert displayTime from seconds to minutes for the model
+  const displayTimeInMinutes = displayTime / 60
+  const vehicles = tunnels.getAllVehicles(displayTimeInMinutes)
+  const phases = tunnels.getPhases(displayTimeInMinutes)
+  const colorRectangles = tunnels.getColorRectangles(displayTimeInMinutes)
 
   // Handle timeline click
   const handleTimelineClick = (minute: number) => {

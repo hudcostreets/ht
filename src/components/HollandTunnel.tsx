@@ -13,9 +13,6 @@ interface SpecialVehicle extends VehicleData {
   instance?: VehicleClass;
 }
 
-// Convert our internal time to model time (seconds)
-const toModelTime = (displayTime: number): number => displayTime
-
 // Precompute all vehicles
 const createVehicles = (): SpecialVehicle[] => {
   const vehicles: SpecialVehicle[] = []
@@ -55,7 +52,7 @@ const createVehicles = (): SpecialVehicle[] => {
     // Set queue position for eastbound cars that queue
     if (minute >= 45 && minute <= 57) {
       eastCar2.queuePosition = minute - 45
-      eastCar2.paceCarStartTime = 55 // Pace car starts at :55
+      eastCar2.paceCarStartMins = 55 // Pace car starts at :55
     }
     
     const westCar2: CarData = { 
@@ -69,7 +66,7 @@ const createVehicles = (): SpecialVehicle[] => {
     // Set queue position for westbound cars that queue
     if (minute >= 15 && minute <= 27) {
       westCar2.queuePosition = minute - 15
-      westCar2.paceCarStartTime = 25 // Pace car starts at :25
+      westCar2.paceCarStartMins = 25 // Pace car starts at :25
     }
     
     vehicles.push(
@@ -301,13 +298,13 @@ export function HollandTunnel() {
   const getVehiclePosition = (vehicle: SpecialVehicle, time: number): VehiclePosition | null => {
     // For vehicles with instances, use their getPosition method
     if (vehicle.instance) {
-      return vehicle.instance.getPosition(toModelTime(time))
+      return vehicle.instance.getPosition(time)
     }
     
     // For special vehicles, interpolate between minute positions
     const currentSec = time % 60
-    const currentMinuteTime = Math.floor(time / 60) * 60
-    const nextMinuteTime = (currentMinuteTime + 60) % 3600
+    const currentMinuteTime = Math.floor(time)
+    const nextMinuteTime = (currentMinuteTime + 1) % 60
     
     const currentPos = getSpecialVehiclePosition(vehicle, currentMinuteTime)
     const nextPos = getSpecialVehiclePosition(vehicle, nextMinuteTime)
@@ -352,7 +349,7 @@ export function HollandTunnel() {
         }
         
         // Linear transition: move at constant speed
-        const step = 8 // Seconds per frame (moderate transition speed)
+        const step = 8
         if (diff > 0) {
           let newTime = prevTime + Math.min(step, diff) // Don't overshoot
           // Handle wraparound during animation

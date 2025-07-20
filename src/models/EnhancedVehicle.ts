@@ -4,23 +4,23 @@ import type { VehicleData, VehiclePosition } from './Vehicle'
 // Extended car data that includes queue information
 export interface CarData extends VehicleData {
   queuePosition?: number;
-  paceCarStartTime?: number;
+  paceCarStartMins?: number;
 }
 
 // Enhanced Car class that handles moving queue logic
 export class Car extends BaseCar {
   private queuePosition?: number
-  private paceCarStartTime?: number
+  private paceCarStartMins?: number
   
   constructor(data: CarData) {
     super(data)
     this.queuePosition = data.queuePosition
-    this.paceCarStartTime = data.paceCarStartTime
+    this.paceCarStartMins = data.paceCarStartMins
   }
   
   getPosition(time: number): VehiclePosition | null {
-    const currentHour = Math.floor(time / 3600)
-    const spawnTime = (currentHour * 3600) + (this.data.spawnMinute * 60)
+    const currentHour = Math.floor(time / 60)
+    const spawnTime = (currentHour * 60) + this.data.spawnMinute
     
     // Check if we're within 1 minute of spawn time
     if (time < spawnTime - 60) {
@@ -29,11 +29,11 @@ export class Car extends BaseCar {
       const timeSincePrevSpawn = time - prevHourSpawnTime
       
       // Calculate maximum transit time for a car
-      const tunnelTransitTime = (LAYOUT.TUNNEL_LENGTH_MILES / 24) * 3600
-      const totalTransitTime = tunnelTransitTime + 120 // Add time for fade zones
+      const tunnelTransitMins = (LAYOUT.TUNNEL_LENGTH_MILES / SPEEDS.CAR) * 60
+      const totalTransitMins = tunnelTransitMins + 2
       
       // If the car could still be in transit from previous hour, continue processing
-      if (timeSincePrevSpawn > totalTransitTime + 60) {
+      if (timeSincePrevSpawn > totalTransitMins + 60) {
         return null
       }
       
@@ -45,8 +45,6 @@ export class Car extends BaseCar {
   }
   
   private getPositionForSpawnTime(time: number, spawnTime: number, spawnHour: number): VehiclePosition | null {
-    const currentHour = Math.floor(time / 3600)
-    
     // If we're before spawn time but within fade-in period, car is fading in
     if (time < spawnTime && time >= spawnTime - 60) {
       const timeUntilSpawn = spawnTime - time
@@ -55,9 +53,9 @@ export class Car extends BaseCar {
       // Check if queue is currently draining (pace car has started)
       const isQueueDraining = this.isQueueCurrentlyDraining(time, spawnHour)
       
-      if (isQueueDraining && this.paceCarStartTime && this.queuePosition !== undefined) {
+      if (isQueueDraining && this.paceCarStartMins && this.queuePosition !== undefined) {
         // Calculate position in the moving queue
-        const paceStartTime = (spawnHour * 3600) + (this.paceCarStartTime * 60)
+        const paceStartTime = (spawnHour * 60) + this.paceCarStartMins
         const elapsedSincePaceStart = Math.max(0, time - paceStartTime)
         const paceDistance = SPEEDS.CAR * elapsedSincePaceStart
         
@@ -128,8 +126,8 @@ export class Car extends BaseCar {
     let enterTime = spawnTime
     
     // Check if this car should be in a queue
-    if (this.queuePosition !== undefined && this.paceCarStartTime) {
-      const paceStartTime = (spawnHour * 3600) + (this.paceCarStartTime * 60)
+    if (this.queuePosition !== undefined && this.paceCarStartMins) {
+      const paceStartTime = (spawnHour * 60) + this.paceCarStartMins
       
       if (time >= paceStartTime) {
         // Pace car has started, all queued cars move together
@@ -152,10 +150,10 @@ export class Car extends BaseCar {
           paceCarInitialX - distance + carOffsetFromPace
         
         // Handle fade out
-        const tunnelTransitTime = (LAYOUT.TUNNEL_LENGTH_MILES / 24) * 3600
-        const totalTransitTime = tunnelTransitTime + 120
+        const tunnelTransitMins = (LAYOUT.TUNNEL_LENGTH_MILES / SPEEDS.CAR) * 60
+        const totalTransitMins = tunnelTransitMins + 2
         
-        if (travelTime > totalTransitTime) return null
+        if (travelTime > totalTransitMins) return null
         
         return this.calculatePositionWithFade(x)
       } else if (time >= spawnTime) {
@@ -232,8 +230,8 @@ export class Car extends BaseCar {
       LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + baseOffset + (queueIndex * queueSpacing)
     
     // If queue is draining and we have time info, adjust position
-    if (time && spawnHour && this.isQueueCurrentlyDraining(time, spawnHour) && this.paceCarStartTime) {
-      const paceStartTime = (spawnHour * 3600) + (this.paceCarStartTime * 60)
+    if (time && spawnHour && this.isQueueCurrentlyDraining(time, spawnHour) && this.paceCarStartMins) {
+      const paceStartTime = (spawnHour * 3600) + (this.paceCarStartMins * 60)
       const elapsedSincePaceStart = Math.max(0, time - paceStartTime)
       
       // Calculate how far the front of the queue has moved
@@ -275,9 +273,9 @@ export class Car extends BaseCar {
   }
   
   private isQueueCurrentlyDraining(time: number, spawnHour: number): boolean {
-    if (!this.paceCarStartTime) return false
+    if (!this.paceCarStartMins) return false
     
-    const paceStartTime = (spawnHour * 3600) + (this.paceCarStartTime * 60)
+    const paceStartTime = (spawnHour * 3600) + (this.paceCarStartMins * 60)
     
     // Queue is draining once pace car has started
     if (this.data.direction === 'east') {

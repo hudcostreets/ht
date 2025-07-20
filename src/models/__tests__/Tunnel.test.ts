@@ -13,28 +13,28 @@ describe('Tunnel', () => {
     describe('Time conversion', () => {
       it('should convert absolute time to relative time correctly', () => {
         // At 45 minutes (pen opens), relative time should be 0
-        expect(eastbound.reltime(45 * 60)).toBe(0)
+        expect(eastbound.reltime(45)).toBe(0)
         
-        // At 46 minutes, relative time should be 60 seconds
-        expect(eastbound.reltime(46 * 60)).toBe(60)
+        // At 46 minutes, relative time should be 1
+        expect(eastbound.reltime(46)).toBe(1)
         
         // At 44 minutes (before pen opens), should wrap around
-        expect(eastbound.reltime(44 * 60)).toBe(59 * 60) // 59 minutes later in relative time
+        expect(eastbound.reltime(44)).toBe(59) // 59 minutes later in relative time
         
         // Hour boundaries
-        expect(eastbound.reltime(3600 + 45 * 60)).toBe(0) // Next hour, minute 45
+        expect(eastbound.reltime(60 + 45)).toBe(0) // Next hour, minute 45
       })
     })
     
     describe('Phase detection', () => {
       it('should return correct phases for relative times', () => {
         expect(eastbound.getPhase(0)).toBe('bikes-enter') // :45 (minute 0 relative)
-        expect(eastbound.getPhase(60)).toBe('bikes-enter') // :46 (minute 1 relative)
-        expect(eastbound.getPhase(120)).toBe('bikes-enter') // :47 (minute 2 relative)
-        expect(eastbound.getPhase(180)).toBe('clearing') // :48 (minute 3 relative)
-        expect(eastbound.getPhase(300)).toBe('sweep') // :50 (minute 5 relative)
-        expect(eastbound.getPhase(600)).toBe('pace-car') // :55 (minute 10 relative)
-        expect(eastbound.getPhase(900)).toBe('normal') // :00 (minute 15 relative)
+        expect(eastbound.getPhase(1)).toBe('bikes-enter') // :46 (minute 1 relative)
+        expect(eastbound.getPhase(2)).toBe('bikes-enter') // :47 (minute 2 relative)
+        expect(eastbound.getPhase(3)).toBe('clearing') // :48 (minute 3 relative)
+        expect(eastbound.getPhase(5)).toBe('sweep') // :50 (minute 5 relative)
+        expect(eastbound.getPhase(10)).toBe('pace-car') // :55 (minute 10 relative)
+        expect(eastbound.getPhase(15)).toBe('normal') // :00 (minute 15 relative)
       })
     })
     
@@ -43,14 +43,10 @@ describe('Tunnel', () => {
         const firstBike = eastbound.bikes[0] // Spawns at :00
         
         // At pen opening (:45), first bike should be released immediately
-        const position = firstBike.getPos(45 * 60)
+        const position = firstBike.getPos(45)
         expect(position).toBeTruthy()
-        expect(position!.state).toBe('staging') // Now in staging state during transition
-        
-        // After 3 second transition, should be at tunnel entrance
-        const positionAfterTransition = firstBike.getPos(45 * 60 + 3)
-        expect(positionAfterTransition!.x).toBe(0) // At tunnel entrance
-        expect(positionAfterTransition!.state).toBe('tunnel')
+        expect(position!.state).toBe('tunnel') // Now at tunnel entrance
+        expect(position!.x).toBe(0) // At tunnel entrance
       })
       
       it('should stagger bike releases correctly', () => {
