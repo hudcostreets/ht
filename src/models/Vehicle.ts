@@ -236,18 +236,87 @@ export class Bike extends Vehicle {
   private readonly fadeZone = 50
   
   getPosition(time: number): VehiclePosition | null {
-    // Bikes spawn every 4 minutes (15 total per hour)
-    const bikeSpawnMinute = this.data.spawnMinute * 4
     const currentHour = Math.floor(time / 3600)
+    const spawnTime = (currentHour * 3600) + (this.data.spawnMinute * 60)
     const minuteInHour = Math.floor(time / 60) % 60
     
-    // Only spawn first 14 bikes (0-13)
-    if (this.data.spawnMinute > 13 || bikeSpawnMinute > minuteInHour) return null
+    // Bike hasn't spawned yet
+    if (time < spawnTime) return null
     
-    // Determine release time based on phase
+    // Determine bike pen window and release time
+    const penOpenMinute = this.data.direction === 'east' ? 45 : 15
+    const penCloseMinute = this.data.direction === 'east' ? 48 : 18
     const releaseMinute = this.data.direction === 'east' ? 45 : 15
     const releaseTime = (currentHour * 3600) + (releaseMinute * 60)
     
+    // Check if this bike arrives during the pen window (can join traveling group)
+    const arrivesDuringPenWindow = this.data.spawnMinute >= penOpenMinute && this.data.spawnMinute < penCloseMinute
+    
+    // Bikes that arrive DURING pen window can join the traveling group directly
+    if (arrivesDuringPenWindow) {
+      // Calculate when they join the traveling group (immediately at spawn time)
+      const joinTime = spawnTime
+      
+      if (time < joinTime) {
+        return null // Haven't spawned yet
+      }
+      
+      // Calculate position in the traveling group
+      const travelTime = time - joinTime
+      const groupStartTime = releaseTime
+      const groupTravelTime = time - groupStartTime
+      
+      // Calculate how far the group has traveled from tunnel entrance
+      let groupDistance = 0
+      if (groupTravelTime > 0) {
+        const halfwayTime = (LAYOUT.TUNNEL_WIDTH / 2) / SPEEDS.BIKE_DOWNHILL
+        if (groupTravelTime <= halfwayTime) {
+          groupDistance = SPEEDS.BIKE_DOWNHILL * groupTravelTime
+        } else {
+          groupDistance = (LAYOUT.TUNNEL_WIDTH / 2) + SPEEDS.BIKE_UPHILL * (groupTravelTime - halfwayTime)
+        }
+      }
+      
+      // This bike joins at the back of the group
+      const joinOffset = 20 // meters behind the group
+      const bikeDistance = Math.max(0, groupDistance - joinOffset)
+      
+      const x = this.data.direction === 'east' ? 
+        this.getTunnelEntrance() + bikeDistance : 
+        this.getTunnelEntrance() - bikeDistance
+      
+      return this.calculateBikePositionWithFade(x)
+    }
+    
+    // Bikes that arrive OUTSIDE pen window go to pen to wait
+    if (this.data.spawnMinute >= penCloseMinute) {
+      // Late arrivals go to pen and wait for their turn to be released
+      
+      // They must spawn first
+      if (time < spawnTime) {
+        return null
+      }
+      
+      // Late arrivals wait for the NEXT cycle (30 minutes later)
+      const nextCycleReleaseTime = releaseTime + (30 * 60) // 30 minutes later
+      const lateArrivalOrder = this.data.spawnMinute - penCloseMinute
+      const releaseDelay = lateArrivalOrder * 12
+      const actualReleaseTime = nextCycleReleaseTime + releaseDelay
+      
+      // Stay in pen until their release time
+      if (time < actualReleaseTime) {
+        return this.getPenPosition()
+      }
+      
+      // Moving through tunnel
+      const travelTime = time - actualReleaseTime
+      return this.calculateMovingPosition(travelTime)
+    }
+    
+    // Early bikes (arrive before pen opens) - only bikes before pen opens
+    if (this.data.spawnMinute >= penOpenMinute) return null
+    
+    // These are the original traveling bikes, released sequentially starting at :45/:15
     if (time < releaseTime) {
       return this.getPenPosition()
     }
@@ -263,9 +332,9 @@ export class Bike extends Vehicle {
       }
     }
     
-    // Calculate release timing (5 per minute = 12 seconds apart)
-    const releaseOrder = this.data.spawnMinute
-    const releaseDelay = releaseOrder * 12
+    // Calculate release timing for early bikes (need to convert back to index for release order)
+    const releaseOrder = this.data.spawnMinute / 4
+    const releaseDelay = releaseOrder * 12 // 5 per minute = 12 seconds apart
     const actualReleaseTime = releaseTime + releaseDelay
     
     if (time < actualReleaseTime) {
@@ -278,9 +347,22 @@ export class Bike extends Vehicle {
   }
   
   private getPenPosition(): VehiclePosition {
+    // Calculate position index for pen arrangement
+    const penOpenMinute = this.data.direction === 'east' ? 45 : 15
+    const penCloseMinute = this.data.direction === 'east' ? 48 : 18
+    let positionIndex: number
+    
+    if (this.data.spawnMinute >= penCloseMinute) {
+      // Late arrivals (after pen window) - arrange after the traveling group
+      positionIndex = 15 + (this.data.spawnMinute - penCloseMinute)
+    } else {
+      // Early bikes (traveling group) - arrange by their order (convert back to index)
+      positionIndex = this.data.spawnMinute / 4
+    }
+    
     // Arrange bikes in a 3x5 grid
-    const row = Math.floor(this.data.spawnMinute / 3)
-    const col = this.data.spawnMinute % 3
+    const row = Math.floor(positionIndex / 3)
+    const col = positionIndex % 3
     
     const penX = this.data.direction === 'east' ? 70 : LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + 70
     const penY = this.data.direction === 'east' ? 310 : 60
@@ -290,6 +372,36 @@ export class Bike extends Vehicle {
       y: penY + (row * 15) - 30,
       state: 'pen',
       opacity: 1
+    }
+  }
+  
+  private calculateBikePositionWithFade(x: number): VehiclePosition | null {
+    // Check if exited
+    if ((this.data.direction === 'east' && x > LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + this.fadeZone) ||
+        (this.data.direction === 'west' && x < LAYOUT.QUEUE_AREA_WIDTH - this.fadeZone)) {
+      return null
+    }
+    
+    // Calculate opacity for fade out at exit
+    let opacity = 1
+    if (this.data.direction === 'east') {
+      if (x > LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH) {
+        opacity = Math.max(0, (LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + this.fadeZone - x) / this.fadeZone)
+      }
+    } else {
+      if (x < LAYOUT.QUEUE_AREA_WIDTH) {
+        opacity = Math.max(0, (x - (LAYOUT.QUEUE_AREA_WIDTH - this.fadeZone)) / this.fadeZone)
+      }
+    }
+    
+    const state = x < LAYOUT.QUEUE_AREA_WIDTH || x > LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH ? 
+      'exiting' : 'tunnel'
+    
+    return { 
+      x, 
+      y: getLaneY(this.data.direction, this.data.lane), 
+      state, 
+      opacity 
     }
   }
   
@@ -310,7 +422,7 @@ export class Bike extends Vehicle {
     
     // Check if exited
     if ((this.data.direction === 'east' && x > LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + this.fadeZone) ||
-        (this.data.direction === 'west' && x < -this.fadeZone)) {
+        (this.data.direction === 'west' && x < LAYOUT.QUEUE_AREA_WIDTH - this.fadeZone)) {
       return null
     }
     
@@ -322,7 +434,7 @@ export class Bike extends Vehicle {
       }
     } else {
       if (x < LAYOUT.QUEUE_AREA_WIDTH) {
-        opacity = Math.max(0, (x + this.fadeZone) / this.fadeZone)
+        opacity = Math.max(0, (x - (LAYOUT.QUEUE_AREA_WIDTH - this.fadeZone)) / this.fadeZone)
       }
     }
     

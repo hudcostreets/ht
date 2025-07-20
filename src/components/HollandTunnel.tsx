@@ -78,19 +78,20 @@ const createVehicles = (): SpecialVehicle[] => {
     )
   }
   
-  // 15 bikes for each direction (spawn every 4 minutes)
+  // Bikes for each direction - spawn every 4 minutes (15 total per hour)
   for (let i = 0; i < 15; i++) {
+    const spawnMinute = i * 4  // 0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56
     const eastBike = { 
       id: `bike-e-${i}`, 
       type: 'bike' as const, 
-      spawnMinute: i, 
+      spawnMinute: spawnMinute, 
       lane: 2, 
       direction: 'east' as const 
     }
     const westBike = { 
       id: `bike-w-${i}`, 
       type: 'bike' as const, 
-      spawnMinute: i, 
+      spawnMinute: spawnMinute, 
       lane: 1, 
       direction: 'west' as const 
     }
@@ -100,6 +101,7 @@ const createVehicles = (): SpecialVehicle[] => {
       { ...westBike, instance: new Bike(westBike) }
     )
   }
+  
   
   // Sweep and pace vehicles (we'll handle these specially for now)
   vehicles.push(
@@ -455,8 +457,8 @@ export function HollandTunnel() {
       const lane = vehicle.lane === 1 ? 'L' : 'R'
       tooltip = `:${vehicle.spawnMinute.toString().padStart(2, '0')} - ${lane} lane - ${dir}`
     } else if (vehicle.type === 'bike') {
-      const bikeMinute = vehicle.spawnMinute * 4
-      tooltip = `#${vehicle.spawnMinute + 1} - :${bikeMinute.toString().padStart(2, '0')} spawn - ${dir}`
+      const bikeIndex = vehicle.spawnMinute / 4
+      tooltip = `#${bikeIndex + 1} - :${vehicle.spawnMinute.toString().padStart(2, '0')} spawn - ${dir}`
     } else if (vehicle.type === 'sweep') {
       tooltip = `Sweep - ${dir}`
     } else {
