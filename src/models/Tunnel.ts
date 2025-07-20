@@ -84,9 +84,8 @@ export class Tunnel {
     // Create cars
     this.ncars = 60 * carsPerMinute
     for (let i = 0; i < this.ncars; i++) {
-      const spawn = 60 * (i + .5) / this.ncars
-      this.cars.push(new Car(this, spawn, spawn, 'L'))
-      this.cars.push(new Car(this, spawn, spawn, 'R'))
+      this.cars.push(new Car(this, 60 * (i + .5) / this.ncars, 'L'))
+      this.cars.push(new Car(this, 60 * i / this.ncars, 'R'))
     }
 
     // const { penOpenMinutes } = config

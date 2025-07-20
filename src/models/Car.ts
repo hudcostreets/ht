@@ -9,10 +9,10 @@ export class Car {
   public lane: Lane
   public timePositions: TimePos[] = []
 
-  constructor(tunnel: Tunnel, id: number, spawnMinute: number, laneId: LaneId) {
+  constructor(tunnel: Tunnel, spawnMin: number, laneId: LaneId) {
     this.tunnel = tunnel
-    this.id = id
-    this.spawnMinute = spawnMinute
+    this.id = spawnMin
+    this.spawnMinute = spawnMin
     this.laneId = laneId
     this.lane = laneId === 'L' ? tunnel.l : tunnel.r
     const lane = this.lane
