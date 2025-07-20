@@ -26,19 +26,19 @@ export function HollandTunnelNew() {
     defaultValue: 1
   })
 
-  // Animation for smooth transitions
-  const [displayTime, setDisplayTime] = useState(initialMinute * 60)
+  // Animation for smooth transitions (in minutes)
+  const [displayTime, setDisplayTime] = useState(initialMinute)
   const animationRef = useRef<number | undefined>(undefined)
   
   // State for arrow key transitions
-  const [targetTime, setTargetTime] = useState(initialMinute * 60)
+  const [targetTime, setTargetTime] = useState(initialMinute)
   const [isTransitioning, setIsTransitioning] = useState(false)
   
   // Update current minute when display time changes
   useEffect(() => {
     // Ensure displayTime stays within bounds
-    const boundedTime = displayTime % 3600
-    const newMinute = Math.floor(boundedTime / 60) % 60
+    const boundedTime = displayTime % 60
+    const newMinute = Math.floor(boundedTime) % 60
     if (newMinute !== currentMinute) {
       setCurrentMinute(newMinute)
     }
@@ -48,8 +48,10 @@ export function HollandTunnelNew() {
   const animate = useCallback(() => {
     if (!isPaused && !isTransitioning) {
       setDisplayTime(prevTime => {
-        const newTime = prevTime + speed
-        return newTime % 3600
+        // Speed is in minutes per frame (at 60fps, speed=1 means 60 minutes per second)
+        const minutesPerFrame = speed / 60
+        const newTime = prevTime + minutesPerFrame
+        return newTime % 60
       })
     } else if (isTransitioning) {
       // Smooth transition for arrow key navigation
@@ -57,28 +59,28 @@ export function HollandTunnelNew() {
         let diff = targetTime - prevTime
         
         // Handle wraparound at hour boundaries
-        if (diff > 1800) { // More than 30 minutes backward, must be :59→:00
-          diff = diff - 3600 // Convert to small forward step
-        } else if (diff < -1800) { // More than 30 minutes forward, must be :00→:59
-          diff = diff + 3600 // Convert to small backward step
+        if (diff > 30) { // More than 30 minutes backward, must be :59→:00
+          diff = diff - 60 // Convert to small forward step
+        } else if (diff < -30) { // More than 30 minutes forward, must be :00→:59
+          diff = diff + 60 // Convert to small backward step
         }
         
-        if (Math.abs(diff) < 0.5) {
+        if (Math.abs(diff) < 0.01) {
           setIsTransitioning(false)
           return targetTime
         }
         
-        // Linear transition: move at constant speed
-        const step = 8
+        // Linear transition: move at constant speed (8 minutes per second at 60fps)
+        const step = 8 / 60
         if (diff > 0) {
           let newTime = prevTime + Math.min(step, diff) // Don't overshoot
           // Handle wraparound during animation
-          if (newTime >= 3600) newTime -= 3600
+          if (newTime >= 60) newTime -= 60
           return newTime
         } else {
           let newTime = prevTime - Math.min(step, -diff) // Don't overshoot
           // Handle wraparound during animation
-          if (newTime < 0) newTime += 3600
+          if (newTime < 0) newTime += 60
           return newTime
         }
       })
@@ -104,9 +106,9 @@ export function HollandTunnelNew() {
       } else if (e.code === 'ArrowRight' && isPaused) {
         e.preventDefault()
         const baseTime = isTransitioning ? targetTime : displayTime
-        const currentMinute = Math.floor(baseTime / 60) % 60
+        const currentMinute = Math.floor(baseTime) % 60
         const newMinute = (currentMinute + 1) % 60
-        const newTime = newMinute * 60
+        const newTime = newMinute
         
         setTargetTime(newTime)
         setIsTransitioning(true)
@@ -118,9 +120,9 @@ export function HollandTunnelNew() {
       } else if (e.code === 'ArrowLeft' && isPaused) {
         e.preventDefault()
         const baseTime = isTransitioning ? targetTime : displayTime
-        const currentMinute = Math.floor(baseTime / 60) % 60
+        const currentMinute = Math.floor(baseTime) % 60
         const newMinute = (currentMinute - 1 + 60) % 60
-        const newTime = newMinute * 60
+        const newTime = newMinute
         
         setTargetTime(newTime)
         setIsTransitioning(true)
@@ -137,15 +139,13 @@ export function HollandTunnelNew() {
   }, [isPaused, isTransitioning, targetTime, displayTime, setIsPaused])
 
   // Get current vehicles and phases
-  // Convert displayTime from seconds to minutes for the model
-  const displayTimeInMinutes = displayTime / 60
-  const vehicles = tunnels.getAllVehicles(displayTimeInMinutes)
-  const phases = tunnels.getPhases(displayTimeInMinutes)
-  const colorRectangles = tunnels.getColorRectangles(displayTimeInMinutes)
+  const vehicles = tunnels.getAllVehicles(displayTime)
+  const phases = tunnels.getPhases(displayTime)
+  const colorRectangles = tunnels.getColorRectangles(displayTime)
 
   // Handle timeline click
   const handleTimelineClick = (minute: number) => {
-    const newTime = minute * 60
+    const newTime = minute
     // Jump directly to the new time (no transition)
     setDisplayTime(newTime)
     setTargetTime(newTime)
@@ -197,9 +197,9 @@ export function HollandTunnelNew() {
           </div>
         </div>
         <div className="clock-container-large">
-          <AnalogClock minute={displayTime / 60} />
+          <AnalogClock minute={displayTime} />
           <div className="digital-time-large">
-            0:{String(Math.floor(displayTime / 60) % 60).padStart(2, '0')}
+            0:{String(Math.floor(displayTime) % 60).padStart(2, '0')}
           </div>
         </div>
       </div>

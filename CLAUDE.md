@@ -71,3 +71,12 @@ pnpm run lint     # Run linter
 - :45 E/b and :15 W/b cars queue and enter after pace car
 - First bike stages at tunnel entrance when bike phase begins
 - All timing uses simulated/virtual time scaled by speed setting
+
+## Time Units
+**IMPORTANT**: All time values throughout the codebase use **minutes** as the unit:
+- Absolute time is in minutes (0-59 for each hour, wrapping at 60)
+- Relative time is in minutes (0-59 within each tunnel's cycle)
+- Transit times, delays, etc. are all in fractional minutes
+- The UI component (`HollandTunnelNew.tsx`) also uses minutes internally
+- Animation speed is in minutes per frame (at 60fps, speed=1 means 1 minute of simulation per real second)
+- When writing tests, use minutes directly (e.g., `bike.getPos(45)` for minute 45)

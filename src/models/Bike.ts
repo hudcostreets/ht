@@ -59,7 +59,7 @@ export class Bike {
       },
       // In pen before release
       {
-        time: releaseRelMins - 1,
+        time: releaseRelMins - 0.01,
         ...penPos,
         state: 'pen',
         opacity: 1

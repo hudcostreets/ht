@@ -54,20 +54,21 @@ describe('Tunnel', () => {
         const secondBike = eastbound.bikes[1] // Index 1
         
         // First bike should be released at :45:00
-        const firstPos = firstBike.getPos(45 * 60)
-        expect(firstPos!.state).toBe('staging') // In transition
+        const firstPos = firstBike.getPos(45)
+        expect(firstPos!.state).toBe('tunnel') // At tunnel entrance
         
         // Second bike should still be in pen at :45:00
-        const secondPos = secondBike.getPos(45 * 60)
+        const secondPos = secondBike.getPos(45)
         expect(secondPos!.state).toBe('pen')
         
-        // Second bike should be released 12 seconds later (at :45:12)
-        const secondPosLater = secondBike.getPos(45 * 60 + 12)
-        expect(secondPosLater!.state).toBe('staging') // Also in transition
+        // Second bike should be released later (bikes are released 5 per minute = 0.2 minutes apart)
+        // But bike needs to reach the tunnel entrance position first
+        const secondPosLater = secondBike.getPos(45 + 0.2)
+        expect(secondPosLater!.state).toBe('tunnel') // At tunnel entrance
         
         // After transitions complete, both should be in tunnel
-        const firstPosInTunnel = firstBike.getPos(45 * 60 + 3)
-        const secondPosInTunnel = secondBike.getPos(45 * 60 + 12 + 3)
+        const firstPosInTunnel = firstBike.getPos(45 + 0.05)
+        const secondPosInTunnel = secondBike.getPos(45 + 0.25)
         expect(firstPosInTunnel!.state).toBe('tunnel')
         expect(secondPosInTunnel!.state).toBe('tunnel')
       })
@@ -80,7 +81,7 @@ describe('Tunnel', () => {
         // For now, test the concept with relative times
         
         // A bike arriving at relative minute 1 (:46) should join immediately
-        const relativeTime = 60 // 1 minute after pen opens
+        const relativeTime = 1 // 1 minute after pen opens
         const phase = eastbound.getPhase(relativeTime)
         expect(phase).toBe('bikes-enter')
       })
@@ -89,7 +90,7 @@ describe('Tunnel', () => {
     describe('Late arrival bikes', () => {
       it('should queue late arrivals for next cycle', () => {
         // Test the concept - bikes arriving after :47 should wait for next cycle
-        const relativeTime = 5 * 60 // 5 minutes after pen opens (:50)
+        const relativeTime = 5 // 5 minutes after pen opens (:50)
         const phase = eastbound.getPhase(relativeTime)
         expect(phase).toBe('sweep') // Not bikes-enter anymore
       })
@@ -102,7 +103,7 @@ describe('Tunnel', () => {
         
         if (carAt46) {
           // L lane car spawning at :46 should flow normally
-          const position = carAt46.getPos(46 * 60)
+          const position = carAt46.getPos(46)
           expect(position).toBeTruthy()
           expect(position!.state).toBe('tunnel')
         }
@@ -116,9 +117,9 @@ describe('Tunnel', () => {
         
         if (carAt46) {
           // R lane car spawning at :46 should be queued
-          const position = carAt46.getPos(46 * 60)
+          const position = carAt46.getPos(46)
           expect(position).toBeTruthy()
-          expect(position!.state).toBe('queued')
+          expect(position!.state).toBe('pen')
           expect(position!.x).toBeLessThan(0) // In queue area (negative x)
         }
       })
@@ -129,11 +130,11 @@ describe('Tunnel', () => {
         
         if (carAt45) {
           // At :45, car should be queued
-          const queuedPosition = carAt45.getPos(45 * 60)
-          expect(queuedPosition!.state).toBe('queued')
+          const queuedPosition = carAt45.getPos(45)
+          expect(queuedPosition!.state).toBe('pen')
           
           // At :55 (pace car starts), car should be moving
-          const movingPosition = carAt45.getPos(55 * 60)
+          const movingPosition = carAt45.getPos(55)
           expect(movingPosition!.state).toBe('tunnel')
           expect(movingPosition!.x).toBeGreaterThan(-50) // Should have moved from initial queue position
         }
@@ -151,27 +152,27 @@ describe('Tunnel', () => {
     describe('Time conversion', () => {
       it('should convert absolute time to relative time correctly', () => {
         // At 15 minutes (pen opens), relative time should be 0
-        expect(westbound.relMins(15 * 60)).toBe(0)
+        expect(westbound.relMins(15)).toBe(0)
         
-        // At 16 minutes, relative time should be 60 seconds
-        expect(westbound.relMins(16 * 60)).toBe(60)
+        // At 16 minutes, relative time should be 1
+        expect(westbound.relMins(16)).toBe(1)
         
         // At 14 minutes (before pen opens), should wrap around
-        expect(westbound.relMins(14 * 60)).toBe(59 * 60) // 59 minutes later in relative time
+        expect(westbound.relMins(14)).toBe(59) // 59 minutes later in relative time
       })
     })
     
     describe('Westbound-specific behavior', () => {
       it('should handle :16 westbound bike correctly', () => {
         // A bike spawning at :16 should be able to join the traveling group
-        const relativeTime = 60 // 1 minute after pen opens (:16)
+        const relativeTime = 1 // 1 minute after pen opens (:16)
         const phase = westbound.getPhase(relativeTime)
         expect(phase).toBe('bikes-enter')
       })
       
       it('should queue :20 westbound bike for next cycle', () => {
         // A bike spawning at :20 should wait for next cycle
-        const relativeTime = 5 * 60 // 5 minutes after pen opens (:20)
+        const relativeTime = 5 // 5 minutes after pen opens (:20)
         const phase = westbound.getPhase(relativeTime)
         expect(phase).toBe('sweep') // Past the bikes-enter phase
       })
@@ -184,12 +185,12 @@ describe('Tunnel', () => {
       const westbound = new Tunnel(HOLLAND_TUNNEL_CONFIG.westbound)
       
       // At absolute time :15, eastbound should be in normal phase, westbound in bikes-enter
-      expect(eastbound.getPhase(eastbound.relMins(15 * 60))).toBe('normal')
-      expect(westbound.getPhase(westbound.relMins(15 * 60))).toBe('bikes-enter')
+      expect(eastbound.getPhase(eastbound.relMins(15))).toBe('normal')
+      expect(westbound.getPhase(westbound.relMins(15))).toBe('bikes-enter')
       
       // At absolute time :45, eastbound should be in bikes-enter, westbound in normal
-      expect(eastbound.getPhase(eastbound.relMins(45 * 60))).toBe('bikes-enter')
-      expect(westbound.getPhase(westbound.relMins(45 * 60))).toBe('normal')
+      expect(eastbound.getPhase(eastbound.relMins(45))).toBe('bikes-enter')
+      expect(westbound.getPhase(westbound.relMins(45))).toBe('normal')
     })
   })
 })

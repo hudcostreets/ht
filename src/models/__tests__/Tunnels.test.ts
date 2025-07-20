@@ -12,7 +12,7 @@ describe('Tunnels', () => {
   describe('Vehicle coordination', () => {
     it('should return all vehicles at a given time', () => {
       // At :45 (eastbound pen opens)
-      const vehicles = tunnels.getAllVehicles(45 * 60)
+      const vehicles = tunnels.getAllVehicles(45)
       
       // Should have eastbound and westbound vehicles
       const eastboundVehicles = vehicles.filter(v => v.direction === 'east')
@@ -30,7 +30,7 @@ describe('Tunnels', () => {
     })
     
     it('should provide correct phase information', () => {
-      const phases = tunnels.getPhases(45 * 60)
+      const phases = tunnels.getPhases(45)
       
       expect(phases.east).toBe('bikes-enter') // :45 eastbound
       expect(phases.west).toBe('normal') // :45 westbound (30 minutes after their :15)
@@ -39,64 +39,54 @@ describe('Tunnels', () => {
     it('should handle hour boundaries correctly', () => {
       // Test at :00 (start of new hour)
       const vehiclesAt00 = tunnels.getAllVehicles(0)
-      const vehiclesAt3600 = tunnels.getAllVehicles(3600) // Same time, next hour
+      const vehiclesAt60 = tunnels.getAllVehicles(60) // Same time, next hour
       
       // Should have consistent behavior across hour boundaries
-      expect(vehiclesAt00.length).toBe(vehiclesAt3600.length)
+      expect(vehiclesAt00.length).toBe(vehiclesAt60.length)
     })
   })
   
   describe('Critical time points', () => {
     it('should handle eastbound bike pen opening at :45', () => {
-      const vehicles = tunnels.getAllVehicles(45 * 60)
+      const vehicles = tunnels.getAllVehicles(45)
       const eastboundBikes = vehicles.filter(v => v.type === 'bike' && v.direction === 'east')
       
       // First eastbound bike should be entering tunnel
       const firstBike = eastboundBikes.find(v => v.metadata.index === 0)
       expect(firstBike).toBeTruthy()
-      expect(firstBike!.position.state).toBe('staging') // In transition
-      
-      // After transition, should be at tunnel entrance
-      const vehiclesAfterTransition = tunnels.getAllVehicles(45 * 60 + 3)
-      const firstBikeAfter = vehiclesAfterTransition.find(v => v.type === 'bike' && v.direction === 'east' && v.metadata.index === 0)
-      expect(firstBikeAfter!.position.state).toBe('tunnel')
-      expect(firstBikeAfter!.position.x).toBeLessThan(5) // Near tunnel entrance
+      expect(firstBike!.position.state).toBe('tunnel') // At tunnel entrance
+      expect(firstBike!.position.x).toBe(0) // At tunnel entrance
     })
     
     it('should handle westbound bike pen opening at :15', () => {
-      const vehicles = tunnels.getAllVehicles(15 * 60)
+      const vehicles = tunnels.getAllVehicles(15)
       const westboundBikes = vehicles.filter(v => v.type === 'bike' && v.direction === 'west')
       
       // First westbound bike should be entering tunnel
       const firstBike = westboundBikes.find(v => v.metadata.index === 0)
       expect(firstBike).toBeTruthy()
-      expect(firstBike!.position.state).toBe('staging') // In transition
-      
-      // After transition, should be in tunnel
-      const vehiclesAfterTransition = tunnels.getAllVehicles(15 * 60 + 3)
-      const firstBikeAfter = vehiclesAfterTransition.find(v => v.type === 'bike' && v.direction === 'west' && v.metadata.index === 0)
-      expect(firstBikeAfter!.position.state).toBe('tunnel')
+      expect(firstBike!.position.state).toBe('tunnel') // At tunnel entrance
     })
     
     it('should handle :16 westbound bike joining traveling group', () => {
-      const vehicles = tunnels.getAllVehicles(16 * 60)
+      const vehicles = tunnels.getAllVehicles(16)
       
       // Should have westbound bikes in bikes-enter phase
-      const phases = tunnels.getPhases(16 * 60)
+      const phases = tunnels.getPhases(16)
       expect(phases.west).toBe('bikes-enter')
     })
     
     it('should handle :20 westbound bike waiting in pen', () => {
-      const vehicles = tunnels.getAllVehicles(20 * 60)
+      const vehicles = tunnels.getAllVehicles(20)
       
       // :20 bike should not be in tunnel yet (should wait for next cycle)
-      const phases = tunnels.getPhases(20 * 60)
+      const phases = tunnels.getPhases(20)
       expect(phases.west).toBe('sweep') // Past bikes-enter phase
     })
     
     it('should handle eastbound pace car starting at :55', () => {
-      const vehicles = tunnels.getAllVehicles(55 * 60)
-      const phases = tunnels.getPhases(55 * 60)
+      const vehicles = tunnels.getAllVehicles(55)
+      const phases = tunnels.getPhases(55)
       
       expect(phases.east).toBe('pace-car')
       
@@ -115,8 +105,8 @@ describe('Tunnels', () => {
     })
     
     it('should handle westbound pace car starting at :25', () => {
-      const vehicles = tunnels.getAllVehicles(25 * 60)
-      const phases = tunnels.getPhases(25 * 60)
+      const vehicles = tunnels.getAllVehicles(25)
+      const phases = tunnels.getPhases(25)
       
       expect(phases.west).toBe('pace-car')
       
@@ -140,14 +130,14 @@ describe('Tunnels', () => {
       const eastboundBikes = vehicles.filter(v => v.type === 'bike' && v.direction === 'east')
       const westboundBikes = vehicles.filter(v => v.type === 'bike' && v.direction === 'west')
       
-      // Should have 15 bikes per direction (0.25 bikes/minute * 60 minutes = 15)
+      // Should have 15 bikes per direction (0.25 bikes/minute minutes = 15)
       // But not all may be visible at time 0
       expect(eastboundBikes.length).toBeLessThanOrEqual(15)
       expect(westboundBikes.length).toBeLessThanOrEqual(15)
     })
     
     it('should have correct number of cars per direction per lane', () => {
-      const vehicles = tunnels.getAllVehicles(30 * 60) // :30, during normal flow
+      const vehicles = tunnels.getAllVehicles(30) // :30, during normal flow
       const eastboundCars = vehicles.filter(v => v.type === 'car' && v.direction === 'east')
       const westboundCars = vehicles.filter(v => v.type === 'car' && v.direction === 'west')
       
@@ -166,8 +156,8 @@ describe('Tunnels', () => {
   
   describe('Hour boundary behavior', () => {
     it('should maintain continuity across :59 to :00 transition', () => {
-      const vehiclesAt59 = tunnels.getAllVehicles(59 * 60)
-      const vehiclesAt00 = tunnels.getAllVehicles(60 * 60) // Next hour :00
+      const vehiclesAt59 = tunnels.getAllVehicles(59)
+      const vehiclesAt00 = tunnels.getAllVehicles(60) // Next hour :00
       
       // Should not have a dramatic drop in vehicle count
       const bikesAt59 = vehiclesAt59.filter(v => v.type === 'bike').length
@@ -179,7 +169,7 @@ describe('Tunnels', () => {
     
     it('should handle westbound late arrivals correctly at hour boundary', () => {
       // At :59, should have westbound bikes waiting in pen
-      const vehiclesAt59 = tunnels.getAllVehicles(59 * 60)
+      const vehiclesAt59 = tunnels.getAllVehicles(59)
       const westboundBikesAt59 = vehiclesAt59.filter(v => 
         v.type === 'bike' && 
         v.direction === 'west' && 
@@ -187,7 +177,7 @@ describe('Tunnels', () => {
       )
       
       // At :00, should have westbound bikes in pen (including new :00 bike)
-      const vehiclesAt00 = tunnels.getAllVehicles(60 * 60)
+      const vehiclesAt00 = tunnels.getAllVehicles(60)
       const westboundBikesAt00 = vehiclesAt00.filter(v => 
         v.type === 'bike' && 
         v.direction === 'west' && 
