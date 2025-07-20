@@ -237,9 +237,27 @@ export class Bike extends Vehicle {
   
   getPosition(time: number): VehiclePosition | null {
     const currentHour = Math.floor(time / 3600)
-    const spawnTime = (currentHour * 3600) + (this.data.spawnMinute * 60)
     const minuteInHour = Math.floor(time / 60) % 60
     
+    // Calculate spawn time for current hour
+    const currentHourSpawnTime = (currentHour * 3600) + (this.data.spawnMinute * 60)
+    
+    // For bikes that haven't spawned in current hour, check previous hour
+    if (time < currentHourSpawnTime) {
+      const previousHour = currentHour - 1
+      const previousHourSpawnTime = (previousHour * 3600) + (this.data.spawnMinute * 60)
+      
+      if (time >= previousHourSpawnTime) {
+        return this.getPositionForSpawnTime(time, previousHourSpawnTime, previousHour)
+      }
+      return null
+    }
+    
+    // Use current hour spawn time
+    return this.getPositionForSpawnTime(time, currentHourSpawnTime, currentHour)
+  }
+  
+  private getPositionForSpawnTime(time: number, spawnTime: number, spawnHour: number): VehiclePosition | null {
     // Bike hasn't spawned yet
     if (time < spawnTime) return null
     
@@ -247,7 +265,7 @@ export class Bike extends Vehicle {
     const penOpenMinute = this.data.direction === 'east' ? 45 : 15
     const penCloseMinute = this.data.direction === 'east' ? 48 : 18
     const releaseMinute = this.data.direction === 'east' ? 45 : 15
-    const releaseTime = (currentHour * 3600) + (releaseMinute * 60)
+    const releaseTime = (spawnHour * 3600) + (releaseMinute * 60)
     
     // Check if this bike arrives during the pen window (can join traveling group)
     const arrivesDuringPenWindow = this.data.spawnMinute >= penOpenMinute && this.data.spawnMinute < penCloseMinute
@@ -297,8 +315,18 @@ export class Bike extends Vehicle {
         return null
       }
       
-      // Late arrivals wait for the NEXT cycle (30 minutes later)
-      const nextCycleReleaseTime = releaseTime + (30 * 60) // 30 minutes later
+      // All late arrivals wait for the NEXT occurrence of their direction's release time
+      // Find the next release time that occurs after the current time
+      const currentTime = time
+      const currentTimeHour = Math.floor(currentTime / 3600)
+      const currentTimeMinute = Math.floor(currentTime / 60) % 60
+      
+      let nextReleaseHour = currentTimeHour
+      if (currentTimeMinute >= releaseMinute) {
+        nextReleaseHour = currentTimeHour + 1
+      }
+      
+      const nextCycleReleaseTime = (nextReleaseHour * 3600) + (releaseMinute * 60)
       const lateArrivalOrder = this.data.spawnMinute - penCloseMinute
       const releaseDelay = lateArrivalOrder * 12
       const actualReleaseTime = nextCycleReleaseTime + releaseDelay
@@ -353,16 +381,18 @@ export class Bike extends Vehicle {
     let positionIndex: number
     
     if (this.data.spawnMinute >= penCloseMinute) {
-      // Late arrivals (after pen window) - arrange after the traveling group
-      positionIndex = 15 + (this.data.spawnMinute - penCloseMinute)
+      // Late arrivals (after pen window) - these are bikes like :20, :24, :28, etc.
+      // Convert to sequential index: :20->0, :24->1, :28->2, etc.
+      const lateArrivalIndex = (this.data.spawnMinute - penCloseMinute) / 4
+      positionIndex = 15 + lateArrivalIndex  // Start after the 15 early bikes
     } else {
       // Early bikes (traveling group) - arrange by their order (convert back to index)
       positionIndex = this.data.spawnMinute / 4
     }
     
-    // Arrange bikes in a 3x5 grid
-    const row = Math.floor(positionIndex / 3)
-    const col = positionIndex % 3
+    // Arrange bikes in a larger grid to accommodate late arrivals (expand to 6x5 = 30 spots)
+    const row = Math.floor(positionIndex / 5)
+    const col = positionIndex % 5
     
     const penX = this.data.direction === 'east' ? 70 : LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + 70
     const penY = this.data.direction === 'east' ? 310 : 60
