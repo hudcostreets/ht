@@ -66,9 +66,11 @@ export function getPhase(minute: number, direction: 'east' | 'west'): string {
 export function getLaneY(direction: 'east' | 'west', lane: number): number {
   if (direction === 'west') {
     const baseY = 100;
-    return baseY + (2 - lane) * LAYOUT.LANE_HEIGHT + LAYOUT.LANE_HEIGHT / 2;
+    // Lane 2 (R) is top, Lane 1 (L) is bottom
+    return baseY + (lane - 1) * LAYOUT.LANE_HEIGHT + LAYOUT.LANE_HEIGHT / 2;
   } else {
     const baseY = 200;
+    // Lane 1 (L) is top, Lane 2 (R) is bottom
     return baseY + (lane - 1) * LAYOUT.LANE_HEIGHT + LAYOUT.LANE_HEIGHT / 2;
   }
 }
@@ -106,8 +108,17 @@ export class Car extends Vehicle {
       const timeUntilSpawn = spawnTime - time;
       const fadeProgress = 1 - (timeUntilSpawn / 60);
       
+      // Calculate staging position (1 minute of travel distance before tunnel entrance)
+      const stagingOffset = SPEEDS.CAR * 60; // Distance car travels in 1 minute
+      const stagingX = this.data.direction === 'east' ?
+        this.getTunnelEntrance() - stagingOffset :
+        this.getTunnelEntrance() + stagingOffset;
+      
+      // Interpolate from staging position to tunnel entrance
+      const currentX = stagingX + (this.getTunnelEntrance() - stagingX) * fadeProgress;
+      
       return {
-        x: this.getTunnelEntrance(),
+        x: currentX,
         y: getLaneY(this.data.direction, this.data.lane),
         state: 'approaching',
         opacity: fadeProgress

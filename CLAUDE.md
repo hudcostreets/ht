@@ -59,8 +59,10 @@ pnpm run typecheck # Run TypeScript checks
 - `src/components/HollandTunnelDeterministic.tsx` - Main visualization component
 - `src/components/AnalogClock.tsx` - Animated clock display
 - `src/components/HollandTunnel.css` - Styling
+- `src/models/Vehicle.ts` - Contains Car and Bike classes that encapsulate vehicle position logic
 
 ## Important Notes
+- **Always check `src/models/` for existing classes before implementing logic inline** - The Car and Bike classes already handle position calculations and movement logic
 - Vehicles fade in/out at tunnel entrances/exits
 - :45 E/b and :15 W/b cars queue and enter after pace car
 - First bike stages at tunnel entrance when bike phase begins
