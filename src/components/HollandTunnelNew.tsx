@@ -3,9 +3,8 @@ import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
 import { AnalogClock } from './AnalogClock'
 import { TunnelViewSimple } from './TunnelViewSimple'
-import { Tunnels } from '../models/Tunnels'
 import { HOLLAND_TUNNEL_CONFIG } from '../models/TunnelConfigs'
-import { LAYOUT } from '../models/Vehicle'
+import { Tunnels } from '../models/Tunnels'
 import './HollandTunnel.css'
 
 // Create the tunnels instance
@@ -158,7 +157,6 @@ export function HollandTunnelNew() {
     url.searchParams.set('t', minute.toString())
     window.history.replaceState({}, '', url.toString())
   }
-
 
   return (
     <div className="holland-tunnel">

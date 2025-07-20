@@ -1,4 +1,4 @@
-import {type TimePos, Tunnel} from "./Tunnel"
+import { type TimePos, Tunnel } from "./Tunnel"
 
 export class Bike {
   public tunnel: Tunnel

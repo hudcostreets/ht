@@ -99,7 +99,6 @@ const createVehicles = (): SpecialVehicle[] => {
     )
   }
   
-  
   // Sweep and pace vehicles (we'll handle these specially for now)
   vehicles.push(
     { id: 'sweep-main', type: 'sweep' as const, spawnMinute: 0, lane: 2, direction: 'east' as const },

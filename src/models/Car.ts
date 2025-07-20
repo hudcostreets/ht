@@ -1,5 +1,5 @@
-import {type TimePos, Tunnel} from "./Tunnel"
-import {Lane, LaneId} from "./Lane"
+import { Lane, LaneId } from "./Lane"
+import { type TimePos, Tunnel } from "./Tunnel"
 
 export class Car {
   public tunnel: Tunnel

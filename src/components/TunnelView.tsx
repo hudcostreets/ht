@@ -1,7 +1,5 @@
-import React, {type FC} from 'react'
+import React, { type FC } from 'react'
 import { LAYOUT } from '../models/Vehicle'
-import { Vehicle } from './Vehicle'
-import { ColorRectangle } from './ColorRectangle'
 
 interface TunnelViewProps {
   direction: 'east' | 'west'
@@ -61,13 +59,13 @@ export const TunnelView: FC<TunnelViewProps> = ({ direction, phase, vehicles, co
       
       {/* Bike pen label - needs to be flipped back for westbound */}
       <g transform={isWestbound ? 'scale(-1, -1)' : undefined} 
-         style={{ transformOrigin: isWestbound ? `${penX + LAYOUT.BIKE_PEN_WIDTH/2} ${penY - 10}` : undefined }}>
+        style={{ transformOrigin: isWestbound ? `${penX + LAYOUT.BIKE_PEN_WIDTH/2} ${penY - 10}` : undefined }}>
         <text x={penX + LAYOUT.BIKE_PEN_WIDTH/2} y={penY - 10} fontSize="12" textAnchor="middle">Bike Pen</text>
       </g>
       
       {/* Lane markers - need to be flipped back for westbound */}
       <g transform={isWestbound ? 'scale(-1, -1)' : undefined}
-         style={{ transformOrigin: isWestbound ? `${LAYOUT.QUEUE_AREA_WIDTH + 60} 25` : undefined }}>
+        style={{ transformOrigin: isWestbound ? `${LAYOUT.QUEUE_AREA_WIDTH + 60} 25` : undefined }}>
         <text x={LAYOUT.QUEUE_AREA_WIDTH + 10} y={20} fontSize="12" fill="white">
           {direction === 'east' ? 'L Lane (Cars Only)' : 'R Lane'}
         </text>

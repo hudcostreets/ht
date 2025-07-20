@@ -1,4 +1,4 @@
-import React, {type FC} from 'react'
+import React, { type FC } from 'react'
 import { LAYOUT } from '../models/Vehicle'
 
 interface TunnelViewProps {

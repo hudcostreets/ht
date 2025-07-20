@@ -1,5 +1,5 @@
-import type { TunnelsConfig } from './Tunnels'
 import { LAYOUT, SPEEDS } from './Vehicle'
+import type { TunnelsConfig } from './Tunnels'
 
 export const Common = {
   lengthMiles: 2,

@@ -1,7 +1,7 @@
-import {Car} from "./Car"
-import {Bike} from "./Bike"
-import {Lane} from "./Lane"
-import {pos} from "./Pos"
+import { Bike } from "./Bike"
+import { Car } from "./Car"
+import { Lane } from "./Lane"
+import { pos } from "./Pos"
 
 export type Direction = 'east' | 'west'
 
