@@ -1,4 +1,4 @@
-import { Bike } from "./Bike"
+import { Bike, type BikeSpawnQueue } from "./Bike"
 import { Car } from "./Car"
 import { Lane } from "./Lane"
 import { pos } from "./Pos"
@@ -92,7 +92,7 @@ export class Tunnel {
     this.bikes = []
     for (let i = 0; i < this.nbikes; i++) {
       const spawn = config.period * i / this.nbikes
-      this.bikes.push(new Bike(this, i, spawn))
+      this.bikes.push(new Bike(this, i, spawn))  // Queue info will be calculated after all bikes are created
     }
 
     // Create cars
@@ -173,6 +173,34 @@ export class Tunnel {
         queueIdx++
       }
       // else: Car flows normally, leave spawnQueue undefined
+    }
+    
+    // Calculate bike queueing
+    let bikeQueueIdx = 0
+    let currentReleaseMin = 0
+    const bikesPerRow = config.bikesReleasedPerMin  // Bikes arranged in rows
+    
+    for (const bike of this.bikes) {
+      // Bikes can only enter during minutes 0-2 (pen open window)
+      if (bike.spawnMin >= 0 && bike.spawnMin < config.penCloseMin) {
+        // Bike arrives during pen window - flows immediately
+        // No queue info needed
+      } else {
+        // Bike needs to queue
+        const row = Math.floor(bikeQueueIdx / bikesPerRow)
+        const col = bikeQueueIdx % bikesPerRow
+        
+        // Calculate when this bike will be released
+        const releaseMin = currentReleaseMin + (bikeQueueIdx / config.bikesReleasedPerMin)
+        
+        bike.spawnQueue = {
+          offsetX: col * 20,  // 20px spacing horizontally
+          offsetY: row * 15,  // 15px spacing vertically
+          releaseMin: releaseMin
+        }
+        
+        bikeQueueIdx++
+      }
     }
   }
 

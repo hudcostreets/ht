@@ -76,6 +76,23 @@ pnpm run lint     # Run linter
 - The first queued bike should be at the tunnel entrance at the moment the bike pen opens.
 - All times should be in terms of simulated/virtual "minutes", which can be scaled by the configurable "speed" setting.
 
+## Queueing Logic
+
+### Car Queueing (R Lane)
+- R lane cars arriving during minutes 0-9 (bike phases) must queue
+- Queue position determined by `offsetPx` (spacing between queued cars)
+- When pace car starts at minute 10, queued cars begin moving in lockstep
+- Cars spawning while queue is draining should spawn at the end of the queue
+- The queueing logic is implemented in `Tunnel.ts` where it calculates `spawnQueue` for each car
+
+### Bike Queueing (Pen)
+- Bikes can only enter tunnel during minutes 0-2 (pen open window)
+- Bikes arriving during minutes 3-59 must queue in the pen
+- Bikes are released at rate of `bikesReleasedPerMin` (default: 5/min)
+- Pen arrangement should be configurable (grid layout with X bikes per row)
+- Bikes spawning while queue is draining should go to the end of the queue
+- Similar to cars, bikes need `spawnQueue` info to determine their queue position
+
 ## Time Units
 **IMPORTANT**: All time values throughout the codebase use **minutes** as the unit:
 - Absolute time is in minutes (0-59 for each hour, wrapping at 60)
