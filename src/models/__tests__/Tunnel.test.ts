@@ -4,43 +4,36 @@ import { HOLLAND_TUNNEL_CONFIG } from '../TunnelConfigs'
 
 describe('Tunnel', () => {
   describe('Eastbound Tunnel', () => {
-    let eastbound: Tunnel
+    let eb: Tunnel
     
     beforeEach(() => {
-      eastbound = new Tunnel(HOLLAND_TUNNEL_CONFIG.eastbound)
+      eb = new Tunnel(HOLLAND_TUNNEL_CONFIG.eastbound)
     })
     
     describe('Time conversion', () => {
       it('should convert absolute time to relative time correctly', () => {
-        // At 45 minutes (pen opens), relative time should be 0
-        expect(eastbound.relMins(45)).toBe(0)
-        
-        // At 46 minutes, relative time should be 1
-        expect(eastbound.relMins(46)).toBe(1)
-        
-        // At 44 minutes (before pen opens), should wrap around
-        expect(eastbound.relMins(44)).toBe(59) // 59 minutes later in relative time
-        
-        // Hour boundaries
-        expect(eastbound.relMins(60 + 45)).toBe(0) // Next hour, minute 45
+        expect(eb.relMins(45)).toBe(0)
+        expect(eb.relMins(46)).toBe(1)
+        expect(eb.relMins(44)).toBe(59) // 59 minutes later in relative time
+        expect(eb.relMins(60 + 45)).toBe(0) // Next hour, minute 45
       })
     })
     
     describe('Phase detection', () => {
       it('should return correct phases for relative times', () => {
-        expect(eastbound.getPhase(0)).toBe('bikes-enter') // :45 (minute 0 relative)
-        expect(eastbound.getPhase(1)).toBe('bikes-enter') // :46 (minute 1 relative)
-        expect(eastbound.getPhase(2)).toBe('bikes-enter') // :47 (minute 2 relative)
-        expect(eastbound.getPhase(3)).toBe('clearing') // :48 (minute 3 relative)
-        expect(eastbound.getPhase(5)).toBe('sweep') // :50 (minute 5 relative)
-        expect(eastbound.getPhase(10)).toBe('pace-car') // :55 (minute 10 relative)
-        expect(eastbound.getPhase(15)).toBe('normal') // :00 (minute 15 relative)
+        expect(eb.getPhase(0)).toBe('bikes-enter') // :45 (minute 0 relative)
+        expect(eb.getPhase(1)).toBe('bikes-enter') // :46 (minute 1 relative)
+        expect(eb.getPhase(2)).toBe('bikes-enter') // :47 (minute 2 relative)
+        expect(eb.getPhase(3)).toBe('clearing') // :48 (minute 3 relative)
+        expect(eb.getPhase(5)).toBe('sweep') // :50 (minute 5 relative)
+        expect(eb.getPhase(10)).toBe('pace-car') // :55 (minute 10 relative)
+        expect(eb.getPhase(15)).toBe('normal') // :00 (minute 15 relative)
       })
     })
     
     describe('Early bikes (spawn before pen opens)', () => {
       it('should position first bike correctly at pen opening', () => {
-        const firstBike = eastbound.bikes[0] // Spawns at :00
+        const firstBike = eb.bikes[0] // Spawns at :00
         
         // At pen opening (:45), first bike should be released immediately
         const position = firstBike.getPos(45)
@@ -50,8 +43,8 @@ describe('Tunnel', () => {
       })
       
       it('should stagger bike releases correctly', () => {
-        const firstBike = eastbound.bikes[0] // Index 0
-        const secondBike = eastbound.bikes[1] // Index 1
+        const firstBike = eb.bikes[0] // Index 0
+        const secondBike = eb.bikes[1] // Index 1
         
         // First bike should be released at :45:00
         const firstPos = firstBike.getPos(45)
@@ -82,7 +75,7 @@ describe('Tunnel', () => {
         
         // A bike arriving at relative minute 1 (:46) should join immediately
         const relativeTime = 1 // 1 minute after pen opens
-        const phase = eastbound.getPhase(relativeTime)
+        const phase = eb.getPhase(relativeTime)
         expect(phase).toBe('bikes-enter')
       })
     })
@@ -91,16 +84,14 @@ describe('Tunnel', () => {
       it('should queue late arrivals for next cycle', () => {
         // Test the concept - bikes arriving after :47 should wait for next cycle
         const relativeTime = 5 // 5 minutes after pen opens (:50)
-        const phase = eastbound.getPhase(relativeTime)
+        const phase = eb.getPhase(relativeTime)
         expect(phase).toBe('sweep') // Not bikes-enter anymore
       })
     })
     
     describe('Cars in L lane (always flow)', () => {
       it('should allow L lane cars to flow during bike phases', () => {
-        const lCars = eastbound.cars.filter(car => car.laneId === 'L')
-        const carAt46 = lCars.find(car => car.spawnMin === 46)
-        
+        const carAt46 = eb.cars.l.find(car => car.spawnMin === 46)
         if (carAt46) {
           // L lane car spawning at :46 should flow normally
           const position = carAt46.getPos(46)
@@ -112,9 +103,7 @@ describe('Tunnel', () => {
 
     describe('Cars in R lane (may queue)', () => {
       it('should queue R lane cars during bike phases', () => {
-        const rCars = eastbound.cars.filter(car => car.laneId === 'R')
-        const carAt46 = rCars.find(car => car.spawnMin === 46)
-        
+        const carAt46 = eb.cars.r.find(car => car.spawnMin === 46)
         if (carAt46) {
           // R lane car spawning at :46 should be queued
           const position = carAt46.getPos(46)
@@ -125,8 +114,7 @@ describe('Tunnel', () => {
       })
 
       it('should release queued cars when pace car starts', () => {
-        const rCars = eastbound.cars.filter(car => car.laneId === 'R')
-        const carAt45 = rCars.find(car => car.spawnMin === 45)
+        const carAt45 = eb.cars.r.find(car => car.spawnMin === 45)
         
         if (carAt45) {
           // At :45, car should be queued

@@ -18,19 +18,19 @@ export interface TunnelsConfig {
   }
 }
 
-export interface GlobalVehiclePosition {
-  x: number
-  y: number
-  state: 'staging' | 'tunnel' | 'exiting'
-  opacity: number
-  direction: 'east' | 'west'  // Current movement direction
+export type Vehicle<Metadata = any> = {
+  id: string
+  type: 'bike' | 'car' | 'sweep' | 'pace'
+  position: { x: number, y: number, state: string, opacity: number }
+  direction: 'east' | 'west'
+  metadata: Metadata
 }
 
 export class Tunnels {
   public eastbound: Tunnel
   public westbound: Tunnel
   public sweepConfig: { speed: number, stagingOffset: number }
-  public paceConfig: { speed: number, stagingOffset: number }
+  public  paceConfig: { speed: number, stagingOffset: number }
   private sweep: Sweep
   private pace: Pace
   private colorRects: ColorRectangles
@@ -54,20 +54,8 @@ export class Tunnels {
   }
 
   // Get all vehicles for rendering
-  getAllVehicles(absMins: number): Array<{
-    id: string
-    type: 'bike' | 'car' | 'sweep' | 'pace'
-    position: { x: number, y: number, state: string, opacity: number }
-    direction: 'east' | 'west'
-    metadata: any
-  }> {
-    const vehicles: Array<{
-      id: string
-      type: 'bike' | 'car' | 'sweep' | 'pace'
-      position: { x: number, y: number, state: string, opacity: number }
-      direction: 'east' | 'west'
-      metadata: any
-    }> = []
+  getAllVehicles(absMins: number): Array<Vehicle> {
+    const vehicles: Array<Vehicle> = []
     
     // Eastbound vehicles
     
@@ -84,7 +72,7 @@ export class Tunnels {
       }
     })
     
-    this.e.cars.forEach(car => {
+    this.e.allCars.forEach(car => {
       const position = car.getPos(absMins)
       if (position) {
         vehicles.push({
@@ -111,7 +99,7 @@ export class Tunnels {
       }
     })
     
-    this.w.cars.forEach(car => {
+    this.w.allCars.forEach(car => {
       const position = car.getPos(absMins)
       if (position) {
         vehicles.push({

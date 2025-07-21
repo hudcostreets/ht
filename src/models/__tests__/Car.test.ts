@@ -14,13 +14,13 @@ describe('Car', () => {
     
     // At spawn time, car should be at tunnel entrance
     const pos = car.getPos(45) // Absolute minute 45 = relative minute 0 for eastbound
-    console.log('Car timePositions:', car.timePositions)
+    console.log('Car timePositions:', car.pos)
     console.log('Car position at 45:', pos)
     console.log('Tunnel relMins(45):', tunnel.relMins(45))
     
     expect(pos).toBeTruthy()
-    expect(pos!.state).toBe('transiting')
-    expect(pos!.x).toBe(0) // Tunnel entrance
+    expect(pos?.state).toBe('transiting')
+    expect(pos?.x).toBe(0) // Tunnel entrance
   })
   
   it('should handle queued car', () => {
@@ -34,7 +34,7 @@ describe('Car', () => {
     
     // At spawn time (relative minute 1), car should be queued
     const pos = car.getPos(46)
-    console.log('Queued car timePositions:', car.timePositions)
+    console.log('Queued car timePositions:', car.pos)
     console.log('Queued car position at 46:', pos)
     
     expect(pos).toBeTruthy()

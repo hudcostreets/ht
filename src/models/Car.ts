@@ -1,8 +1,6 @@
 import { Lane, LaneId } from "./Lane"
-import { type TimePos as TimePos0, Tunnel } from "./Tunnel"
-
-export type State = 'origin' | 'queued' | 'dequeueing' | 'transiting' | 'exiting' | 'done'
-export type TimePos = TimePos0<State>
+import {field, Pos, Tunnel} from "./Tunnel"
+import { TimeVal } from "./TimeVal"
 
 export type SpawnQueue = {
   offsetPx: number // Offset in px from the start of the tunnel
@@ -23,7 +21,7 @@ export class Car {
   public id: number
   public spawnMin: number
   public spawnQueue?: SpawnQueue
-  public timePositions: TimePos[] = []
+  public pos: TimeVal<Pos>
 
   constructor({ tunnel, laneId, spawnMin, spawnQueue }: Props) {
     this.tunnel = tunnel
@@ -35,7 +33,7 @@ export class Car {
     const lane = this.lane
     const { d } = tunnel
 
-    const { laneWidthPx, lengthMi, carMph, fadeDistance, } = tunnel.config
+    const { laneWidthPx, lengthMi, carMph, fadeDistance, period, } = tunnel.config
     const tunnelMins = (lengthMi / carMph) * 60 // Convert hours to minutes
     if (spawnQueue) {
       // Car needs to queue
@@ -48,74 +46,40 @@ export class Car {
       const transitingMin = minsBeforeDequeueStart + (offsetPx / pxPerMin)
       const exitingMin = transitingMin + tunnelMins
       
-      this.timePositions = [
-        { mins: 0, x: queueX, y, state: 'queued', opacity: 1 },
-        { mins: minsBeforeDequeueStart, x: queueX, y, state: 'dequeueing', opacity: 1 },
-        { mins: transitingMin, ...lane.entrance, state: 'transiting', opacity: 1 },
-        { mins: exitingMin, ...lane.exit, state: 'exiting', opacity: 1 },
-        { mins: exitingMin + 1, ...lane.dest, state: 'done', opacity: 0 },
-        { mins: exitingMin + 2, ...origin, state: 'origin', opacity: 0 },
-        { mins: tunnel.config.period - 1, ...origin, state: 'origin', opacity: 0 },
-      ]
+      this.pos = new TimeVal<Pos>(
+        [
+          { min: 0, val: { x: queueX, y, state: 'queued', opacity: 1 }, },
+          { min: minsBeforeDequeueStart, val: { x: queueX, y, state: 'dequeueing', opacity: 1 }, },
+          { min: transitingMin, val: { ...lane.entrance, state: 'transiting', opacity: 1 }, },
+          { min: exitingMin, val: { ...lane.exit, state: 'exiting', opacity: 1 }, },
+          { min: exitingMin + 1, val: { ...lane.dest, state: 'done', opacity: 0 }, },
+          { min: exitingMin + 2, val: { ...origin, state: 'origin', opacity: 0 }, },
+          { min: tunnel.config.period - 1, val: { ...origin, state: 'origin', opacity: 0 }, },
+        ],
+        field, period,
+      )
     } else {
       // Car flows normally (no queueing)
       const x = lane.entrance.x
       const y = lane.entrance.y
       const origin = { x: x - fadeDistance * d, y }
       
-      this.timePositions = [
-        { mins: 0, ...lane.entrance, state: 'transiting', opacity: 1 },
-        { mins: tunnelMins, ...lane.exit, state: 'exiting', opacity: 1 },
-        { mins: tunnelMins + 1, ...lane.dest, state: 'done', opacity: 0 },
-        { mins: tunnelMins + 2, ...origin, state: 'origin', opacity: 0 },
-        { mins: tunnel.config.period - 1, ...origin, state: 'origin', opacity: 0 },
-      ]
+      this.pos = new TimeVal<Pos>(
+        [
+          { min: 0, val: { ...lane.entrance, state: 'transiting', opacity: 1 }, },
+          { min: tunnelMins, val: { ...lane.exit, state: 'exiting', opacity: 1 }, },
+          { min: tunnelMins + 1, val: { ...lane.dest, state: 'done', opacity: 0 }, },
+          { min: tunnelMins + 2, val: { ...origin, state: 'origin', opacity: 0 }, },
+          { min: tunnel.config.period - 1, val: { ...origin, state: 'origin', opacity: 0 }, },
+        ],
+        field, period,
+      )
     }
   }
 
-  getPos(absMins: number): { x: number, y: number, state: string, opacity: number } | null {
-    if (this.timePositions.length === 0) return null
-    
-    const period = this.tunnel.config.period
-    const tunnelRelMins = this.tunnel.relMins(absMins)
-    
-    // Calculate position within the repeating cycle
-    // Cars repeat their pattern every period minutes
-    let cycleTime = (tunnelRelMins - this.spawnMin) % period
-    if (cycleTime < 0) cycleTime += period
-
-    // Check if we're before the first time position
-    const first = this.timePositions[0]
-    if (cycleTime < first.mins) {
-      // Still before first position in this cycle
-      return null
-    }
-
-    // Find the appropriate time segment
-    for (let i = 0; i < this.timePositions.length - 1; i++) {
-      const current = this.timePositions[i]
-      const next = this.timePositions[i + 1]
-
-      if (cycleTime >= current.mins && cycleTime < next.mins) {
-        // Interpolate between current and next
-        const t = (cycleTime - current.mins) / (next.mins - current.mins)
-
-        return {
-          x: current.x + (next.x - current.x) * t,
-          y: current.y + (next.y - current.y) * t,
-          state: current.state,
-          opacity: current.opacity + (next.opacity - current.opacity) * t
-        }
-      }
-    }
-
-    // Check if we're past the last time position
-    const last = this.timePositions[this.timePositions.length - 1]
-    if (cycleTime >= last.mins) {
-      // We're at the end of the cycle, waiting to respawn
-      return null
-    }
-
-    return null
+  getPos(absMins: number): Pos {
+    const relMins = this.tunnel.relMins(absMins)
+    return this.pos.at(relMins)
   }
+
 }

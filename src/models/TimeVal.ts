@@ -16,17 +16,15 @@ export const Num: Field<number> = {
   mul: (l, r) => l * r,
 }
 
-export type Interp<T> = (start: TimePoint<T>, end: TimePoint<T>, mins: number) => T
-
 export class TimeVal<T> {
   public points: TimePoint<T>[]
   public field: Field<T>
-  public period?: number // Optional period for cyclic values
+  public period: number
 
   constructor(
     points: TimePoint<T>[],
     field: Field<T>,
-    period?: number
+    period: number
   ) {
     this.points = points
     this.field = field
@@ -42,12 +40,22 @@ export class TimeVal<T> {
     }
   }
 
+  get length(): number {
+    return this.points.length;
+  }
+
   interpolate(
     start: TimePoint<T>,
     end: TimePoint<T>,
     mins: number,
   ): T {
-    const { field: { add, sub, mul } } = this
+    const { field: { add, sub, mul }, period, } = this
+    if (end.min < start.min) {
+      if (mins < end.min) {
+        mins += period
+      }
+      end = { ...end, min: end.min + period }
+    }
     const totalMins = end.min - start.min
     if (totalMins <= 0) {
       throw new Error("End time must be greater than start time")

@@ -7,11 +7,15 @@ describe('TimeVal', () => {
       const tv = new TimeVal([
         { min: 0, val: 0 },
         { min: 10, val: 100 }
-      ], Num)
+      ], Num, 15)
       
       expect(tv.at(0)).toBe(0)
       expect(tv.at(5)).toBe(50)
       expect(tv.at(10)).toBe(100)
+      expect(tv.at(11)).toBe(80)
+      expect(tv.at(14)).toBe(20)
+      expect(tv.at(15)).toBe(0)
+      expect(tv.at(-1)).toBe(20)
     })
     
     it('should handle multiple points', () => {
@@ -19,7 +23,7 @@ describe('TimeVal', () => {
         { min: 0, val: 0 },
         { min: 10, val: 100 },
         { min: 20, val: 50 }
-      ], Num)
+      ], Num, 25)
       
       expect(tv.at(0)).toBe(0)
       expect(tv.at(5)).toBe(50)
@@ -75,7 +79,7 @@ describe('TimeVal', () => {
         { min: 5, val: 50 },
         { min: 15, val: 150 },
         { min: 25, val: 75 }
-      ], Num)
+      ], Num, 26)
       
       expect(tv.at(5)).toBe(50)
       expect(tv.at(15)).toBe(150)
@@ -86,7 +90,7 @@ describe('TimeVal', () => {
       const tv = new TimeVal([
         { min: 10, val: 100 },
         { min: 20, val: 200 }
-      ], Num)
+      ], Num, 21)
       
       expect(tv.at(0)).toBe(100)
       expect(tv.at(5)).toBe(100)
@@ -97,7 +101,7 @@ describe('TimeVal', () => {
       const tv = new TimeVal([
         { min: 10, val: 100 },
         { min: 20, val: 200 }
-      ], Num)
+      ], Num, 21)
       
       expect(tv.at(20)).toBe(200)
       expect(tv.at(25)).toBe(200)
@@ -110,18 +114,18 @@ describe('TimeVal', () => {
       expect(() => new TimeVal([
         { min: 10, val: 100 },
         { min: 5, val: 50 } // Out of order
-      ], Num)).toThrow('strictly ascending')
+      ], Num, 11)).toThrow('strictly ascending')
     })
     
     it('should throw error for duplicate time points', () => {
       expect(() => new TimeVal([
         { min: 10, val: 100 },
         { min: 10, val: 200 } // Duplicate
-      ], Num)).toThrow('strictly ascending')
+      ], Num, 11)).toThrow('strictly ascending')
     })
     
     it('should throw error for empty points', () => {
-      expect(() => new TimeVal([], Num)).toThrow('at least one point')
+      expect(() => new TimeVal([], Num, 10)).toThrow('at least one point')
     })
   })
 })

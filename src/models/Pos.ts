@@ -22,35 +22,3 @@ export const field: Field<Pos> = {
   sub: (l: Pos, r: Pos): Pos => ({ x: l.x - r.x, y: l.y - r.y }),
   mul: (l: Pos, r: number): Pos => ({ x: l.x * r, y: l.y * r }),
 }
-
-// export class Pos {
-//   public x: number
-//   public y: number
-//
-//   // Constructor should accept { x: number, y: number }, two numbers, or [ number, number ]
-//   constructor(x: number | { x: number, y: number } | [number, number], y?: number) {
-//     if (typeof x === 'object') {
-//       this.x = x.x
-//       this.y = x.y
-//     } else if (Array.isArray(x)) {
-//       this.x = x[0]
-//       this.y = x[1]
-//     } else {
-//       this.x = x
-//       this.y = y ?? 0
-//     }
-//   }
-//
-//   // Add a Pos to this one
-//   add(other: Pos): Pos {
-//     return new Pos(this.x + other.x, this.y + other.y);
-//   }
-//
-//   addX(x: number): Pos {
-//     return new Pos(this.x + x, this.y);
-//   }
-//
-//   addY(y: number): Pos {
-//     return new Pos(this.x, this.y + y);
-//   }
-// }

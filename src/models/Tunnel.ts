@@ -2,6 +2,7 @@ import { Bike } from "./Bike"
 import { Car } from "./Car"
 import { Lane } from "./Lane"
 import { pos } from "./Pos"
+import {Field} from "./TimeVal.ts";
 
 export type Direction = 'east' | 'west'
 
@@ -30,23 +31,32 @@ export interface TunnelConfig {
   queuedCarWidthPx: number
 }
 
-// export type Phase = 'cars' | 'pen-open' | 'pen-closed' | 'sweep' | 'pace-car'
-
-export interface TimePos<S extends String> {
-  mins: number
+export type State = 'origin' | 'queued' | 'dequeueing' | 'transiting' | 'exiting' | 'done'
+export type Pos = {
   x: number
   y: number
-  state: S
+  state: State
   opacity: number
+}
+
+export const field: Field<Pos> = {
+  add: (l: Pos, r: Pos): Pos => ({ x: l.x + r.x, y: l.y + r.y, state: l.state, opacity: l.opacity + r.opacity }),
+  sub: (l: Pos, r: Pos): Pos => ({ x: l.x - r.x, y: l.y - r.y, state: l.state, opacity: l.opacity - r.opacity }),
+  mul: (l: Pos, r: number): Pos => ({ x: l.x * r, y: l.y * r, state: l.state, opacity: l.opacity * r }),
+}
+
+export type Cars = {
+  l: Car[]
+  r: Car[]
 }
 
 export class Tunnel {
   public config: TunnelConfig
   public dir: Direction
   public d: number
-  public bikes: Bike[] = []
+  public bikes: Bike[]
   public nbikes: number
-  public cars: Car[] = []
+  public cars: Cars
   public ncars: number
   public l: Lane
   public r: Lane
@@ -79,19 +89,20 @@ export class Tunnel {
     })
 
     // Create bikes
+    this.bikes = []
     for (let i = 0; i < this.nbikes; i++) {
       const spawn = config.period * i / this.nbikes
       this.bikes.push(new Bike(this, i, spawn))
     }
 
     // Create cars
-    this.ncars = config.period * carsPerMin
+    const lcars: Car[] = []
     const rcars: Car[] = []
+    this.cars = { l: lcars, r: rcars }
+    this.ncars = config.period * carsPerMin
     for (let i = 0; i < this.ncars; i++) {
-      this.cars.push(new Car({ tunnel: this, laneId: 'L', spawnMin: config.period * (i + .5) / this.ncars, }))
-      const rcar = new Car({ tunnel: this, laneId: 'R', spawnMin: config.period * i / this.ncars, })
-      rcars.push(rcar)
-      this.cars.push(rcar)
+      lcars.push(new Car({ tunnel: this, laneId: 'L', spawnMin: config.period * (i + .5) / this.ncars, })) // Stagger L cars by half a phase
+      rcars.push(new Car({ tunnel: this, laneId: 'R', spawnMin: config.period *  i       / this.ncars, }))
     }
 
     // Compute nQueueCars{0,1} by iteratively dequeueing rcars, and enqueueing any that would have spawned during the time that took
@@ -163,6 +174,10 @@ export class Tunnel {
       }
       // else: Car flows normally, leave spawnQueue undefined
     }
+  }
+
+  public get allCars(): Car[] {
+    return [ ...this.cars.l, ...this.cars.r ]
   }
 
   public get offset(): number {
