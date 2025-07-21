@@ -70,16 +70,21 @@ export class Car {
           { min: tunnelMins, val: { ...lane.exit, state: 'exiting', opacity: 1 }, },
           { min: tunnelMins + 1, val: { ...lane.dest, state: 'done', opacity: 0 }, },
           { min: tunnelMins + 2, val: { ...origin, state: 'origin', opacity: 0 }, },
-          { min: tunnel.config.period - 1, val: { ...origin, state: 'origin', opacity: 0 }, },
+          { min: period - 1, val: { ...origin, state: 'origin', opacity: 0 }, },
         ],
         field, period,
       )
     }
   }
 
-  getPos(absMins: number): Pos {
+  getPos(absMins: number): Pos | null {
     const relMins = this.tunnel.relMins(absMins)
-    return this.pos.at(relMins)
+    
+    // Offset by spawn time - car's minute 0 corresponds to its spawnMin in tunnel time
+    // TimeVal expects time relative to the car's lifecycle, not tunnel time
+    const carTime = (relMins - this.spawnMin + this.tunnel.config.period) % this.tunnel.config.period
+    
+    return this.pos.at(carTime)
   }
 
 }

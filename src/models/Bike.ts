@@ -112,6 +112,10 @@ export class Bike {
 
   getPos(absMins: number): { x: number, y: number, state: string, opacity: number } {
     const relMins = this.tunnel.relMins(absMins)
-    return this.pos.at(relMins)
+    
+    // Offset by spawn time - bike's minute 0 corresponds to its spawnMin in tunnel time
+    const bikeTime = (relMins - this.spawnMin + this.tunnel.config.period) % this.tunnel.config.period
+    
+    return this.pos.at(bikeTime)
   }
 }
