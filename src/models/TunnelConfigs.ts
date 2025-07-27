@@ -30,17 +30,21 @@ export const Common = {
 export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
   eastbound: {
     direction: 'east',
-    offsetMin: 45,
-    penRelativeX: -LAYOUT.QUEUE_AREA_WIDTH + 70,  // Relative to tunnel start
-    penRelativeY: 110,  // Below the lanes
+    offsetMin: 45,  // Bike pen opens at :45
+    penOffset: {
+      x: -LAYOUT.QUEUE_AREA_WIDTH + 70,  // Relative to tunnel start
+      y: 110,  // Below the lanes
+    },
     ...Common,
   },
   
   westbound: {
     direction: 'west',
-    offsetMin: 15,  // Pen opens at :15
-    penRelativeX: LAYOUT.TUNNEL_WIDTH + 70,  // Relative to tunnel start
-    penRelativeY: -80,  // Above the lanes
+    offsetMin: 15,  // Bike pen opens at :15
+    penOffset: {
+      x: LAYOUT.TUNNEL_WIDTH + 70,  // Relative to tunnel start
+      y: -80,  // Above the lanes
+    },
     ...Common,
   },
   

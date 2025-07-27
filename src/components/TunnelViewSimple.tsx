@@ -131,7 +131,7 @@ function getTooltip(vehicle: any): string {
     const lane = vehicle.metadata.lane === 'L' ? 'L' : 'R'
     return `:${vehicle.metadata.spawnMinute.toString().padStart(2, '0')} - ${lane} lane - ${dir}`
   } else if (vehicle.type === 'bike') {
-    return `#${vehicle.metadata.idx + 1} - :${vehicle.metadata.spawnMinute.toString().padStart(2, '0')} spawn - ${dir}`
+    return `#${vehicle.metadata.idx} - :${vehicle.metadata.spawnMinute.toString().padStart(2, '0')} spawn - ${dir}`
   } else if (vehicle.type === 'sweep') {
     return `Sweep - ${dir}`
   } else {

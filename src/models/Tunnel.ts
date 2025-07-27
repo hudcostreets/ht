@@ -32,8 +32,7 @@ export interface TunnelConfig {
   // Layout
   laneWidthPx: number
   laneHeightPx: number
-  penRelativeX: number   // Relative to R lane start
-  penRelativeY: number   // Relative to R lane start
+  penOffset: XY  // Relative to R Lane entrance
   penWidthPx: number
   penHeightPx: number
   fadeMins: number
@@ -164,7 +163,6 @@ export class Tunnel {
       }
     }
 
-    let bikes = [ ...bikes1, ...bikes0 ]
     const interp: Interp<number> = ({ start, min }) => (start.val - (min - start.min) * bikesPerMin)
     queueLen = bikes1.length
     const bikeQueueLenPts: TimePoint<number>[] = []
@@ -191,7 +189,7 @@ export class Tunnel {
     })
     const bikeQueueLen = new TimeVal(bikeQueueLenPts, Num, period)
     const bikesPerRow = bikesReleasedPerMin
-    bikes = [ ...bikes0, ...bikes1 ]
+    const bikes = [ ...bikes0, ...bikes1 ]
     for (const bike of bikes) {
       const { spawnMin } = bike
       const queueLen = bikeQueueLen.at(spawnMin)
@@ -209,11 +207,16 @@ export class Tunnel {
           minsDequeueing: queueLen / bikesReleasedPerMin,
         }
       }
-      const { idx, spawnQueue } = bike
-      console.log(`bike ${idx}:`, bike.points(), spawnQueue)
     }
-
-    this.bikes = bikes
+    this.bikes = []
+    for (const bike of bikes) {
+      const split = bike.split()
+      for (const b of split) {
+        const { idx, spawnQueue, spawnMin, } = b
+        console.log(`bike ${idx} (${spawnMin}):`, b.points(), spawnQueue)
+      }
+      this.bikes.push(...split)
+    }
   }
 
   public get allCars(): Car[] {

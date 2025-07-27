@@ -8,7 +8,7 @@ export class Car extends Vehicle {
     return this.config.bikeFlatMph
   }
 
-  points(): TimePoint<Pos>[] {
+  get _points(): TimePoint<Pos>[] {
     const { tunnel, spawnQueue, lane, fadeDist } = this
     const { d, config } = tunnel
     const { lengthMi, carMph, period, fadeMins, } = config
