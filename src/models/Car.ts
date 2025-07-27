@@ -11,7 +11,7 @@ export class Car extends Vehicle {
   points(): TimePoint<Pos>[] {
     const { tunnel, spawnQueue, lane, fadeDist } = this
     const { d, config } = tunnel
-    const { lengthMi, carMph, period, } = config
+    const { lengthMi, carMph, period, fadeMins, } = config
     const tunnelMins = (lengthMi / carMph) * 60 // Convert hours to minutes
     let transitingMin: number
     let initPos: XY
@@ -38,13 +38,14 @@ export class Car extends Vehicle {
     const origin = { ...initPos }
     initPos.x -= fadeDist * d
     const exitingMin = transitingMin + tunnelMins
+    const fadedMin = exitingMin + fadeMins
     const fadeDest = { x: lane.exit.x + fadeDist * d, y: lane.exit.y }
     return [
       ...points,
       { min: transitingMin, val: { ...lane.entrance, state: 'transiting', opacity: 1 }, },
       { min: exitingMin, val: { ...lane.exit, state: 'exiting', opacity: 1 }, },
-      { min: exitingMin + 1, val: { ...fadeDest, state: 'done', opacity: 0 }, },
-      { min: exitingMin + 2, val: { ...origin, state: 'origin', opacity: 0 }, },
+      { min: fadedMin, val: { ...fadeDest, state: 'done', opacity: 0 }, },
+      { min: fadedMin + 1, val: { ...origin, state: 'origin', opacity: 0 }, },
       { min: period - 1, val: { ...origin, state: 'origin', opacity: 0 }, },
     ]
   }

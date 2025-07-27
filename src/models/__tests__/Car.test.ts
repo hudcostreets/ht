@@ -8,35 +8,34 @@ describe('Car', () => {
     const tunnel = new Tunnel(HOLLAND_TUNNEL_CONFIG.eastbound)
     const car = new Car({ 
       tunnel, 
-      laneId: 'L', 
-      spawnMin: 0
+      laneId: 'L',
+      idx: 0,
+      spawnMin: 5,
     })
     
     // At spawn time, car should be at tunnel entrance
-    const pos = car.getPos(45) // Absolute minute 45 = relative minute 0 for eastbound
-    console.log('Car timePositions:', car.pos)
-    console.log('Car position at 45:', pos)
-    console.log('Tunnel relMins(45):', tunnel.relMins(45))
-    
-    expect(pos).toBeTruthy()
-    expect(pos?.state).toBe('transiting')
-    expect(pos?.x).toBe(0) // Tunnel entrance
+    const pos = car.getPos(5) // Absolute minute 45 = relative minute 0 for eastbound
+    // console.log('Car timePositions:', car.pos)
+    // console.log('Car position at 45:', pos)
+    // console.log('Tunnel relMins(45):', tunnel.relMins(45))
+    expect(pos.state).toBe('transiting')
+    expect(pos.x).toBe(0) // Tunnel entrance
   })
   
   it('should handle queued car', () => {
     const tunnel = new Tunnel(HOLLAND_TUNNEL_CONFIG.eastbound)
     const car = new Car({ 
       tunnel, 
-      laneId: 'R', 
-      spawnMin: 1,  // Spawns at tunnel-relative minute 1
-      spawnQueue: { offsetPx: 30, minsBeforeDequeueing: 9 }
+      laneId: 'R',
+      idx: 0,
+      spawnMin: 0,
+      spawnQueue: { offset: { x: 30, y: 0 }, minsBeforeDequeueing: 9, minsDequeueing: 0, }
     })
     
-    // At spawn time (absolute minute 46 = tunnel relative minute 1), car should be queued
-    const pos = car.getPos(46)  // Absolute minute 46 = relative minute 1 for eastbound
-    console.log('Queued car timePositions:', car.pos)
-    console.log('Queued car position at 46:', pos)
-    console.log('Car spawnMin:', car.spawnMin)
+    const pos = car.getPos(0)
+    // console.log('Queued car timePositions:', car.pos)
+    // console.log('Queued car position at 45:', pos)
+    // console.log('Car spawnMin:', car.spawnMin)
     
     expect(pos).toBeTruthy()
     expect(pos!.state).toBe('queued')

@@ -2,7 +2,8 @@ import { Bike } from "./Bike"
 import {Car} from "./Car"
 import { Lane } from "./Lane"
 import {XY, xy} from "./XY.ts"
-import {Field} from "./TimeVal"
+import {Field, Start, Interp, Num, TimePoint, TimeVal} from "./TimeVal"
+const { floor, max, } = Math
 
 export type Direction = 'east' | 'west'
 
@@ -74,10 +75,18 @@ export class Tunnel {
   
   constructor(config: TunnelConfig) {
     this.config = config
-    const { bikesPerMin, carsPerMin, carsReleasedPerMin, laneWidthPx, laneHeightPx, direction, paceCarStartMin, carMph, lengthMi, queuedCarWidthPx, } = config
+    const {
+      bikesPerMin, bikesReleasedPerMin,
+      carsPerMin, carsReleasedPerMin,
+      laneWidthPx, laneHeightPx,
+      direction,
+      paceCarStartMin, penCloseMin,
+      queuedCarWidthPx,
+      period,
+    } = config
     this.dir = direction
     this.d = direction === 'east' ? 1 : -1
-    this.nbikes = config.period * bikesPerMin
+    this.nbikes = period * bikesPerMin
     const { nbikes, d } = this
 
     // Create lanes
@@ -94,15 +103,19 @@ export class Tunnel {
       exit: xy(end, laneHeightPx * (1 + d * .5)),
     })
 
+    if ((period - penCloseMin) * carsReleasedPerMin < carsPerMin * period) {
+      throw new Error(`${period - penCloseMin}mins x ${carsReleasedPerMin} cars/min = ${(period - penCloseMin) * carsReleasedPerMin} cars/period, but ${period}mins x ${carsPerMin} cars/min = ${period * carsPerMin} cars`)
+    }
+
     // Create cars
     const lcars: Car[] = []
     const rcars: Car[] = []
     this.cars = { l: lcars, r: rcars }
-    this.ncars = config.period * carsPerMin
+    this.ncars = period * carsPerMin
     const { ncars } = this
     for (let idx = 0; idx < ncars; idx++) {
-      lcars.push(new Car({ tunnel: this, laneId: 'L', idx, spawnMin: config.period * (idx + .5) / ncars, })) // Stagger L cars by half a phase
-      rcars.push(new Car({ tunnel: this, laneId: 'R', idx, spawnMin: config.period *  idx       / ncars, }))
+      lcars.push(new Car({ tunnel: this, laneId: 'L', idx, spawnMin: period * (idx + .5) / ncars, })) // Stagger L cars by half a phase
+      rcars.push(new Car({ tunnel: this, laneId: 'R', idx, spawnMin: period *  idx       / ncars, }))
     }
 
     // Populate rcars' spawnQueue elems
@@ -114,13 +127,13 @@ export class Tunnel {
       const { spawnMin } = rcar
       const elapsed = spawnMin - prvSpawnMin
       const carsElapsed = elapsed * carsReleasedPerMin
-      queueLen = Math.max(queueLen - carsElapsed, 0)
+      queueLen = max(queueLen - carsElapsed, 0)
       const queueOpenMin = paceCarStartMin
       // Handle period wrapping - if car arrives in blocked period of this or next cycle
       if (spawnMin < queueOpenMin || queueLen > 0) {
         // Car needs to queue
         const queueOffsetX = queueLen * queuedCarWidthPx
-        const minsBeforeDequeueing = Math.max(queueOpenMin - spawnMin, 0)
+        const minsBeforeDequeueing = max(queueOpenMin - spawnMin, 0)
         queueLen++
         const minsDequeueing = queueLen / carsReleasedPerMin
         rcar.spawnQueue = {
@@ -134,58 +147,73 @@ export class Tunnel {
     }
 
     // Calculate bike queueing
-    let bikeQueueIdx = 0
-    let currentReleaseMin = 0
-    const bikesPerRow = config.bikesReleasedPerMin  // Bikes arranged in rows
+    if (penCloseMin * bikesReleasedPerMin < bikesPerMin * period) {
+      throw new Error(`${penCloseMin}mins x ${bikesReleasedPerMin} bikes/min = ${penCloseMin * bikesReleasedPerMin} bikes/period, but ${period}mins x ${bikesPerMin} bikes/min = ${period * bikesPerMin} bikes`)
+    }
 
     // Create bikes
-    this.bikes = []
+    const bikes0 = []
+    const bikes1 = []
     for (let idx = 0; idx < nbikes; idx++) {
-      const spawnMin = config.period * idx / nbikes
-      let spawnQueue: SpawnQueue | undefined = undefined
-      if (spawnMin >= 0 && spawnMin < config.penCloseMin) {
-        // Bike arrives during pen window - flows immediately
-        // No queue info needed
+      const spawnMin = period * idx / nbikes
+      const bike = new Bike({ tunnel: this, laneId: 'R', idx, spawnMin })
+      if (spawnMin >= penCloseMin) {
+        bikes1.push(bike)
       } else {
-        // Bike needs to queue
-        const row = Math.floor(bikeQueueIdx / bikesPerRow)
-        const col = bikeQueueIdx % bikesPerRow
-
-        // Calculate when this bike will be released
-        const transitingMin = currentReleaseMin + (bikeQueueIdx / config.bikesReleasedPerMin)
-
-        spawnQueue = {
-          offset: { x: col * 20, y: row * 15, },
-          transitingMin,
-        }
-
-        bikeQueueIdx++
+        bikes0.push(bike)
       }
-      const bike = new Bike({ tunnel: this, laneId: 'R', idx, spawnMin, spawnQueue })
-      this.bikes.push(bike)
     }
 
-    for (const bike of this.bikes) {
-      console.log("bike:", bike.spawnMin, config.penCloseMin)
-      if (bike.spawnMin >= 0 && bike.spawnMin < config.penCloseMin) {
-        // Bike arrives during pen window - flows immediately
-        // No queue info needed
+    let bikes = [ ...bikes1, ...bikes0 ]
+    const interp: Interp<number> = ({ start, min }) => (start.val - (min - start.min) * bikesPerMin)
+    queueLen = bikes1.length
+    const bikeQueueLenPts: TimePoint<number>[] = []
+    prvSpawnMin = 0
+    for (const bike of bikes0) {
+      const { spawnMin } = bike
+      const elapsed = spawnMin - prvSpawnMin
+      queueLen = queueLen - elapsed * bikesReleasedPerMin + 1
+      if (queueLen <= 0) {
+        // Queue is cleared. This bike doesn't need to queue, nor do the remainders from `bikes0` (that arrive while the pen is open)
+        bikeQueueLenPts.push({min: spawnMin, val: 0, interp})
+        break
       } else {
+        bikeQueueLenPts.push({min: spawnMin, val: queueLen, interp})
+      }
+      prvSpawnMin = spawnMin
+    }
+    const firstBikeMin = bikes1[0].spawnMin
+    if (penCloseMin < firstBikeMin) {
+      bikeQueueLenPts.push({ min: penCloseMin, val: 0, interp: Start })
+    }
+    bikes1.forEach(({ spawnMin }, idx) => {
+      bikeQueueLenPts.push({ min: spawnMin, val: idx + 1, interp: Start })
+    })
+    const bikeQueueLen = new TimeVal(bikeQueueLenPts, Num, period)
+    const bikesPerRow = bikesReleasedPerMin
+    bikes = [ ...bikes0, ...bikes1 ]
+    for (const bike of bikes) {
+      const { spawnMin } = bike
+      const queueLen = bikeQueueLen.at(spawnMin)
+      // console.log("bike:", spawnMin, penCloseMin)
+      if (queueLen > 0) {
         // Bike needs to queue
-        const row = Math.floor(bikeQueueIdx / bikesPerRow)
-        const col = bikeQueueIdx % bikesPerRow
-        
-        // Calculate when this bike will be released
-        const transitingMin = currentReleaseMin + (bikeQueueIdx / config.bikesReleasedPerMin)
-        
+        const idx = queueLen - 1
+        const row = floor(idx / bikesPerRow)
+        const col = idx % bikesPerRow
+        const offset = { x: col * 20, y: row * 15, }
+        const minsBeforeDequeueing = spawnMin >= penCloseMin ? (period - spawnMin) : 0
         bike.spawnQueue = {
-          offset: { x: col * 20, y: row * 15, },
-          transitingMin,
+          offset,
+          minsBeforeDequeueing,
+          minsDequeueing: queueLen / bikesReleasedPerMin,
         }
-        
-        bikeQueueIdx++
       }
+      const { idx, spawnQueue } = bike
+      console.log(`bike ${idx}:`, bike.points(), spawnQueue)
     }
+
+    this.bikes = bikes
   }
 
   public get allCars(): Car[] {
@@ -212,7 +240,7 @@ export class Tunnel {
 
   // Get phase at relative time (0 = pen opens)
   getPhase(relMins: number): 'normal' | 'bikes-enter' | 'clearing' | 'sweep' | 'pace-car' {
-    const minute = Math.floor(relMins)
+    const minute = floor(relMins)
     
     if (minute >= 0 && minute < this.config.penCloseMin) {
       return 'bikes-enter'

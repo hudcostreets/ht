@@ -1,7 +1,18 @@
 
+export type InterpArg<T> = {
+  start: TimePoint<T>
+  min: number
+  end: TimePoint<T>
+}
+
+export type Interp<T> = ((_: InterpArg<T>) => T)
+
+export const Start = <T>(arg: InterpArg<T>): T => arg.start.val
+
 export type TimePoint<T> = {
   min: number // Minutes from the start of the simulation
   val: T // The value at this time point
+  interp?: Interp<T> // Optional interpolation method
 }
 
 export type Field<T> = {
@@ -44,27 +55,34 @@ export class TimeVal<T> {
     return this.points.length;
   }
 
+  get linear(): Interp<T> {
+    return ({ start, min, end }) => {
+      const totalMins = end.min - start.min
+      if (totalMins <= 0) {
+        throw new Error("End time must be greater than start time")
+      }
+      const ratio = (min - start.min) / totalMins
+      return this.field.add(
+        start.val,
+        this.field.mul(this.field.sub(end.val, start.val), ratio)
+      )
+    }
+  }
+
   interpolate(
     start: TimePoint<T>,
     end: TimePoint<T>,
     mins: number,
   ): T {
-    const { field: { add, sub, mul }, period, } = this
+    const { period } = this
     if (end.min < start.min) {
       if (mins < end.min) {
         mins += period
       }
       end = { ...end, min: end.min + period }
     }
-    const totalMins = end.min - start.min
-    if (totalMins <= 0) {
-      throw new Error("End time must be greater than start time")
-    }
-    const ratio = (mins - start.min) / totalMins
-    return add(
-      start.val,
-      mul(sub(end.val, start.val), ratio)
-    )
+    const interp = start.interp ?? this.linear
+    return interp({ start, min: mins, end })
   }
 
   // Get the value at a specific minute

@@ -57,13 +57,13 @@ export abstract class Vehicle {
     return this._pos;
   }
 
-  getPos(absMins: number): Pos | null {
+  getPos(absMins: number): Pos {
     const relMins = this.tunnel.relMins(absMins)
 
     // Offset by spawn time - car's minute 0 corresponds to its spawnMin in tunnel time
     // TimeVal expects time relative to the car's lifecycle, not tunnel time
-    const carTime = (relMins - this.spawnMin + this.period) % this.period
+    const vehTime = (relMins - this.spawnMin + this.period) % this.period
 
-    return this.pos.at(carTime)
+    return this.pos.at(vehTime)
   }
 }

@@ -63,11 +63,11 @@ export class Tunnels {
       const position = bike.getPos(absMins)
       if (position) {
         vehicles.push({
-          id: `bike-e-${bike.index}`,
+          id: `bike-e-${bike.idx}`,
           type: 'bike',
           position,
           direction: 'east',
-          metadata: { spawnMinute: bike.spawnMin, index: bike.index }
+          metadata: { spawnMinute: bike.spawnMin, idx: bike.idx }
         })
       }
     })
@@ -90,11 +90,11 @@ export class Tunnels {
       const position = bike.getPos(absMins)
       if (position) {
         vehicles.push({
-          id: `bike-w-${bike.index}`,
+          id: `bike-w-${bike.idx}`,
           type: 'bike',
           position,
           direction: 'west',
-          metadata: { spawnMinute: bike.spawnMin, index: bike.index }
+          metadata: { spawnMinute: bike.spawnMin, idx: bike.idx }
         })
       }
     })
