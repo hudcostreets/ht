@@ -1,17 +1,19 @@
-import { LAYOUT, SPEEDS } from './Constants'
+import { LAYOUT } from './Constants'
 import type { TunnelsConfig } from './Tunnels'
 
 export const Common = {
   period: 60,
   lengthMi: 2,
   carMph: 24,      // mph
-  bikeUpMph: SPEEDS.BIKE_UPHILL,
-  bikeDownMph: SPEEDS.BIKE_DOWNHILL,
+  bikeUpMph: 8,
+  bikeDownMph: 15,
+  bikeFlatMph: 12,
   penCloseMin: 3,
   sweepStartMin: 5,
   paceCarStartMin: 10,
-  bikesPerMin: 0.25, // 15 bikes per hour
   carsPerMin: 1,  // 60 cars per hour
+  carsReleasedPerMin: 5,
+  bikesPerMin: 0.25, // 15 bikes per hour
   bikesReleasedPerMin: 5,
 
   // Layout (eastbound-specific coordinates)
@@ -21,6 +23,7 @@ export const Common = {
   penHeightPx: LAYOUT.BIKE_PEN_HEIGHT,
   queuedCarWidthPx: 30,   // Queued car spacing
   fadeDistance: 100,  // Pixels to travel while fading out
+  fadeMins: 1,
 }
 
 // Default configuration for Holland Tunnel
@@ -42,12 +45,12 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
   },
   
   sweepConfig: {
-    speed: SPEEDS.SWEEP,
+    speed: 12,
     stagingOffset: 35
   },
   
   paceConfig: {
-    speed: SPEEDS.CAR,  // Same as car speed
+    speed: Common.carMph,
     stagingOffset: 60
   }
 }

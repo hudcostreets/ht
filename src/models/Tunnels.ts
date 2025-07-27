@@ -76,7 +76,7 @@ export class Tunnels {
       const position = car.getPos(absMins)
       if (position) {
         vehicles.push({
-          id: `car-e-${car.laneId}-${car.id}`,
+          id: `car-e-${car.laneId}-${car.idx}`,
           type: 'car',
           position,
           direction: 'east',
@@ -103,7 +103,7 @@ export class Tunnels {
       const position = car.getPos(absMins)
       if (position) {
         vehicles.push({
-          id: `car-w-${car.laneId}-${car.id}`,
+          id: `car-w-${car.laneId}-${car.idx}`,
           type: 'car',
           position,
           direction: 'west',

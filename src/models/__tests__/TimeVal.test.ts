@@ -90,22 +90,14 @@ describe('TimeVal', () => {
       const tv = new TimeVal([
         { min: 10, val: 100 },
         { min: 20, val: 200 }
-      ], Num, 21)
+      ], Num, 30)
       
-      expect(tv.at(0)).toBe(100)
-      expect(tv.at(5)).toBe(100)
-      expect(tv.at(9.9)).toBe(100)
-    })
-    
-    it('should return last value after last point (non-periodic)', () => {
-      const tv = new TimeVal([
-        { min: 10, val: 100 },
-        { min: 20, val: 200 }
-      ], Num, 21)
-      
+      expect(tv.at(0)).toBe(150)
+      expect(tv.at(5)).toBe(125)
+      expect(tv.at(9.9)).toBeCloseTo(100.5)
       expect(tv.at(20)).toBe(200)
-      expect(tv.at(25)).toBe(200)
-      expect(tv.at(100)).toBe(200)
+      expect(tv.at(25)).toBe(175)
+      expect(tv.at(100)).toBe(100)
     })
   })
   

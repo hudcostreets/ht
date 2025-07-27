@@ -29,7 +29,7 @@ describe('Car', () => {
       tunnel, 
       laneId: 'R', 
       spawnMin: 1,  // Spawns at tunnel-relative minute 1
-      spawnQueue: { offsetPx: 30, minsBeforeDequeueStart: 9 }
+      spawnQueue: { offsetPx: 30, minsBeforeDequeueing: 9 }
     })
     
     // At spawn time (absolute minute 46 = tunnel relative minute 1), car should be queued

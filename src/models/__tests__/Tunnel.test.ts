@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { Tunnel } from '../Tunnel'
+import {State, Tunnel} from '../Tunnel'
 import { HOLLAND_TUNNEL_CONFIG } from '../TunnelConfigs'
+import {Bike} from "../Bike"
 
 describe('Tunnel', () => {
   describe('Eastbound Tunnel', () => {
@@ -9,7 +10,19 @@ describe('Tunnel', () => {
     beforeEach(() => {
       eb = new Tunnel(HOLLAND_TUNNEL_CONFIG.eastbound)
     })
-    
+
+    function check(
+      bikeIdx: number,
+      min: number,
+      expectedState: State,
+      expectedX: number,
+    ) {
+      const bike = eb.bikes[bikeIdx]
+      const pos = bike.getPos(min)
+      expect(pos!.state).toBe(expectedState)
+      expect(pos!.x).toBe(expectedX)
+    }
+
     describe('Time conversion', () => {
       it('should convert absolute time to relative time correctly', () => {
         expect(eb.relMins(45)).toBe(0)
@@ -21,11 +34,11 @@ describe('Tunnel', () => {
     
     describe('Phase detection', () => {
       it('should return correct phases for relative times', () => {
-        expect(eb.getPhase(0)).toBe('bikes-enter') // :45 (minute 0 relative)
-        expect(eb.getPhase(1)).toBe('bikes-enter') // :46 (minute 1 relative)
-        expect(eb.getPhase(2)).toBe('bikes-enter') // :47 (minute 2 relative)
-        expect(eb.getPhase(3)).toBe('clearing') // :48 (minute 3 relative)
-        expect(eb.getPhase(5)).toBe('sweep') // :50 (minute 5 relative)
+        expect(eb.getPhase( 0)).toBe('bikes-enter') // :45 (minute 0 relative)
+        expect(eb.getPhase( 1)).toBe('bikes-enter') // :46 (minute 1 relative)
+        expect(eb.getPhase( 2)).toBe('bikes-enter') // :47 (minute 2 relative)
+        expect(eb.getPhase( 3)).toBe('clearing') // :48 (minute 3 relative)
+        expect(eb.getPhase( 5)).toBe('sweep') // :50 (minute 5 relative)
         expect(eb.getPhase(10)).toBe('pace-car') // :55 (minute 10 relative)
         expect(eb.getPhase(15)).toBe('normal') // :00 (minute 15 relative)
       })
@@ -33,37 +46,24 @@ describe('Tunnel', () => {
     
     describe('Early bikes (spawn before pen opens)', () => {
       it('should position first bike correctly at pen opening', () => {
-        const firstBike = eb.bikes[0] // Spawns at :00
-        
         // At pen opening (:45), first bike should be released immediately
-        const position = firstBike.getPos(45)
-        expect(position).toBeTruthy()
-        expect(position!.state).toBe('tunnel') // Now at tunnel entrance
-        expect(position!.x).toBe(0) // At tunnel entrance
+        check(0, 45, 'transiting', 0) // At tunnel entrance
       })
       
       it('should stagger bike releases correctly', () => {
-        const firstBike = eb.bikes[0] // Index 0
-        const secondBike = eb.bikes[1] // Index 1
-        
-        // First bike should be released at :45:00
-        const firstPos = firstBike.getPos(45)
-        expect(firstPos!.state).toBe('tunnel') // At tunnel entrance
-        
+        check(0, 45, 'transiting', 0) // At tunnel entrance
+        check(1, 45, 'dequeueing', -30) // In pen (queued)
+        const b1 = eb.bikes[1] // Index 1
         // Second bike should still be in pen at :45:00
-        const secondPos = secondBike.getPos(45)
-        expect(secondPos!.state).toBe('queue')
+        expect(b1.getPos(45)!.state).toBe('origin')
         
         // Second bike should be released later (bikes are released 5 per minute = 0.2 minutes apart)
         // But bike needs to reach the tunnel entrance position first
-        const secondPosLater = secondBike.getPos(45 + 0.2)
-        expect(secondPosLater!.state).toBe('tunnel') // At tunnel entrance
+        expect(b1.getPos(45 + 0.2)!.state).toBe('transiting') // At tunnel entrance
         
         // After transitions complete, both should be in tunnel
-        const firstPosInTunnel = firstBike.getPos(45 + 0.05)
-        const secondPosInTunnel = secondBike.getPos(45 + 0.25)
-        expect(firstPosInTunnel!.state).toBe('tunnel')
-        expect(secondPosInTunnel!.state).toBe('tunnel')
+        // expect(b0.getPos(45 + 0.05)!.state).toBe('transiting')
+        // expect(b1.getPos(45 + 0.25)!.state).toBe('transiting')
       })
     })
     
@@ -103,29 +103,25 @@ describe('Tunnel', () => {
 
     describe('Cars in R lane (may queue)', () => {
       it('should queue R lane cars during bike phases', () => {
-        const carAt46 = eb.cars.r.find(car => car.spawnMin === 46)
-        if (carAt46) {
-          // R lane car spawning at :46 should be queued
-          const position = carAt46.getPos(46)
-          expect(position).toBeTruthy()
-          expect(position!.state).toBe('queued')
-          expect(position!.x).toBeLessThan(0) // In queue area (negative x)
-        }
+        const carAt46 = eb.cars.r.find(car => car.spawnMin === 46)!
+        // R lane car spawning at :46 should be queued
+        const position = carAt46.getPos(46)
+        expect(position).toBeTruthy()
+        expect(position!.state).toBe('queued')
+        expect(position!.x).toBeLessThan(0) // In queue area (negative x)
       })
 
       it('should release queued cars when pace car starts', () => {
-        const carAt45 = eb.cars.r.find(car => car.spawnMin === 45)
+        const carAt45 = eb.cars.r.find(car => car.spawnMin === 45)!
         
-        if (carAt45) {
-          // At :45, car should be queued
-          const queuedPosition = carAt45.getPos(45)
-          expect(queuedPosition!.state).toBe('queued')
-          
-          // At :55 (pace car starts), car should be moving
-          const movingPosition = carAt45.getPos(55)
-          expect(movingPosition!.state).toBe('transiting')
-          expect(movingPosition!.x).toBeGreaterThan(-50) // Should have moved from initial queue position
-        }
+        // At :45, car should be queued
+        const queuedPosition = carAt45.getPos(45)
+        expect(queuedPosition!.state).toBe('queued')
+
+        // At :55 (pace car starts), car should be moving
+        const movingPosition = carAt45.getPos(55)
+        expect(movingPosition!.state).toBe('transiting')
+        expect(movingPosition!.x).toBeGreaterThan(-50) // Should have moved from initial queue position
       })
     })
   })

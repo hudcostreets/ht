@@ -1,121 +1,91 @@
-import {field, Pos, Tunnel} from "./Tunnel"
-import {TimePoint, TimeVal} from "./TimeVal"
+import {Pos} from "./Tunnel"
+import {TimePoint} from "./TimeVal"
+import {Vehicle} from "./Vehicle"
 
-export type BikeSpawnQueue = {
-  offsetX: number  // X offset in pen
-  offsetY: number  // Y offset in pen  
-  releaseMin: number  // When this bike gets released from pen
-}
+export class Bike extends Vehicle {
+  get fadeMph(): number {
+    return this.config.bikeFlatMph
+  }
 
-export class Bike {
-  public tunnel: Tunnel
-  public index: number
-  public spawnMin: number
-  public spawnQueue?: BikeSpawnQueue
-  public pos: TimeVal<Pos>
-
-  constructor(
-    tunnel: Tunnel,
-    index: number,
-    spawnMin: number,
-    spawnQueue?: BikeSpawnQueue,
-  ) {
-    this.tunnel = tunnel
-    this.index = index
-    this.spawnMin = spawnMin
-    this.spawnQueue = spawnQueue
-
+  points(): TimePoint<Pos>[] {
     // Calculate the full trajectory for this bike
-    const { period, laneWidthPx, lengthMi, bikeDownMph, bikeUpMph, penRelativeX, penRelativeY } = this.tunnel.config
+    const { tunnel, config, spawnQueue, idx, spawnMin } = this
+    const { d } = tunnel
+    const { period, laneWidthPx, penCloseMin, lengthMi, bikeDownMph, bikeUpMph, bikeFlatMph, fadeMins, } = config
 
-    // Determine when this bike should be released from pen
-    let releaseRelMins: number
-    let penX: number
-    let penY: number
+    // let transitingMin
 
+    let initPos = tunnel.r.entrance
     if (spawnQueue) {
       // Bike has queue info - use it
-      releaseRelMins = spawnQueue.releaseMin
-      penX = penRelativeX + spawnQueue.offsetX
-      penY = penRelativeY + spawnQueue.offsetY
+      const { offset, minsBeforeDequeueing, minsDequeueing } = spawnQueue
+      // transitingMin = minsBeforeDequeueing + minsDequeueing
+      initPos = {
+        x: initPos.x + offset.x,
+        y: initPos.y + offset.y,
+      }
     } else {
       // Bike flows immediately (arrives during pen open window)
-      releaseRelMins = this.spawnMin
-      // Default pen position
-      penX = penRelativeX
-      penY = penRelativeY
+      // transitingMin = this.spawnMin
+    }
+    const origin = {
+      x: initPos.x - 100 * d,
+      y: initPos.y,
     }
 
     // Calculate tunnel transit time
-    const tunnelWidthPixels = laneWidthPx
-    const pixelsPerMile = tunnelWidthPixels / lengthMi
+    const tunnelWidthPx = laneWidthPx
+    const pxPerMile = tunnelWidthPx / lengthMi
+    const pxPerMin = bikeFlatMph / lengthMi * tunnelWidthPx / 60
+    const fadePx = pxPerMin * fadeMins
 
     // Variable speed through tunnel (downhill first half, uphill second half)
-    const halfwayPoint = tunnelWidthPixels / 2
-    const downMins = (halfwayPoint / pixelsPerMile) / bikeDownMph * 60
-    const upMins = (halfwayPoint / pixelsPerMile) / bikeUpMph * 60
-    const totalTransitMins = downMins + upMins
-
-    const penPos = { x: penX, y: penY }
-    const origin = {
-      x: penPos.x - 100 * this.tunnel.d,
-      y: penPos.y,
-    }
+    const halfWPx = tunnelWidthPx / 2
+    const halfway = { ...tunnel.r.entrance }
+    halfway.x += halfWPx * d
+    const downMins = (halfWPx / pxPerMile) / bikeDownMph * 60
+    const upMins = (halfWPx / pxPerMile) / bikeUpMph * 60
 
     // Build time positions array
     const points: TimePoint<Pos>[] = []
     
     // Handle bikes that are released immediately vs those that wait
-    if (releaseRelMins === 0) {
+    if (!spawnQueue) {
       // Bike enters tunnel immediately at minute 0
-      points.push({ min: 0, val: { ...tunnel.r.entrance, state: 'transiting', opacity: 1, }, })
+      points.push({ min: spawnMin, val: { ...tunnel.r.entrance, state: 'transiting', opacity: 1, }, })
     } else {
+      const { offset, minsBeforeDequeueing, minsDequeueing } = spawnQueue
       // Start in pen
-      points.push({ min: 0, val: { ...penPos, state: 'queued', opacity: 1, }, })
-      
+      points.push({ min: spawnMin, val: { ...initPos, state: 'queued', opacity: 1, }, })
+
       // Add dequeueing state if there's time before release
-      if (releaseRelMins > 1) {
-        points.push({ min: releaseRelMins - 1, val: { ...penPos, state: 'dequeueing', opacity: 1, }, })
+      if (spawnMin > penCloseMin) {
+        points.push({ min: (transitingMin + period - 1) % period, val: { ...initPos, state: 'dequeueing', opacity: 1, }, })
       }
       
       // Enter tunnel
-      points.push({ min: releaseRelMins, val: { ...tunnel.r.entrance, state: 'transiting', opacity: 1, }, })
+      points.push({ min: transitingMin, val: { ...tunnel.r.entrance, state: 'transiting', opacity: 1, }, })
     }
     
     // Exit tunnel
-    const exitMin = releaseRelMins + totalTransitMins
-    if (exitMin < period - 0.1) {  // Leave some buffer before period end
-      points.push({ min: exitMin, val: { ...tunnel.r.exit, state: 'exiting', opacity: 1, }, })
+    const halfwayMin = (transitingMin + downMins) % period
+    points.push({ min: halfwayMin, val: { ...halfway, state: 'transiting', opacity: 1, }, })
+    const exitMin = (halfwayMin + upMins) % period
+    points.push({ min: exitMin, val: { ...tunnel.r.exit, state: 'exiting', opacity: 1, }, })
       
-      // Fade out
-      const fadeMin = exitMin + 1
-      if (fadeMin < period - 0.1) {
-        points.push({ min: fadeMin, val: { ...tunnel.r.dest, state: 'done', opacity: 0, }, })
-        
-        // Return to origin
-        const returnMin = fadeMin + 1
-        if (returnMin < period - 0.1) {
-          points.push({ min: returnMin, val: { ...origin, state: 'origin', opacity: 0, }, })
-        }
-      }
-    }
-    
-    // Always end at period - 1
-    const lastPoint = points[points.length - 1]
-    if (lastPoint.min < period - 1) {
-      // Use the last point's value for the final position
-      points.push({ min: period - 1, val: { ...lastPoint.val }, })
-    }
-    
-    this.pos = new TimeVal(points, field, period)
-  }
+    // Fade out
+    const fadeMin = (exitMin + fadeMins) % period
+    const destPos = { ...tunnel.r.exit }
+    destPos.x += fadePx * d
+    points.push({ min: fadeMin, val: { ...destPos, state: 'done', opacity: 0, }, })
 
-  getPos(absMins: number): { x: number, y: number, state: string, opacity: number } {
-    const relMins = this.tunnel.relMins(absMins)
-    
-    // Offset by spawn time - bike's minute 0 corresponds to its spawnMin in tunnel time
-    const bikeTime = (relMins - this.spawnMin + this.tunnel.config.period) % this.tunnel.config.period
-    
-    return this.pos.at(bikeTime)
+    // Return to origin
+    const returnMin = (fadeMin + 1) % period
+    const originVal: Pos = { ...origin, state: 'origin', opacity: 0, }
+    points.push({ min: returnMin, val: originVal, })
+    points.push({ min: (spawnMin - 1 + period) % period, val: originVal, })
+    points.sort((a, b) => a.min - b.min)
+    console.log(`Bike ${idx}:`, points, spawnQueue)
+    return points
   }
 }

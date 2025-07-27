@@ -1,10 +1,16 @@
-import { Bike, type BikeSpawnQueue } from "./Bike"
-import { Car } from "./Car"
+import { Bike } from "./Bike"
+import {Car} from "./Car"
 import { Lane } from "./Lane"
-import { pos } from "./Pos"
-import {Field} from "./TimeVal.ts";
+import {XY, xy} from "./XY.ts"
+import {Field} from "./TimeVal"
 
 export type Direction = 'east' | 'west'
+
+export type SpawnQueue = {
+  offset: XY
+  minsBeforeDequeueing: number // Minutes before dequeueing starts
+  minsDequeueing: number
+}
 
 export interface TunnelConfig {
   direction: Direction
@@ -14,9 +20,11 @@ export interface TunnelConfig {
   carMph: number
   bikeUpMph: number
   bikeDownMph: number
+  bikeFlatMph: number
   penCloseMin: number
-  bikesPerMin: number
   carsPerMin: number
+  carsReleasedPerMin: number
+  bikesPerMin: number
   bikesReleasedPerMin: number
   paceCarStartMin: number
 
@@ -27,7 +35,7 @@ export interface TunnelConfig {
   penRelativeY: number   // Relative to R lane start
   penWidthPx: number
   penHeightPx: number
-  fadeDistance: number  // Distance to travel while fading out after tunnel exit
+  fadeMins: number
   queuedCarWidthPx: number
 }
 
@@ -60,128 +68,105 @@ export class Tunnel {
   public ncars: number
   public l: Lane
   public r: Lane
-  public nQueueCars0: number  // Number of cars that queue on spawn before pace car departs
-  public nQueueCars1: number  // Number of cars that queue on spawn after pace car departs
-  public nQueueCars: number   // Number of cars that queue on spawn (total, before and after pace car)
+  // public nQueueCars0: number  // Number of cars that queue on spawn before pace car departs
+  // public nQueueCars1: number  // Number of cars that queue on spawn after pace car departs
+  // public nQueueCars: number   // Number of cars that queue on spawn (total, before and after pace car)
   
   constructor(config: TunnelConfig) {
     this.config = config
-    const { bikesPerMin, carsPerMin, laneWidthPx, laneHeightPx, direction, paceCarStartMin, carMph, lengthMi, queuedCarWidthPx, } = config
+    const { bikesPerMin, carsPerMin, carsReleasedPerMin, laneWidthPx, laneHeightPx, direction, paceCarStartMin, carMph, lengthMi, queuedCarWidthPx, } = config
     this.dir = direction
     this.d = direction === 'east' ? 1 : -1
     this.nbikes = config.period * bikesPerMin
+    const { nbikes, d } = this
 
     // Create lanes
-    const exitFadeDistance = config.fadeDistance * this.d
     const start = direction === 'east' ? 0 : laneWidthPx
     const end = direction === 'east' ? laneWidthPx : 0
     this.l = new Lane({
       id: 'L',
-      entrance: pos(start, laneHeightPx * (1 - this.d * .5)),
-      exit: pos(end, laneHeightPx * (1 - this.d * .5)),
-      exitFadeDistance,
+      entrance: xy(start, laneHeightPx * (1 - d * .5)),
+      exit: xy(end, laneHeightPx * (1 - d * .5)),
     })
     this.r = new Lane({
       id: 'R',
-      entrance: pos(start, laneHeightPx * (1 + this.d * .5)),
-      exit: pos(end, laneHeightPx * (1 + this.d * .5)),
-      exitFadeDistance,
+      entrance: xy(start, laneHeightPx * (1 + d * .5)),
+      exit: xy(end, laneHeightPx * (1 + d * .5)),
     })
-
-    // Create bikes
-    this.bikes = []
-    for (let i = 0; i < this.nbikes; i++) {
-      const spawn = config.period * i / this.nbikes
-      this.bikes.push(new Bike(this, i, spawn))  // Queue info will be calculated after all bikes are created
-    }
 
     // Create cars
     const lcars: Car[] = []
     const rcars: Car[] = []
     this.cars = { l: lcars, r: rcars }
     this.ncars = config.period * carsPerMin
-    for (let i = 0; i < this.ncars; i++) {
-      lcars.push(new Car({ tunnel: this, laneId: 'L', spawnMin: config.period * (i + .5) / this.ncars, })) // Stagger L cars by half a phase
-      rcars.push(new Car({ tunnel: this, laneId: 'R', spawnMin: config.period *  i       / this.ncars, }))
-    }
-
-    // Compute nQueueCars{0,1} by iteratively dequeueing rcars, and enqueueing any that would have spawned during the time that took
-    this.nQueueCars0 = 0
-    this.nQueueCars1 = 0
-    this.nQueueCars = 0
-    const carPxPerMin = carMph * laneWidthPx / lengthMi / 60 // Convert from mph to px/min
-    let dequeueEndMin = paceCarStartMin
-    let carIdx = 0
-    let nQueueCars = 0
-    let carQueueStartIdx = 0
-    while (carIdx < rcars.length) {
-      const rcar = rcars[carIdx]
-
-      // If the car spawns before the dequeue end, it is queued
-      if (rcar.spawnMin < dequeueEndMin) {
-        // If this is the first car in the queue, set nQueueCars0
-        if (carQueueStartIdx === 0) {
-          this.nQueueCars0++
-        } else {
-          this.nQueueCars1++
-        }
-        nQueueCars++
-        carIdx++
-      } else {
-        // If there are no cars to dequeue, just move to the next car
-        if (nQueueCars === 0) {
-          carIdx++
-          continue
-        }
-        
-        // Dequeue cars until we reach the next spawn time
-        const queueEndPx = nQueueCars * queuedCarWidthPx
-        dequeueEndMin += queueEndPx / carPxPerMin
-
-        // Update nQueueCars and reset for next iteration
-        this.nQueueCars += nQueueCars
-        nQueueCars = 0
-        carQueueStartIdx = carIdx
-      }
+    const { ncars } = this
+    for (let idx = 0; idx < ncars; idx++) {
+      lcars.push(new Car({ tunnel: this, laneId: 'L', idx, spawnMin: config.period * (idx + .5) / ncars, })) // Stagger L cars by half a phase
+      rcars.push(new Car({ tunnel: this, laneId: 'R', idx, spawnMin: config.period *  idx       / ncars, }))
     }
 
     // Populate rcars' spawnQueue elems
     // Instead of checking phase at spawn time, check if tunnel is blocked when car arrives
-    let queueIdx = 0
+    let queueLen = 0
+    let prvSpawnMin = 0
     for (const rcar of rcars) {
       // Tunnel is blocked from minute 0 (bikes enter) until pace car starts at minute 10
-      const tunnelBlockedStart = 0
-      const tunnelBlockedEnd = paceCarStartMin
-      
-      // Check if this car would arrive during blocked period
-      const arrivalMin = rcar.spawnMin
-      
+      const { spawnMin } = rcar
+      const elapsed = spawnMin - prvSpawnMin
+      const carsElapsed = elapsed * carsReleasedPerMin
+      queueLen = Math.max(queueLen - carsElapsed, 0)
+      const queueOpenMin = paceCarStartMin
       // Handle period wrapping - if car arrives in blocked period of this or next cycle
-      let needsQueue = false
-      if (arrivalMin >= tunnelBlockedStart && arrivalMin < tunnelBlockedEnd) {
-        needsQueue = true
-      }
-      
-      if (needsQueue) {
+      if (spawnMin < queueOpenMin || queueLen > 0) {
         // Car needs to queue
-        const queueOffset = queueIdx * queuedCarWidthPx
-        const dequeueStartMin = tunnelBlockedEnd - arrivalMin
-        rcar.spawnQueue = { 
-          offsetPx: queueOffset, 
-          minsBeforeDequeueStart: dequeueStartMin > 0 ? dequeueStartMin : 0 
+        const queueOffsetX = queueLen * queuedCarWidthPx
+        const minsBeforeDequeueing = Math.max(queueOpenMin - spawnMin, 0)
+        queueLen++
+        const minsDequeueing = queueLen / carsReleasedPerMin
+        rcar.spawnQueue = {
+          offset: { x: queueOffsetX, y: 0 },
+          minsBeforeDequeueing,
+          minsDequeueing,
         }
-        queueIdx++
       }
+      prvSpawnMin = spawnMin
       // else: Car flows normally, leave spawnQueue undefined
     }
-    
+
     // Calculate bike queueing
     let bikeQueueIdx = 0
     let currentReleaseMin = 0
     const bikesPerRow = config.bikesReleasedPerMin  // Bikes arranged in rows
-    
+
+    // Create bikes
+    this.bikes = []
+    for (let idx = 0; idx < nbikes; idx++) {
+      const spawnMin = config.period * idx / nbikes
+      let spawnQueue: SpawnQueue | undefined = undefined
+      if (spawnMin >= 0 && spawnMin < config.penCloseMin) {
+        // Bike arrives during pen window - flows immediately
+        // No queue info needed
+      } else {
+        // Bike needs to queue
+        const row = Math.floor(bikeQueueIdx / bikesPerRow)
+        const col = bikeQueueIdx % bikesPerRow
+
+        // Calculate when this bike will be released
+        const transitingMin = currentReleaseMin + (bikeQueueIdx / config.bikesReleasedPerMin)
+
+        spawnQueue = {
+          offset: { x: col * 20, y: row * 15, },
+          transitingMin,
+        }
+
+        bikeQueueIdx++
+      }
+      const bike = new Bike({ tunnel: this, laneId: 'R', idx, spawnMin, spawnQueue })
+      this.bikes.push(bike)
+    }
+
     for (const bike of this.bikes) {
-      // Bikes can only enter during minutes 0-2 (pen open window)
+      console.log("bike:", bike.spawnMin, config.penCloseMin)
       if (bike.spawnMin >= 0 && bike.spawnMin < config.penCloseMin) {
         // Bike arrives during pen window - flows immediately
         // No queue info needed
@@ -191,12 +176,11 @@ export class Tunnel {
         const col = bikeQueueIdx % bikesPerRow
         
         // Calculate when this bike will be released
-        const releaseMin = currentReleaseMin + (bikeQueueIdx / config.bikesReleasedPerMin)
+        const transitingMin = currentReleaseMin + (bikeQueueIdx / config.bikesReleasedPerMin)
         
         bike.spawnQueue = {
-          offsetX: col * 20,  // 20px spacing horizontally
-          offsetY: row * 15,  // 15px spacing vertically
-          releaseMin: releaseMin
+          offset: { x: col * 20, y: row * 15, },
+          transitingMin,
         }
         
         bikeQueueIdx++
