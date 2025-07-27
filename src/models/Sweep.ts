@@ -1,5 +1,5 @@
 import { TimeVal, TimePoint, Num } from './TimeVal'
-import { LAYOUT } from './Constants'
+import { Direction } from "./Tunnel"
 import type { Tunnels } from './Tunnels'
 
 export type SweepState = 'staging' | 'tunnel' | 'exiting'
@@ -9,7 +9,7 @@ export interface SweepPosition {
   y: number
   state: SweepState
   opacity: number
-  direction: 'east' | 'west'
+  direction: Direction
 }
 
 export class Sweep {
@@ -19,7 +19,7 @@ export class Sweep {
   private direction: TimeVal<number> // 0=east, 1=west
   
   constructor(tunnels: Tunnels) {
-    const { eastbound: e, westbound: w, sweepConfig } = tunnels
+    const { eastbound: e, sweepConfig } = tunnels
     const { stagingOffset } = sweepConfig
     const { laneWidthPx, laneHeightPx, period } = e.config
     
@@ -103,7 +103,7 @@ export class Sweep {
     const dirNum = Math.round(this.direction.at(relMins))
     
     const states: SweepState[] = ['staging', 'tunnel', 'exiting']
-    const directions: ('east' | 'west')[] = ['east', 'west']
+    const directions: (Direction)[] = ['east', 'west']
     
     return {
       x,

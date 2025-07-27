@@ -1,8 +1,8 @@
 import { Bike } from "./Bike"
-import {Car} from "./Car"
+import { Car } from "./Car"
 import { Lane } from "./Lane"
-import {XY, xy} from "./XY.ts"
-import {Field, Start, Interp, Num, TimePoint, TimeVal} from "./TimeVal"
+import { Field, Start, Interp, Num, TimePoint, TimeVal } from "./TimeVal"
+import { XY, xy } from "./XY.ts"
 const { floor, max, } = Math
 
 export type Direction = 'east' | 'west'
@@ -121,19 +121,22 @@ export class Tunnel {
     // Instead of checking phase at spawn time, check if tunnel is blocked when car arrives
     let queueLen = 0
     let prvSpawnMin = 0
+    console.log(`${rcars.length} rcars`)
     for (const rcar of rcars) {
       // Tunnel is blocked from minute 0 (bikes enter) until pace car starts at minute 10
       const { spawnMin } = rcar
-      const elapsed = spawnMin - prvSpawnMin
-      const carsElapsed = elapsed * carsReleasedPerMin
-      queueLen = max(queueLen - carsElapsed, 0)
       const queueOpenMin = paceCarStartMin
+      if (spawnMin > queueOpenMin) {
+        const elapsed = spawnMin - max(queueOpenMin, prvSpawnMin)
+        const carsElapsed = elapsed * carsReleasedPerMin
+        queueLen = max(queueLen - carsElapsed, 0)
+      }
       // Handle period wrapping - if car arrives in blocked period of this or next cycle
       if (spawnMin < queueOpenMin || queueLen > 0) {
         // Car needs to queue
-        const queueOffsetX = queueLen * queuedCarWidthPx
         const minsBeforeDequeueing = max(queueOpenMin - spawnMin, 0)
         queueLen++
+        const queueOffsetX = queueLen * queuedCarWidthPx
         const minsDequeueing = queueLen / carsReleasedPerMin
         rcar.spawnQueue = {
           offset: { x: queueOffsetX, y: 0 },
@@ -141,6 +144,9 @@ export class Tunnel {
           minsDequeueing,
         }
       }
+      // if (rcar.tunnel.dir === 'east') {
+      //   console.log(`Car ${rcar.idx} (${spawnMin}):`, rcar.points(), `queueLen: ${queueLen}, queueOffsetX: ${rcar.spawnQueue?.offset?.x}, minsBeforeDequeueing: ${rcar.spawnQueue?.minsBeforeDequeueing}, minsDequeueing: ${rcar.spawnQueue?.minsDequeueing}`)
+      // }
       prvSpawnMin = spawnMin
       // else: Car flows normally, leave spawnQueue undefined
     }
@@ -173,10 +179,10 @@ export class Tunnel {
       queueLen = queueLen - elapsed * bikesReleasedPerMin + 1
       if (queueLen <= 0) {
         // Queue is cleared. This bike doesn't need to queue, nor do the remainders from `bikes0` (that arrive while the pen is open)
-        bikeQueueLenPts.push({min: spawnMin, val: 0, interp})
+        bikeQueueLenPts.push({ min: spawnMin, val: 0, interp })
         break
       } else {
-        bikeQueueLenPts.push({min: spawnMin, val: queueLen, interp})
+        bikeQueueLenPts.push({ min: spawnMin, val: queueLen, interp })
       }
       prvSpawnMin = spawnMin
     }
@@ -211,10 +217,10 @@ export class Tunnel {
     this.bikes = []
     for (const bike of bikes) {
       const split = bike.split()
-      for (const b of split) {
-        const { idx, spawnQueue, spawnMin, } = b
-        console.log(`bike ${idx} (${spawnMin}):`, b.points(), spawnQueue)
-      }
+      // for (const b of split) {
+      //   const { idx, spawnQueue, spawnMin, } = b
+      //   console.log(`bike ${idx} (${spawnMin}):`, b.points(), spawnQueue)
+      // }
       this.bikes.push(...split)
     }
   }

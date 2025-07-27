@@ -1,5 +1,5 @@
+import { Start, TimePoint } from "./TimeVal"
 import { Pos } from "./Tunnel"
-import {Start, TimePoint} from "./TimeVal"
 import { Vehicle } from "./Vehicle"
 import { XY } from "./XY"
 
@@ -117,7 +117,7 @@ export class Bike extends Vehicle {
   }
 
   get downhill(): TimePoint<Pos> {
-    const { lane, transitingMin, initPos } = this
+    const { lane, transitingMin } = this
     return { min: transitingMin, val: { ...lane.entrance, state: 'transiting', opacity: 1, }, }
   }
 
@@ -186,7 +186,7 @@ export class Bike extends Vehicle {
     }
     const splitAt = resetMin + 1
     const points = this.points()
-    console.log(`Bike ${idx}: splitting at ${splitAt} (resetMin: ${resetMin}, period: ${period})`, points)
+    // console.log(`Bike ${idx}: splitting at ${splitAt} (resetMin: ${resetMin}, period: ${period})`, points)
     if (points.length !== 8) {
       throw new Error(`Bike ${this.idx}: Expected 8 points, got ${points.length}: ${JSON.stringify(points)}`)
     }

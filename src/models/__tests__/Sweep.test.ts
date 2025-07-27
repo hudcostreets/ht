@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Sweep } from '../Sweep'
-import { Tunnels } from '../Tunnels'
 import { HOLLAND_TUNNEL_CONFIG } from '../TunnelConfigs'
+import { Tunnels } from '../Tunnels'
 
 describe('Sweep', () => {
   let tunnels: Tunnels

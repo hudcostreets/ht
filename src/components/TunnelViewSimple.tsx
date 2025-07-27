@@ -1,18 +1,19 @@
 import React, { type FC } from 'react'
 import { LAYOUT } from '../models/Constants'
+import { Direction } from "../models/Tunnel"
 
 interface TunnelViewProps {
-  direction: 'east' | 'west'
+  direction: Direction
   phase: string
   vehicles: Array<{
     id: string
     type: 'car' | 'bike' | 'sweep' | 'pace'
     position: { x: number; y: number; state: string; opacity: number }
-    direction: 'east' | 'west'
+    direction: Direction
     metadata: any
   }>
   colorRectangles: Array<{
-    direction: 'east' | 'west'
+    direction: Direction
     color: 'green' | 'red'
     x: number
     width: number
@@ -104,8 +105,8 @@ export const TunnelViewSimple: FC<TunnelViewProps> = ({ direction, phase, vehicl
             opacity={vehicle.position.opacity}
             style={{ userSelect: 'none', cursor: 'pointer' }}
             transform={transform}
-            data-tooltip-id="vehicle-tooltip"
-            data-tooltip-content={getTooltip(vehicle)}
+            data-tooltip-id={vehicle.position.state !== 'origin' ? 'vehicle-tooltip' : undefined}
+            data-tooltip-content={vehicle.position.state !== 'origin' ? getTooltip(vehicle) : undefined}
           >
             {getEmoji(vehicle.type)}
           </text>
@@ -129,7 +130,7 @@ function getTooltip(vehicle: any): string {
   
   if (vehicle.type === 'car') {
     const lane = vehicle.metadata.lane === 'L' ? 'L' : 'R'
-    return `:${vehicle.metadata.spawnMinute.toString().padStart(2, '0')} - ${lane} lane - ${dir}`
+    return `#${vehicle.metadata.idx} - :${vehicle.metadata.spawnMinute.toString().padStart(2, '0')} - ${lane} lane - ${dir}`
   } else if (vehicle.type === 'bike') {
     return `#${vehicle.metadata.idx} - :${vehicle.metadata.spawnMinute.toString().padStart(2, '0')} spawn - ${dir}`
   } else if (vehicle.type === 'sweep') {

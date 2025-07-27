@@ -1,7 +1,7 @@
-import {Pos} from "./Tunnel"
-import {TimePoint} from "./TimeVal"
-import {XY} from "./XY"
-import {Vehicle} from "./Vehicle"
+import { TimePoint } from "./TimeVal"
+import { Pos } from "./Tunnel"
+import { Vehicle } from "./Vehicle"
+import { XY } from "./XY"
 
 export class Car extends Vehicle {
   get fadeMph(): number {
@@ -33,10 +33,10 @@ export class Car extends Vehicle {
     } else {
       transitingMin = 0
       // Car flows normally (no queueing)
-      initPos = lane.entrance
+      initPos = {...lane.entrance}
     }
     const origin = { ...initPos }
-    initPos.x -= fadeDist * d
+    origin.x -= fadeDist * d
     const exitingMin = transitingMin + tunnelMins
     const fadedMin = exitingMin + fadeMins
     const fadeDest = { x: lane.exit.x + fadeDist * d, y: lane.exit.y }

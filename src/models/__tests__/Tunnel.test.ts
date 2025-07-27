@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import {State, Tunnel} from '../Tunnel'
+import { State, Tunnel } from '../Tunnel'
 import { HOLLAND_TUNNEL_CONFIG } from '../TunnelConfigs'
-import {Bike} from "../Bike"
 
 describe('Tunnel', () => {
   describe('Eastbound Tunnel', () => {

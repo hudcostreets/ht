@@ -52,7 +52,7 @@ export class TimeVal<T> {
   }
 
   get length(): number {
-    return this.points.length;
+    return this.points.length
   }
 
   get linear(): Interp<T> {

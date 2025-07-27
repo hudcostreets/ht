@@ -1,6 +1,6 @@
-import {TimePoint, TimeVal} from "./TimeVal.ts";
-import {field, Pos, SpawnQueue, Tunnel, TunnelConfig} from "./Tunnel.ts";
-import {Lane, LaneId} from "./Lane.ts";
+import { Lane, LaneId } from "./Lane.ts"
+import { TimePoint, TimeVal } from "./TimeVal.ts"
+import { field, Pos, SpawnQueue, Tunnel, TunnelConfig } from "./Tunnel.ts"
 
 export type Points = TimePoint<Pos>[]
 
@@ -35,18 +35,18 @@ export abstract class Vehicle {
 
   points(): Points {
     if (this.__points === undefined) {
-      this.__points = this._points;
+      this.__points = this._points
       if (!this.__points.length) {
-        throw new Error(`Vehicle ${this.laneId}${this.idx} has no points defined`);
+        throw new Error(`Vehicle ${this.laneId}${this.idx} has no points defined`)
       }
       // Ensure points are sorted by `mins` strictly ascending
       for (let i = 1; i < this.__points.length; i++) {
         if (this.__points[i].min <= this.__points[i - 1].min) {
-          throw new Error(`Vehicle ${this.laneId}${this.idx} points must be strictly ascending by mins. Found: ${this.__points[i - 1].min} and ${this.__points[i].min}`);
+          throw new Error(`Vehicle ${this.laneId}${this.idx} points must be strictly ascending by mins. Found: ${this.__points[i - 1].min} and ${this.__points[i].min}`)
         }
       }
     }
-    return this.__points;
+    return this.__points
   }
 
   abstract get _points(): Points
@@ -58,7 +58,7 @@ export abstract class Vehicle {
   }
 
   get period(): number {
-    return this.config.period;
+    return this.config.period
   }
 
   get pxPerMin(): number {
@@ -75,7 +75,7 @@ export abstract class Vehicle {
     if (this._pos === undefined) {
       this._pos = new TimeVal(this.points(), field, this.period)
     }
-    return this._pos;
+    return this._pos
   }
 
   getPos(absMins: number): Pos {

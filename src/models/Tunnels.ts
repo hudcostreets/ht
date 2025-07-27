@@ -1,8 +1,7 @@
-import { Tunnel } from './Tunnel'
-import type { TunnelConfig } from './Tunnel'
-import { Sweep } from './Sweep'
-import { Pace } from './Pace'
 import { ColorRectangles } from './ColorRectangles'
+import { Pace } from './Pace'
+import { Sweep } from './Sweep'
+import { Direction, Tunnel, type TunnelConfig, } from './Tunnel'
 
 export interface TunnelsConfig {
   eastbound: TunnelConfig
@@ -22,7 +21,7 @@ export type Vehicle<Metadata = any> = {
   id: string
   type: 'bike' | 'car' | 'sweep' | 'pace'
   position: { x: number, y: number, state: string, opacity: number }
-  direction: 'east' | 'west'
+  direction: Direction
   metadata: Metadata
 }
 
@@ -80,7 +79,7 @@ export class Tunnels {
           type: 'car',
           position,
           direction: 'east',
-          metadata: { spawnMinute: car.spawnMin, lane: car.laneId }
+          metadata: { spawnMinute: car.spawnMin, lane: car.laneId, idx: car.idx, }
         })
       }
     })
@@ -154,7 +153,7 @@ export class Tunnels {
   
   // Get color rectangles for rendering
   getColorRectangles(absMins: number): Array<{
-    direction: 'east' | 'west'
+    direction: Direction
     color: 'green' | 'red'
     x: number
     width: number

@@ -54,7 +54,7 @@ describe('Tunnels', () => {
       const eastboundBikes = vehicles.filter(v => v.type === 'bike' && v.direction === 'east')
       
       // First eastbound bike should be entering tunnel
-      const firstBike = eastboundBikes.find(v => v.metadata.index === 0)
+      const firstBike = eastboundBikes.find(v => v.metadata.idx === 0)
       expect(firstBike).toBeTruthy()
       expect(firstBike!.position.state).toBe('tunnel') // At tunnel entrance
       expect(firstBike!.position.x).toBe(0) // At tunnel entrance
@@ -65,13 +65,13 @@ describe('Tunnels', () => {
       const westboundBikes = vehicles.filter(v => v.type === 'bike' && v.direction === 'west')
       
       // First westbound bike should be entering tunnel
-      const firstBike = westboundBikes.find(v => v.metadata.index === 0)
+      const firstBike = westboundBikes.find(v => v.metadata.idx === 0)
       expect(firstBike).toBeTruthy()
       expect(firstBike!.position.state).toBe('tunnel') // At tunnel entrance
     })
     
     it('should handle :16 westbound bike joining traveling group', () => {
-      const vehicles = ht.getAllVehicles(16)
+      // const vehicles = ht.getAllVehicles(16)
       
       // Should have westbound bikes in bikes-enter phase
       const phases = ht.getPhases(16)
@@ -79,7 +79,7 @@ describe('Tunnels', () => {
     })
     
     it('should handle :20 westbound bike waiting in pen', () => {
-      const vehicles = ht.getAllVehicles(20)
+      // const vehicles = ht.getAllVehicles(20)
       
       // :20 bike should not be in tunnel yet (should wait for next cycle)
       const phases = ht.getPhases(20)

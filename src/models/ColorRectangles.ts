@@ -1,8 +1,9 @@
 import { TimeVal, TimePoint, Num } from './TimeVal'
+import { Direction } from "./Tunnel"
 import type { Tunnels } from './Tunnels'
 
 export interface ColorRectangle {
-  direction: 'east' | 'west'
+  direction: Direction
   color: 'green' | 'red'
   x: number
   width: number
@@ -20,7 +21,7 @@ export class ColorRectangles {
   private laneHeight: number
   
   constructor(tunnels: Tunnels) {
-    const { eastbound: e, westbound: w } = tunnels
+    const { eastbound: e } = tunnels
     const { laneWidthPx, laneHeightPx, period } = e.config
     this.laneWidth = laneWidthPx
     this.laneHeight = laneHeightPx
