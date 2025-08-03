@@ -41,9 +41,9 @@ export class Pace extends Vehicle {
   }
 
   get _points(): Points {
-    const { eb, wb, transitingMins, } = this
+    const { eb, wb, transitingMins, period, } = this
     const { officialResetMins, paceStartMin, } = eb.config
-    const points: TimePoint<Pos>[] = []
+    let points: TimePoint<Pos>[] = []
 
     const westStaging = { x: wb.r.entrance.x + this.stagingOffset, y: wb.r.entrance.y }
     const eastStaging = { x: eb.r.entrance.x - this.stagingOffset, y: eb.r.entrance.y }
@@ -53,17 +53,19 @@ export class Pace extends Vehicle {
     points.push({ min: eTransitingMin, val: { ...eb.r.entrance, state: 'transiting', opacity: 1 } })
     const eExitingMin = eTransitingMin + transitingMins
     points.push({ min: eExitingMin, val: { ...eb.r.exit, state: 'exiting', opacity: 1 } })
-
     const wStageMin = eExitingMin + officialResetMins
-    points.push({ min: wStageMin, val: { ...westStaging, state: 'origin', opacity: 1 } })
+    points.push({ min: wStageMin, val: { ...westStaging, state: 'queued', opacity: 1 } })
+
     const wTransitingMin = wb.offset + paceStartMin
     points.push({ min: wTransitingMin - 1, val: { ...westStaging, state: 'dequeueing', opacity: 1 } })
     points.push({ min: wTransitingMin, val: { ...westStaging, state: 'transiting', opacity: 1 } })
     const wExitingMin = wTransitingMin + transitingMins
     points.push({ min: wExitingMin, val: { ...wb.r.exit, state: 'exiting', opacity: 1 } })
     const eStageMin = wExitingMin + officialResetMins
-    points.push({ min: eStageMin, val: { ...eastStaging, state: 'origin', opacity: 1 } })
+    points.push({ min: eStageMin, val: { ...eastStaging, state: 'queued', opacity: 1 } })
 
+    points = points.map(({ min, val }) => ({ min: min % period, val }))
+    points.sort((a, b) => a.min - b.min)
     return points
   }
 

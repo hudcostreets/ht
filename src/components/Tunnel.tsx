@@ -1,12 +1,14 @@
 import React, { type FC } from 'react'
 import { LAYOUT } from '../models/Constants'
 import { VehicleI } from "../models/Tunnels"
+import { Tunnel as T } from "../models/Tunnel"
 import { Direction } from "../models/types"
 
 interface Props {
-  direction: Direction
+  dir: Direction
   phase: string
-  vehicles: VehicleI[]
+  displayTime: number
+  tunnel: T
   colorRectangles: Array<{
     direction: Direction
     color: 'green' | 'red'
@@ -17,26 +19,18 @@ interface Props {
   }>
 }
 
-export const Tunnel: FC<Props> = ({ direction, phase, vehicles, colorRectangles }) => {
-  // Filter vehicles and rectangles for this direction
-  // Special case: sweep/pace in 'origin' state should render with both tunnels
-  const directionVehicles = vehicles.filter(({ type, pos, dir }) => {
-    if ((type === 'sweep' || type === 'pace') && pos.state === 'origin') {
-      // Render sweep/pace with both tunnel views during staging
-      return true
-    }
-    return dir === direction
-  })
-  const directionRectangles = colorRectangles.filter(r => r.direction === direction)
+export const Tunnel: FC<Props> = ({ dir, phase, displayTime, tunnel, colorRectangles }) => {
+  const vehs = tunnel.allVehicles(displayTime)
+  const rects = colorRectangles.filter(r => r.direction === dir)
 
   // Y offset for this tunnel (westbound on top, eastbound on bottom)
-  const yOffset = direction === 'west' ? 100 : 200
+  const yOffset = dir === 'west' ? 100 : 200
 
   return (
     <g>
       {/* Direction label */}
       <text x={20} y={yOffset - 20} fontSize="16" fontWeight="bold">
-        {direction === 'east' ? 'Eastbound (Manhattan →) - 12th St' : 'Westbound (← NJ) - 14th St'}
+        {dir === 'east' ? 'Eastbound (Manhattan →) - 12th St' : 'Westbound (← NJ) - 14th St'}
       </text>
       <text x={20} y={yOffset} fontSize="12" fill="#666">Phase: {phase}</text>
 
@@ -45,7 +39,7 @@ export const Tunnel: FC<Props> = ({ direction, phase, vehicles, colorRectangles 
       <rect x={LAYOUT.QUEUE_AREA_WIDTH} y={yOffset + 30} width={LAYOUT.TUNNEL_WIDTH} height={LAYOUT.LANE_HEIGHT} fill="#666" stroke="#333" />
 
       {/* Bike pen */}
-      {direction === 'east' ? (
+      {dir === 'east' ? (
         <>
           <rect x={20} y={yOffset + 90} width={LAYOUT.BIKE_PEN_WIDTH} height={LAYOUT.BIKE_PEN_HEIGHT}
             fill="#e3f2fd" stroke="#2196f3" strokeWidth="2" strokeDasharray="5,5" rx="6" />
@@ -62,16 +56,16 @@ export const Tunnel: FC<Props> = ({ direction, phase, vehicles, colorRectangles 
 
       {/* Lane markers */}
       <text x={LAYOUT.QUEUE_AREA_WIDTH + 10} y={yOffset + 20} fontSize="12" fill="white">
-        {direction === 'east' ? 'L Lane (Cars Only)' : 'R Lane'}
+        {dir === 'east' ? 'L Lane (Cars Only)' : 'R Lane'}
       </text>
       <text x={LAYOUT.QUEUE_AREA_WIDTH + 10} y={yOffset + 50} fontSize="12" fill="white">
-        {direction === 'east' ? 'R Lane' : 'L Lane (Cars Only)'}
+        {dir === 'east' ? 'R Lane' : 'L Lane (Cars Only)'}
       </text>
 
       {/* Color rectangles */}
-      {directionRectangles.map((rect, index) => (
+      {rects.map((rect, index) => (
         <rect
-          key={`${direction}-color-${index}`}
+          key={`${dir}-color-${index}`}
           x={rect.x + LAYOUT.QUEUE_AREA_WIDTH}
           y={rect.y + yOffset}
           width={rect.width}
@@ -82,24 +76,11 @@ export const Tunnel: FC<Props> = ({ direction, phase, vehicles, colorRectangles 
       ))}
 
       {/* Vehicles */}
-      {directionVehicles.map(v => {
+      {vehs.map(v => {
         const { id, dir, pos, type, } = v
         // Calculate position
         let x = pos.x + LAYOUT.QUEUE_AREA_WIDTH
         let y = pos.y + yOffset
-
-        // Handle special states
-        if ((type === 'sweep' || type === 'pace') && pos.state === 'origin') {
-          // Special handling for sweep/pace staging positions
-          // Determine which tunnel they're staging for based on x position
-          if (pos.x < 400) {
-            // Staging for eastbound (x < 400 means near east entrance)
-            y = pos.y + 200 // Eastbound yOffset
-          } else {
-            // Staging for westbound (x >= 400 means near west entrance)
-            y = pos.y + 100 // Westbound yOffset
-          }
-        }
 
         // Vehicle emoji direction
         const transform = dir === 'east' ? `translate(${x * 2},0) scale(-1,1)` : undefined

@@ -212,25 +212,31 @@ export class Tunnel {
   }
 
   public allVehicles(absMins: number): VehicleI[] {
-    const { bikes, allCars } = this
+    const { bikes, allCars, dir, } = this
     return [
       ...bikes.map(
-        ({ idx, spawnMin, getPos, }) => ({
-          id: `bike-w-${idx}`,
-          type: 'bike',
-          pos: getPos(absMins),
-          dir: 'west',
-          metadata: { spawnMin, idx }
-        }) as VehicleI
+        bike => {
+          const { idx, spawnMin, } = bike
+          return ({
+            id: `bike-${dir[0]}-${idx}`,
+            type: 'bike',
+            pos: bike.getPos(absMins),
+            dir,
+            metadata: { spawnMin, idx }
+          }) as VehicleI
+        }
       ),
       ...allCars.map(
-        ({ laneId, idx, spawnMin, getPos, }) => ({
-          id: `car-w-${laneId}-${idx}`,
-          type: 'car',
-          pos: getPos(absMins),
-          dir: 'west',
-          metadata: { spawnMin, idx, laneId }
-        }) as VehicleI
+        car => {
+          const { laneId, idx, spawnMin, } = car
+          return ({
+            id: `car-${dir[0]}-${laneId}-${idx}`,
+            type: 'car',
+            pos: car.getPos(absMins),
+            dir,
+            metadata: { spawnMin, idx, laneId }
+          }) as VehicleI
+        }
       ),
     ]
   }

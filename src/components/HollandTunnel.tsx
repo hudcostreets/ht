@@ -9,6 +9,7 @@ import './HollandTunnel.css'
 
 // Create the tunnels instance
 const tunnels = new Tunnels(HOLLAND_TUNNEL_CONFIG)
+const { eb, wb, sweep, pace } = tunnels
 
 export function HollandTunnel() {
   // Check URL parameter for initial time
@@ -107,29 +108,25 @@ export function HollandTunnel() {
         e.preventDefault()
         const baseTime = isTransitioning ? targetTime : displayTime
         const currentMinute = Math.floor(baseTime) % 60
-        const newMinute = (currentMinute + 1) % 60
-        const newTime = newMinute
-
-        setTargetTime(newTime)
+        const newMin = (currentMinute + 1) % 60
+        setTargetTime(newMin)
         setIsTransitioning(true)
 
         // Update URL
         const url = new URL(window.location.href)
-        url.searchParams.set('t', newMinute.toString())
+        url.searchParams.set('t', newMin.toString())
         window.history.replaceState({}, '', url.toString())
       } else if (e.code === 'ArrowLeft' && isPaused) {
         e.preventDefault()
         const baseTime = isTransitioning ? targetTime : displayTime
         const currentMinute = Math.floor(baseTime) % 60
-        const newMinute = (currentMinute - 1 + 60) % 60
-        const newTime = newMinute
-
-        setTargetTime(newTime)
+        const newMin = (currentMinute - 1 + 60) % 60
+        setTargetTime(newMin)
         setIsTransitioning(true)
 
         // Update URL
         const url = new URL(window.location.href)
-        url.searchParams.set('t', newMinute.toString())
+        url.searchParams.set('t', newMin.toString())
         window.history.replaceState({}, '', url.toString())
       }
     }
@@ -139,7 +136,6 @@ export function HollandTunnel() {
   }, [isPaused, isTransitioning, targetTime, displayTime, setIsPaused])
 
   // Get current vehicles and phases
-  const vehicles = tunnels.getAllVehicles(displayTime)
   const phases = tunnels.getPhases(displayTime)
   const colorRectangles = tunnels.getColorRectangles(displayTime)
 
@@ -208,16 +204,18 @@ export function HollandTunnel() {
         <svg width="1100" height="400" viewBox="0 0 1100 400">
           {/* Both tunnels */}
           <Tunnel
-            direction="west"
+            dir="west"
+            displayTime={displayTime}
             phase={phases.west}
-            vehicles={vehicles}
+            tunnel={wb}
             colorRectangles={colorRectangles}
           />
 
           <Tunnel
-            direction="east"
+            dir="east"
+            displayTime={displayTime}
             phase={phases.east}
-            vehicles={vehicles}
+            tunnel={eb}
             colorRectangles={colorRectangles}
           />
         </svg>
