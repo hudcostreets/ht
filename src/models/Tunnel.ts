@@ -7,6 +7,11 @@ import { Direction } from "./types"
 import { XY, xy } from "./XY"
 const { floor, max, } = Math
 
+export type Pen = XY & {
+  w: number
+  h: number
+}
+
 export interface TunnelConfig {
   direction: Direction
   offsetMin: number
@@ -28,10 +33,8 @@ export interface TunnelConfig {
   // Layout
   laneWidthPx: number
   laneHeightPx: number
-  tunnelYOffset: number  // Y offset for this tunnel in the visualization
-  penOffset: XY  // Relative to R Lane entrance
-  penWidthPx: number
-  penHeightPx: number
+  y: number  // Y offset for this tunnel in the visualization
+  pen: Pen  // Relative to R Lane entrance
   fadeMins: number
   queuedCarWidthPx: number
 }
@@ -74,10 +77,9 @@ export class Tunnel {
     // Create lanes
     const start = direction === 'east' ? 0 : laneWidthPx
     const end = direction === 'east' ? laneWidthPx : 0
-    const { tunnelYOffset } = config
     // Lane positions relative to tunnel model (0-based)
-    const lLaneY = laneHeightPx * (1 - d * .5)
-    const rLaneY = laneHeightPx * (1 + d * .5)
+    const lLaneY = laneHeightPx * (1 - d / 2)
+    const rLaneY = laneHeightPx * (1 + d / 2)
     this.l = new Lane({
       id: 'L',
       entrance: xy(start, lLaneY),
@@ -131,11 +133,7 @@ export class Tunnel {
           minsDequeueing,
         }
       }
-      // if (rcar.tunnel.dir === 'east') {
-      //   console.log(`Car ${rcar.idx} (${spawnMin}):`, rcar.points(), `queueLen: ${queueLen}, queueOffsetX: ${rcar.spawnQueue?.offset?.x}, minsBeforeDequeueing: ${rcar.spawnQueue?.minsBeforeDequeueing}, minsDequeueing: ${rcar.spawnQueue?.minsDequeueing}`)
-      // }
       prvSpawnMin = spawnMin
-      // else: Car flows normally, leave spawnQueue undefined
     }
 
     // Calculate bike queueing
@@ -204,10 +202,6 @@ export class Tunnel {
     this.bikes = []
     for (const bike of bikes) {
       const split = bike.split()
-      // for (const b of split) {
-      //   const { idx, spawnQueue, spawnMin, } = b
-      //   console.log(`bike ${idx} (${spawnMin}):`, b.points(), spawnQueue)
-      // }
       this.bikes.push(...split)
     }
   }

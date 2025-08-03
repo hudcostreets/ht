@@ -4,15 +4,15 @@ import useSessionStorageState from 'use-session-storage-state'
 import { AnalogClock } from './AnalogClock'
 import { Tunnel } from './Tunnel.tsx'
 import { HOLLAND_TUNNEL_CONFIG } from '../models/TunnelConfigs'
-import { Tunnels } from '../models/Tunnels'
+import { Tunnels as HT } from '../models/Tunnels'
 import { LAYOUT } from '../models/Constants'
-import './HollandTunnel.css'
+import './Tunnels.css'
 
 // Create the tunnels instance
-const tunnels = new Tunnels(HOLLAND_TUNNEL_CONFIG)
+const tunnels = new HT(HOLLAND_TUNNEL_CONFIG)
 const { eb, wb, sweep, pace } = tunnels
 
-export function HollandTunnel() {
+export function Tunnels() {
   // Check URL parameter for initial time
   const urlParams = new URLSearchParams(window.location.search)
   const urlMinute = urlParams.get('t')
@@ -229,7 +229,7 @@ export function HollandTunnel() {
             // Render sweep
             if (sweepPos) {
               const sweepTunnel = sweep.currentTunnel
-              const yOffset = sweepTunnel?.config.tunnelYOffset || eb.config.tunnelYOffset
+              const yOffset = sweepTunnel?.config.y || eb.config.y
               vehicles.push(
                 <text
                   key="sweep"
@@ -250,7 +250,7 @@ export function HollandTunnel() {
             // Render pace
             if (pacePos) {
               const paceTunnel = pace.currentTunnel
-              const yOffset = paceTunnel?.config.tunnelYOffset || eb.config.tunnelYOffset
+              const yOffset = paceTunnel?.config.y || eb.config.y
               vehicles.push(
                 <text
                   key="pace"

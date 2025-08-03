@@ -20,8 +20,6 @@ export const Common = {
   // Layout (eastbound-specific coordinates)
   laneWidthPx: LAYOUT.TUNNEL_WIDTH,
   laneHeightPx: LAYOUT.LANE_HEIGHT,
-  penWidthPx: LAYOUT.BIKE_PEN_WIDTH,
-  penHeightPx: LAYOUT.BIKE_PEN_HEIGHT,
   queuedCarWidthPx: 30,   // Queued car spacing
   fadeDistance: 100,  // Pixels to travel while fading out
   fadeMins: 1,
@@ -32,10 +30,12 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
   eb: {
     direction: 'east',
     offsetMin: 45,  // Bike pen opens at :45
-    tunnelYOffset: 200,  // Eastbound tunnel is at bottom
-    penOffset: {
+    y: 200,  // Eastbound tunnel is at bottom
+    pen: {
       x: -LAYOUT.QUEUE_AREA_WIDTH + 70,  // Relative to tunnel start
       y: 110,  // Below the lanes
+      w: LAYOUT.BIKE_PEN_WIDTH,
+      h: LAYOUT.BIKE_PEN_HEIGHT,
     },
     ...Common,
   },
@@ -43,10 +43,12 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
   wb: {
     direction: 'west',
     offsetMin: 15,  // Bike pen opens at :15
-    tunnelYOffset: 100,  // Westbound tunnel is at top
-    penOffset: {
+    y: 100,  // Westbound tunnel is at top
+    pen: {
       x: LAYOUT.TUNNEL_WIDTH + 70,  // Relative to tunnel start
       y: -80,  // Above the lanes
+      w: LAYOUT.BIKE_PEN_WIDTH,
+      h: LAYOUT.BIKE_PEN_HEIGHT,
     },
     ...Common,
   },

@@ -18,14 +18,14 @@ export class Bike extends Vehicle {
 
   get initPos(): XY {
     const { lane, spawnQueue, config, tunnel } = this
-    const { penOffset } = config
+    const { pen } = config
     const { d } = tunnel
     if (spawnQueue) {
       // Car needs to queue
       const { offset } = spawnQueue
       return {
-        x: lane.entrance.x + (penOffset.x - offset.x) * d,
-        y: lane.entrance.y + (penOffset.y - offset.y) * d,
+        x: lane.entrance.x + (pen.x - offset.x) * d,
+        y: lane.entrance.y + (pen.y - offset.y) * d,
       }
     } else {
       // No queueing
