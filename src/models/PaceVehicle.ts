@@ -16,7 +16,6 @@ export class PaceVehicle extends Vehicle {
 
   get _points(): Points {
     const { laneWidthPx, period } = this.config
-    const { spawnMin } = this
     const pxPerMin = this.pxPerMin
 
     // Calculate transit time based on speed
@@ -33,18 +32,14 @@ export class PaceVehicle extends Vehicle {
       opacity: 0
     }
 
-    if (spawnMin > 0) {
-      points.push({ min: 0, val: origin })
-    }
-
-    // Start transiting (pace car enters from the left)
+    // Start transiting directly at vehicle time 0
     points.push({
-      min: spawnMin,
+      min: 0,
       val: { x: 0, y: this.lane.entrance.y, state: 'transiting', opacity: 1 }
     })
 
-    // Reach end of tunnel
-    const exitMin = spawnMin + transitMins
+    // Reach end of tunnel after transitMins
+    const exitMin = transitMins
     points.push({
       min: exitMin,
       val: { x: laneWidthPx, y: this.lane.exit.y, state: 'exiting', opacity: 1 }
@@ -53,9 +48,11 @@ export class PaceVehicle extends Vehicle {
     // For pace car, instead of fading, it transitions to the other tunnel
     // This will be handled by Tunnels class by updating the tunnel reference
 
-    // Reset to origin at end of period
+    // Reset to origin after exiting
+    points.push({ min: exitMin + 1, val: origin })
+
+    // Fill out the rest of the period
     if (exitMin + 1 < period) {
-      points.push({ min: exitMin + 1, val: origin })
       points.push({ min: period - 1, val: origin })
     }
 

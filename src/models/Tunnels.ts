@@ -31,10 +31,10 @@ export class Tunnels {
   public westbound: Tunnel
   public sweepConfig: { speed: number, stagingOffset: number }
   public  paceConfig: { speed: number, stagingOffset: number }
-  private sweepEast: SweepVehicle
-  private sweepWest: SweepVehicle
-  private paceEast: PaceVehicle
-  private paceWest: PaceVehicle
+  public sweepEast: SweepVehicle
+  public sweepWest: SweepVehicle
+  public paceEast: PaceVehicle
+  public paceWest: PaceVehicle
   private colorRects: ColorRectangles
 
   constructor(config: TunnelsConfig) {

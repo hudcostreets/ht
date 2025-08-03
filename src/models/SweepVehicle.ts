@@ -16,7 +16,6 @@ export class SweepVehicle extends Vehicle {
 
   get _points(): Points {
     const { laneWidthPx, period } = this.config
-    const { spawnMin } = this
     const pxPerMin = this.pxPerMin
 
     // Calculate transit time based on speed
@@ -34,27 +33,21 @@ export class SweepVehicle extends Vehicle {
     }
 
     // Staging position (just outside tunnel)
-    const staging: Pos = {
+    const _staging: Pos = {
       x: -35, // stagingOffset from config
       y: this.lane.entrance.y,
       state: 'origin',  // Use origin state for staging
       opacity: 1
     }
 
-    if (spawnMin > 5) {
-      // Staging before sweep
-      points.push({ min: 0, val: staging })
-      points.push({ min: spawnMin - 1, val: staging })
-    }
-
-    // Start transiting (sweep enters from the left)
+    // Vehicle starts directly at tunnel entrance (no staging in points)
     points.push({
-      min: spawnMin,
+      min: 0,
       val: { x: 0, y: this.lane.entrance.y, state: 'transiting', opacity: 1 }
     })
 
-    // Reach end of tunnel
-    const exitMin = spawnMin + transitMins
+    // Reach end of tunnel after transitMins
+    const exitMin = transitMins
     points.push({
       min: exitMin,
       val: { x: laneWidthPx, y: this.lane.exit.y, state: 'exiting', opacity: 1 }
