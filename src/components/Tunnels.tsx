@@ -6,7 +6,7 @@ import { Tunnel } from './Tunnel.tsx'
 import { HOLLAND_TUNNEL_CONFIG } from '../models/TunnelConfigs'
 import { Tunnels as HT } from '../models/Tunnels'
 import { LAYOUT } from '../models/Constants'
-import './Tunnels.css'
+import './Tunnels.scss'
 
 // Create the tunnels instance
 const tunnels = new HT(HOLLAND_TUNNEL_CONFIG)
