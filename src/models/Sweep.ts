@@ -50,20 +50,20 @@ export class Sweep extends Vehicle {
     const westStaging = { x: wb.r.entrance.x + this.stagingOffset, y: wb.r.entrance.y }
 
     const eTransitingMin = eb.offset + sweepStartMin
-    points.push({ min: eTransitingMin - 1, val: { ...eastStaging, state: 'dequeueing', opacity: 1 } })
-    points.push({ min: eTransitingMin, val: { ...eb.r.entrance, state: 'transiting', opacity: 1 } })
+    points.push({ min: eTransitingMin - 1, val: { ...eastStaging, state: 'dequeueing', opacity: 1, direction: 'east' } })
+    points.push({ min: eTransitingMin, val: { ...eb.r.entrance, state: 'transiting', opacity: 1, direction: 'east' } })
     const eExitingMin = eTransitingMin + transitingMins
-    points.push({ min: eExitingMin, val: { ...eb.r.exit, state: 'exiting', opacity: 1 } })
+    points.push({ min: eExitingMin, val: { ...eb.r.exit, state: 'exiting', opacity: 1, direction: 'east' } })
     const wStageMin = eExitingMin + officialResetMins
-    points.push({ min: wStageMin, val: { ...westStaging, state: 'queued', opacity: 1 } })
+    points.push({ min: wStageMin, val: { ...westStaging, state: 'queued', opacity: 1, direction: 'west' } })
 
     const wTransitingMin = wb.offset + sweepStartMin
-    points.push({ min: wTransitingMin - 1, val: { ...westStaging, state: 'dequeueing', opacity: 1 } })
-    points.push({ min: wTransitingMin, val: { ...wb.r.entrance, state: 'transiting', opacity: 1 } })
+    points.push({ min: wTransitingMin - 1, val: { ...westStaging, state: 'dequeueing', opacity: 1, direction: 'west' } })
+    points.push({ min: wTransitingMin, val: { ...wb.r.entrance, state: 'transiting', opacity: 1, direction: 'west' } })
     const wExitingMin = wTransitingMin + transitingMins
-    points.push({ min: wExitingMin, val: { ...wb.r.exit, state: 'exiting', opacity: 1 } })
+    points.push({ min: wExitingMin, val: { ...wb.r.exit, state: 'exiting', opacity: 1, direction: 'west' } })
     const eStageMin = wExitingMin + officialResetMins
-    points.push({ min: eStageMin, val: { ...eastStaging, state: 'queued', opacity: 1 } })
+    points.push({ min: eStageMin, val: { ...eastStaging, state: 'queued', opacity: 1, direction: 'east' } })
 
     points = points.map(({ min, val }) => ({ min: min % period, val }))
     points.sort((a, b) => a.min - b.min)

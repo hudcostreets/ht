@@ -222,51 +222,30 @@ export function Tunnels() {
 
           {/* Global vehicles (Sweep and Pace) */}
           {(() => {
-            const sweepPos = sweep.getPos(displayTime)
-            const pacePos = pace.getPos(displayTime)
-            const vehicles = []
+            const allVehicles = tunnels.getAllVehicles(displayTime)
+            const globalVehicles = allVehicles.filter(v => v.type === 'sweep' || v.type === 'pace')
 
-            // Render sweep
-            if (sweepPos) {
-              const sweepTunnel = sweep.currentTunnel
-              vehicles.push(
+            return globalVehicles.map(v => {
+              const { id, dir, pos, type } = v
+              const x = pos.x + LAYOUT.QUEUE_AREA_WIDTH
+              const y = pos.y  // No yOffset needed - positions are absolute
+
+              return (
                 <text
-                  key="sweep"
-                  x={sweepPos.x + LAYOUT.QUEUE_AREA_WIDTH}
-                  y={sweepPos.y}  // No yOffset needed - positions are absolute
+                  key={id}
+                  x={x}
+                  y={y}
                   fontSize="20"
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  opacity={sweepPos.opacity}
+                  opacity={pos.opacity}
                   style={{ userSelect: 'none', cursor: 'pointer' }}
-                  transform={sweepTunnel?.config.direction === 'east' ? `translate(${(sweepPos.x + LAYOUT.QUEUE_AREA_WIDTH) * 2},0) scale(-1,1)` : undefined}
+                  transform={dir === 'east' ? `translate(${x * 2},0) scale(-1,1)` : undefined}
                 >
-                  🚐
+                  {type === 'sweep' ? '🚐' : '🚓'}
                 </text>
               )
-            }
-
-            // Render pace
-            if (pacePos) {
-              const paceTunnel = pace.currentTunnel
-              vehicles.push(
-                <text
-                  key="pace"
-                  x={pacePos.x + LAYOUT.QUEUE_AREA_WIDTH}
-                  y={pacePos.y}  // No yOffset needed - positions are absolute
-                  fontSize="20"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  opacity={pacePos.opacity}
-                  style={{ userSelect: 'none', cursor: 'pointer' }}
-                  transform={paceTunnel?.config.direction === 'east' ? `translate(${(pacePos.x + LAYOUT.QUEUE_AREA_WIDTH) * 2},0) scale(-1,1)` : undefined}
-                >
-                  🚓
-                </text>
-              )
-            }
-
-            return vehicles
+            })
           })()}
         </svg>
       </div>

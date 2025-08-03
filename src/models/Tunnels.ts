@@ -69,13 +69,13 @@ export class Tunnels {
       {
         id: 'sweep', type: 'sweep',
         pos: sweep.getPos(absMins),
-        dir: sweep.currentTunnel?.config.direction || 'east',
+        dir: sweep.getPos(absMins).direction || 'east',
         metadata: {}
       },
       {
         id: 'pace', type: 'pace',
         pos: pace.getPos(absMins),
-        dir: pace.currentTunnel?.config.direction || 'east',
+        dir: pace.getPos(absMins).direction || 'east',
         metadata: {}
       },
     ]
