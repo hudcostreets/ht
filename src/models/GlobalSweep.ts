@@ -39,43 +39,17 @@ export class GlobalSweep {
     const _transitMins = laneWidthPx / pxPerMin // 10 minutes at 12mph
     const points: TimePoint<Pos>[] = []
 
-    // Sweep does a round trip:
-    // Minute 0-4: Staging at west exit (from previous cycle)
-    // Minute 5: Start eastbound from staging
-    // Minute 5-15: Transit eastbound (10 mins)
-    // Minute 15-20: Staging at east exit
-    // Minute 20: Start westbound from staging
+    // Sweep schedule (follows bikes):
+    // Minute 0-19: Staging at east exit (from previous eastbound run)
+    // Minute 20: Start westbound
     // Minute 20-30: Transit westbound (10 mins)
-    // Minute 30-35: Staging at west exit
-    // Minute 35: Start eastbound from staging
-    // Minute 35-45: Transit eastbound (10 mins)
-    // Minute 45-50: Staging at east exit
-    // Minute 50: Start westbound from staging
-    // Minute 50-60: Transit westbound (10 mins)
+    // Minute 30-49: Staging at west exit
+    // Minute 50: Start eastbound (following E/b bikes that entered at :45)
+    // Minute 50-60: Transit eastbound (10 mins)
 
-    // Staging at west exit (minutes 0-4)
+    // Staging at east exit (minutes 0-19)
     points.push({
       min: 0,
-      val: { x: -this.stagingOffset, y: this.westbound.r.exit.y, state: 'origin', opacity: 1 }
-    })
-    points.push({
-      min: 4,
-      val: { x: -this.stagingOffset, y: this.westbound.r.exit.y, state: 'origin', opacity: 1 }
-    })
-
-    // First eastbound leg (minutes 5-15)
-    points.push({
-      min: 5,
-      val: { x: 0, y: this.eastbound.r.entrance.y, state: 'transiting', opacity: 1 }
-    })
-    points.push({
-      min: 15,
-      val: { x: laneWidthPx, y: this.eastbound.r.exit.y, state: 'exiting', opacity: 1 }
-    })
-
-    // Staging at east exit
-    points.push({
-      min: 16,
       val: { x: laneWidthPx + this.stagingOffset, y: this.eastbound.r.exit.y, state: 'origin', opacity: 1 }
     })
     points.push({
@@ -83,7 +57,7 @@ export class GlobalSweep {
       val: { x: laneWidthPx + this.stagingOffset, y: this.eastbound.r.exit.y, state: 'origin', opacity: 1 }
     })
 
-    // First westbound leg (minutes 20-30)
+    // Westbound leg (minutes 20-30)
     points.push({
       min: 20,
       val: { x: laneWidthPx, y: this.westbound.r.entrance.y, state: 'transiting', opacity: 1 }
@@ -93,44 +67,24 @@ export class GlobalSweep {
       val: { x: 0, y: this.westbound.r.exit.y, state: 'exiting', opacity: 1 }
     })
 
-    // Staging at west exit
+    // Staging at west exit (minutes 31-49)
     points.push({
       min: 31,
       val: { x: -this.stagingOffset, y: this.westbound.r.exit.y, state: 'origin', opacity: 1 }
     })
     points.push({
-      min: 34,
+      min: 49,
       val: { x: -this.stagingOffset, y: this.westbound.r.exit.y, state: 'origin', opacity: 1 }
     })
 
-    // Second eastbound leg (minutes 35-45)
+    // Eastbound leg (minutes 50-60)
     points.push({
-      min: 35,
+      min: 50,
       val: { x: 0, y: this.eastbound.r.entrance.y, state: 'transiting', opacity: 1 }
     })
     points.push({
-      min: 45,
-      val: { x: laneWidthPx, y: this.eastbound.r.exit.y, state: 'exiting', opacity: 1 }
-    })
-
-    // Staging at east exit
-    points.push({
-      min: 46,
-      val: { x: laneWidthPx + this.stagingOffset, y: this.eastbound.r.exit.y, state: 'origin', opacity: 1 }
-    })
-    points.push({
-      min: 49,
-      val: { x: laneWidthPx + this.stagingOffset, y: this.eastbound.r.exit.y, state: 'origin', opacity: 1 }
-    })
-
-    // Second westbound leg (minutes 50-60)
-    points.push({
-      min: 50,
-      val: { x: laneWidthPx, y: this.westbound.r.entrance.y, state: 'transiting', opacity: 1 }
-    })
-    points.push({
       min: 60,
-      val: { x: 0, y: this.westbound.r.exit.y, state: 'exiting', opacity: 1 }
+      val: { x: laneWidthPx, y: this.eastbound.r.exit.y, state: 'exiting', opacity: 1 }
     })
 
     return points
@@ -148,14 +102,10 @@ export class GlobalSweep {
     const pos = this.pos.at(relMins)
 
     // Update current tunnel based on position
-    if (relMins >= 5 && relMins < 20) {
-      this.currentTunnel = this.eastbound
-    } else if (relMins >= 20 && relMins < 35) {
+    if (relMins >= 20 && relMins < 31) {
       this.currentTunnel = this.westbound
-    } else if (relMins >= 35 && relMins < 50) {
+    } else if (relMins >= 50 || relMins < 20) {
       this.currentTunnel = this.eastbound
-    } else if (relMins >= 50 || relMins < 5) {
-      this.currentTunnel = this.westbound
     }
 
     return pos
