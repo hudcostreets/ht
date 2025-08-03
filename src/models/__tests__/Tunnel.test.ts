@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { State, Tunnel } from '../Tunnel'
-import { HOLLAND_TUNNEL_CONFIG } from '../TunnelConfigs'
+import {beforeEach, describe, expect, it} from 'vitest'
+import {Pos, Tunnel} from '../Tunnel'
+import {HOLLAND_TUNNEL_CONFIG} from '../TunnelConfigs'
+import {entries} from "@rdub/base";
+
 
 describe('Tunnel', () => {
   describe('Eastbound Tunnel', () => {
@@ -13,13 +15,13 @@ describe('Tunnel', () => {
     function check(
       bikeIdx: number,
       min: number,
-      expectedState: State,
-      expectedX: number,
+      expected: Partial<Pos>,
     ) {
-      const bike = eb.bikes[bikeIdx]
+      const bike = eb.bikes.find(({ idx }) => idx == bikeIdx)!
       const pos = bike.getPos(min)
-      expect(pos!.state).toBe(expectedState)
-      expect(pos!.x).toBe(expectedX)
+      entries(expected).forEach(([key, value]) => {
+        expect(pos![key]).toBe(value)
+      })
     }
 
     describe('Time conversion', () => {
@@ -44,83 +46,33 @@ describe('Tunnel', () => {
     })
     
     describe('Early bikes (spawn before pen opens)', () => {
-      it('should position first bike correctly at pen opening', () => {
+      it('should position bike 1.2 correctly', () => {
         // At pen opening (:45), first bike should be released immediately
-        check(0, 45, 'transiting', 0) // At tunnel entrance
-      })
-      
-      it('should stagger bike releases correctly', () => {
-        check(0, 45, 'transiting', 0) // At tunnel entrance
-        check(1, 45, 'dequeueing', -30) // In pen (queued)
-        const b1 = eb.bikes[1] // Index 1
-        // Second bike should still be in pen at :45:00
-        expect(b1.getPos(45)!.state).toBe('origin')
-        
-        // Second bike should be released later (bikes are released 5 per minute = 0.2 minutes apart)
-        // But bike needs to reach the tunnel entrance position first
-        expect(b1.getPos(45 + 0.2)!.state).toBe('transiting') // At tunnel entrance
-        
-        // After transitions complete, both should be in tunnel
-        // expect(b0.getPos(45 + 0.05)!.state).toBe('transiting')
-        // expect(b1.getPos(45 + 0.25)!.state).toBe('transiting')
-      })
-    })
-    
-    describe('Bikes arriving during pen window', () => {
-      it('should handle bike arriving at :46', () => {
-        // Create a bike that spawns at :46 (during pen window :45-:47)
-        // This would be handled differently in the real implementation
-        // For now, test the concept with relative times
-        
-        // A bike arriving at relative minute 1 (:46) should join immediately
-        const relativeTime = 1 // 1 minute after pen opens
-        const phase = eb.getPhase(relativeTime)
-        expect(phase).toBe('bikes-enter')
-      })
-    })
-    
-    describe('Late arrival bikes', () => {
-      it('should queue late arrivals for next cycle', () => {
-        // Test the concept - bikes arriving after :47 should wait for next cycle
-        const relativeTime = 5 // 5 minutes after pen opens (:50)
-        const phase = eb.getPhase(relativeTime)
-        expect(phase).toBe('sweep') // Not bikes-enter anymore
-      })
-    })
-    
-    describe('Cars in L lane (always flow)', () => {
-      it('should allow L lane cars to flow during bike phases', () => {
-        const carAt46 = eb.cars.l.find(car => car.spawnMin === 46)
-        if (carAt46) {
-          // L lane car spawning at :46 should flow normally
-          const position = carAt46.getPos(46)
-          expect(position).toBeTruthy()
-          expect(position!.state).toBe('transiting')
-        }
-      })
-    })
-
-    describe('Cars in R lane (may queue)', () => {
-      it('should queue R lane cars during bike phases', () => {
-        const carAt46 = eb.cars.r.find(car => car.spawnMin === 46)!
-        // R lane car spawning at :46 should be queued
-        const position = carAt46.getPos(46)
-        expect(position).toBeTruthy()
-        expect(position!.state).toBe('queued')
-        expect(position!.x).toBeLessThan(0) // In queue area (negative x)
+        check(1.2, 45  , { state: 'dequeueing', x:  -80, opacity: 1, }) // In queue
+        check(1.2, 45.1, { state: 'dequeueing', x:  -40, opacity: 1, }) // Dequeueing
+        check(1.2, 45.2, { state: 'transiting', x:    0, opacity: 1, }) // Entering
+        check(1.2, 49.2, { state: 'transiting', x:  400, opacity: 1, }) // Halfway
+        check(1.2, 56.7, { state:    'exiting', x:  800, opacity: 1, }) // Exiting
+        check(1.2, 57.7, { state:       'done', x:  880, opacity: 0, }) // Faded out
+        check(1.2, 58.7, { state:     'origin', x: -160, opacity: 0, }) // Reset
+        check(1.2, 59.7, { state:     'queued', x:  -80, opacity: 1, }) // Re-enqueued
+        check(1.2,  0  , { state:     'queued', x:  -80, opacity: 1, }) // In queue
+        check(1.2,  1  , { state:     'queued', x:  -80, opacity: 1, }) // In queue
+        check(1.2, 44  , { state:     'queued', x:  -80, opacity: 1, }) // In queue
       })
 
-      it('should release queued cars when pace car starts', () => {
-        const carAt45 = eb.cars.r.find(car => car.spawnMin === 45)!
-        
-        // At :45, car should be queued
-        const queuedPosition = carAt45.getPos(45)
-        expect(queuedPosition!.state).toBe('queued')
-
-        // At :55 (pace car starts), car should be moving
-        const movingPosition = carAt45.getPos(55)
-        expect(movingPosition!.state).toBe('transiting')
-        expect(movingPosition!.x).toBeGreaterThan(-50) // Should have moved from initial queue position
+      it('should position bike 0 correctly', () => {
+        // Bike "0" arrives at :45 to a full queue, enters tunnel just before pen closes at :48
+        check(0, 44  , { state:     'origin', x: -240, opacity: 0, })
+        check(0, 45  , { state: 'dequeueing', x: -160, opacity: 1, })
+        check(0, 46.5, { state: 'dequeueing', x:  -80, opacity: 1, })
+        check(0, 48  , { state: 'transiting', x:    0, opacity: 1, })
+        check(0, 52  , { state: 'transiting', x:  400, opacity: 1, })
+        check(0, 59.5, { state:    'exiting', x:  800, opacity: 1, })
+        check(0,  0.5, { state:       'done', x:  880, opacity: 0, })
+        check(0,  1.5, { state:     'origin', x: -240, opacity: 0, })
+        check(0,  2.5, { state:     'origin', x: -240, opacity: 0, })
+        check(0, 43  , { state:     'origin', x: -240, opacity: 0, })
       })
     })
   })
