@@ -1,6 +1,8 @@
+import { entries } from "@rdub/base"
 import { beforeEach, describe, expect, it } from 'vitest'
 import { HOLLAND_TUNNEL_CONFIG } from '../TunnelConfigs'
 import { Tunnels } from '../Tunnels'
+import { Pos } from '../types'
 
 describe('Vehicle Subclasses', () => {
   let tunnels: Tunnels
@@ -9,68 +11,138 @@ describe('Vehicle Subclasses', () => {
     tunnels = new Tunnels(HOLLAND_TUNNEL_CONFIG)
   })
 
-  describe('SweepVehicle', () => {
-    describe('Eastbound sweep', () => {
-      it('should move at 12mph through tunnel', () => {
-        const sweep = tunnels.sweepEast
-        // Eastbound sweep starts at minute 50
-        // At 12mph, should take 10 minutes to cross 2 miles
-
-        // The sweep takes 10 minutes to cross the tunnel
-        const points = sweep.points()
-        expect(points[0].min).toBe(0) // Starts at vehicle time 0
-        expect(points[0].val.x).toBe(0) // At tunnel entrance
-        expect(points[1].min).toBe(10) // Exits at vehicle time 10
-        expect(points[1].val.x).toBe(800) // At tunnel exit
-
-        // This confirms the sweep is moving at 12mph (10 minutes to cross 2 miles)
-      })
+  function check(
+    vehicle: { getPos: (mins: number) => Pos },
+    min: number,
+    expected: Partial<Pos>,
+  ) {
+    const pos = vehicle.getPos(min)
+    entries(expected).forEach(([key, value]) => {
+      if (key === 'x' || key === 'y') {
+        expect(pos![key]).toBeCloseTo(value as number, 5)
+      } else {
+        expect(pos![key]).toBe(value)
+      }
     })
+  }
 
-    describe('Westbound sweep', () => {
-      it('should move at 12mph through tunnel', () => {
-        const sweep = tunnels.sweepWest
-        // Westbound sweep starts at minute 20
-        // At 12mph, should take 10 minutes to cross 2 miles
+  describe('GlobalSweep', () => {
+    it('should complete a 60-minute round trip at 12mph', () => {
+      // Sweep does a round trip through both tunnels
+      // At 12mph, takes 10 minutes to cross 2 miles (800px)
 
-        const points = sweep.points()
-        expect(points[0].min).toBe(0)
-        expect(points[0].val.x).toBe(0)
-        expect(points[1].min).toBe(10)
-        expect(points[1].val.x).toBe(800)
-      })
+      // Minute 0-4: Staging west
+      check(tunnels.sweep, 0, { state: 'origin', x: -35, opacity: 1 })
+      check(tunnels.sweep, 1, { state: 'origin', x: -35, opacity: 1 })
+      check(tunnels.sweep, 4, { state: 'origin', x: -35, opacity: 1 })
+
+      // Minute 5: Start eastbound
+      check(tunnels.sweep, 5, { state: 'transiting', x: 0, opacity: 1 })
+
+      // Minute 10: Halfway through eastbound
+      check(tunnels.sweep, 10, { state: 'transiting', x: 400, opacity: 1 })
+
+      // Minute 15: Exit eastbound
+      check(tunnels.sweep, 15, { state: 'exiting', x: 800, opacity: 1 })
+
+      // Minute 16-19: Staging east
+      check(tunnels.sweep, 16, { state: 'origin', x: 835, opacity: 1 })
+      check(tunnels.sweep, 19, { state: 'origin', x: 835, opacity: 1 })
+
+      // Minute 20: Start westbound
+      check(tunnels.sweep, 20, { state: 'transiting', x: 800, opacity: 1 })
+
+      // Minute 25: Halfway through westbound
+      check(tunnels.sweep, 25, { state: 'transiting', x: 400, opacity: 1 })
+
+      // Minute 30: Exit westbound
+      check(tunnels.sweep, 30, { state: 'exiting', x: 0, opacity: 1 })
+
+      // Minute 31-34: Staging west
+      check(tunnels.sweep, 31, { state: 'origin', x: -35, opacity: 1 })
+      check(tunnels.sweep, 34, { state: 'origin', x: -35, opacity: 1 })
+
+      // Minute 35: Start eastbound again
+      check(tunnels.sweep, 35, { state: 'transiting', x: 0, opacity: 1 })
+
+      // Minute 40: Halfway through eastbound
+      check(tunnels.sweep, 40, { state: 'transiting', x: 400, opacity: 1 })
+
+      // Minute 45: Exit eastbound
+      check(tunnels.sweep, 45, { state: 'exiting', x: 800, opacity: 1 })
+
+      // Minute 46-49: Staging east
+      check(tunnels.sweep, 46, { state: 'origin', x: 835, opacity: 1 })
+      check(tunnels.sweep, 49, { state: 'origin', x: 835, opacity: 1 })
+
+      // Minute 50: Start westbound again
+      check(tunnels.sweep, 50, { state: 'transiting', x: 800, opacity: 1 })
+
+      // Minute 55: Halfway through westbound
+      check(tunnels.sweep, 55, { state: 'transiting', x: 400, opacity: 1 })
+
+      // Minute 59.9: Just before exit westbound
+      check(tunnels.sweep, 59.9, { state: 'transiting', x: 8, opacity: 1 })
     })
   })
 
-  describe('PaceVehicle', () => {
-    describe('Eastbound pace', () => {
-      it('should move at 24mph through tunnel', () => {
-        const pace = tunnels.paceEast
-        // Eastbound pace starts at minute 55
-        // At 24mph, should take 5 minutes to cross 2 miles
+  describe('GlobalPace', () => {
+    it('should complete a 60-minute round trip at 24mph', () => {
+      // Pace does a round trip through both tunnels
+      // At 24mph, takes 5 minutes to cross 2 miles (800px)
 
-        const points = pace.points()
-        expect(points[0].min).toBe(0)
-        expect(points[0].val.x).toBe(0)
-        expect(points[1].min).toBe(5)
-        expect(points[1].val.x).toBe(800)
+      // Minute 0-9: Staging west
+      check(tunnels.pace, 0, { state: 'origin', x: -60, opacity: 1 })
+      check(tunnels.pace, 1, { state: 'origin', x: -60, opacity: 1 })
+      check(tunnels.pace, 9, { state: 'origin', x: -60, opacity: 1 })
 
-        // This confirms pace car moves at 24mph (5 minutes to cross 2 miles)
-      })
-    })
+      // Minute 10: Start eastbound
+      check(tunnels.pace, 10, { state: 'transiting', x: 0, opacity: 1 })
 
-    describe('Westbound pace', () => {
-      it('should move at 24mph through tunnel', () => {
-        const pace = tunnels.paceWest
-        // Westbound pace starts at minute 25
-        // At 24mph, should take 5 minutes to cross 2 miles
+      // Minute 12.5: Halfway through eastbound
+      check(tunnels.pace, 12.5, { state: 'transiting', x: 400, opacity: 1 })
 
-        const points = pace.points()
-        expect(points[0].min).toBe(0)
-        expect(points[0].val.x).toBe(0)
-        expect(points[1].min).toBe(5)
-        expect(points[1].val.x).toBe(800)
-      })
+      // Minute 15: Exit eastbound
+      check(tunnels.pace, 15, { state: 'exiting', x: 800, opacity: 1 })
+
+      // Minute 16-24: Staging east
+      check(tunnels.pace, 16, { state: 'origin', x: 860, opacity: 1 })
+      check(tunnels.pace, 24, { state: 'origin', x: 860, opacity: 1 })
+
+      // Minute 25: Start westbound
+      check(tunnels.pace, 25, { state: 'transiting', x: 800, opacity: 1 })
+
+      // Minute 27.5: Halfway through westbound
+      check(tunnels.pace, 27.5, { state: 'transiting', x: 400, opacity: 1 })
+
+      // Minute 30: Exit westbound
+      check(tunnels.pace, 30, { state: 'exiting', x: 0, opacity: 1 })
+
+      // Minute 31-39: Staging west
+      check(tunnels.pace, 31, { state: 'origin', x: -60, opacity: 1 })
+      check(tunnels.pace, 39, { state: 'origin', x: -60, opacity: 1 })
+
+      // Minute 40: Start eastbound again
+      check(tunnels.pace, 40, { state: 'transiting', x: 0, opacity: 1 })
+
+      // Minute 42.5: Halfway through eastbound
+      check(tunnels.pace, 42.5, { state: 'transiting', x: 400, opacity: 1 })
+
+      // Minute 45: Exit eastbound
+      check(tunnels.pace, 45, { state: 'exiting', x: 800, opacity: 1 })
+
+      // Minute 46-54: Staging east
+      check(tunnels.pace, 46, { state: 'origin', x: 860, opacity: 1 })
+      check(tunnels.pace, 54, { state: 'origin', x: 860, opacity: 1 })
+
+      // Minute 55: Start westbound again
+      check(tunnels.pace, 55, { state: 'transiting', x: 800, opacity: 1 })
+
+      // Minute 57.5: Halfway through westbound
+      check(tunnels.pace, 57.5, { state: 'transiting', x: 400, opacity: 1 })
+
+      // Minute 59.9: Just before exit westbound
+      check(tunnels.pace, 59.9, { state: 'transiting', x: 16, opacity: 1 })
     })
   })
 })

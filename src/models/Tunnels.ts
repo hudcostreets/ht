@@ -1,6 +1,6 @@
 import { ColorRectangles } from './ColorRectangles'
-import { PaceVehicle } from './PaceVehicle'
-import { SweepVehicle } from './SweepVehicle'
+import { GlobalPace } from './GlobalPace'
+import { GlobalSweep } from './GlobalSweep'
 import { Tunnel, type TunnelConfig } from './Tunnel'
 import { Direction } from './types'
 
@@ -31,10 +31,8 @@ export class Tunnels {
   public westbound: Tunnel
   public sweepConfig: { speed: number, stagingOffset: number }
   public  paceConfig: { speed: number, stagingOffset: number }
-  public sweepEast: SweepVehicle
-  public sweepWest: SweepVehicle
-  public paceEast: PaceVehicle
-  public paceWest: PaceVehicle
+  public sweep: GlobalSweep
+  public pace: GlobalPace
   private colorRects: ColorRectangles
 
   constructor(config: TunnelsConfig) {
@@ -42,42 +40,20 @@ export class Tunnels {
     this.westbound = new Tunnel(config.westbound)
     this.sweepConfig = config.sweepConfig
     this.paceConfig = config.paceConfig
-    // Create sweep vehicles for each direction
-    // Eastbound sweep starts at minute 50
-    this.sweepEast = new SweepVehicle({
-      tunnel: this.eastbound,
-      laneId: 'R',
-      idx: 0,
-      spawnMin: 50,
-      sweepMph: config.sweepConfig.speed
+    // Create global sweep vehicle that traverses both tunnels
+    this.sweep = new GlobalSweep({
+      eastbound: this.eastbound,
+      westbound: this.westbound,
+      sweepMph: config.sweepConfig.speed,
+      stagingOffset: config.sweepConfig.stagingOffset
     })
 
-    // Westbound sweep starts at minute 20
-    this.sweepWest = new SweepVehicle({
-      tunnel: this.westbound,
-      laneId: 'R',
-      idx: 0,
-      spawnMin: 20,
-      sweepMph: config.sweepConfig.speed
-    })
-
-    // Create pace vehicles for each direction
-    // Eastbound pace starts at minute 55 (10 mins after pen opens)
-    this.paceEast = new PaceVehicle({
-      tunnel: this.eastbound,
-      laneId: 'R',
-      idx: 0,
-      spawnMin: 55,
-      paceMph: config.paceConfig.speed
-    })
-
-    // Westbound pace starts at minute 25 (10 mins after pen opens)
-    this.paceWest = new PaceVehicle({
-      tunnel: this.westbound,
-      laneId: 'R',
-      idx: 0,
-      spawnMin: 25,
-      paceMph: config.paceConfig.speed
+    // Create global pace vehicle that traverses both tunnels
+    this.pace = new GlobalPace({
+      eastbound: this.eastbound,
+      westbound: this.westbound,
+      paceMph: config.paceConfig.speed,
+      stagingOffset: config.paceConfig.stagingOffset
     })
 
     this.colorRects = new ColorRectangles(this)
@@ -151,49 +127,24 @@ export class Tunnels {
     })
 
     // Global vehicles (sweep and pace)
-    // Get positions for both sweep vehicles
-    const sweepEastPos = this.sweepEast.getPos(absMins)
-    const sweepWestPos = this.sweepWest.getPos(absMins)
-
-    // Determine which sweep vehicle is active based on states
-    // If east sweep is exiting, switch to west sweep
-    if (sweepEastPos.state === 'transiting' || sweepEastPos.state === 'exiting') {
+    const sweepPos = this.sweep.getPos(absMins)
+    if (sweepPos.state === 'transiting' || sweepPos.state === 'exiting') {
       vehicles.push({
         id: 'sweep',
         type: 'sweep',
-        position: sweepEastPos,
-        direction: 'east',
-        metadata: {}
-      })
-    } else if (sweepWestPos.state === 'transiting' || sweepWestPos.state === 'exiting') {
-      vehicles.push({
-        id: 'sweep',
-        type: 'sweep',
-        position: sweepWestPos,
-        direction: 'west',
+        position: sweepPos,
+        direction: this.sweep.currentTunnel?.config.direction || 'east',
         metadata: {}
       })
     }
 
-    // Get positions for both pace vehicles
-    const paceEastPos = this.paceEast.getPos(absMins)
-    const paceWestPos = this.paceWest.getPos(absMins)
-
-    // Determine which pace vehicle is active based on states
-    if (paceEastPos.state === 'transiting' || paceEastPos.state === 'exiting') {
+    const pacePos = this.pace.getPos(absMins)
+    if (pacePos.state === 'transiting' || pacePos.state === 'exiting') {
       vehicles.push({
         id: 'pace',
         type: 'pace',
-        position: paceEastPos,
-        direction: 'east',
-        metadata: {}
-      })
-    } else if (paceWestPos.state === 'transiting' || paceWestPos.state === 'exiting') {
-      vehicles.push({
-        id: 'pace',
-        type: 'pace',
-        position: paceWestPos,
-        direction: 'west',
+        position: pacePos,
+        direction: this.pace.currentTunnel?.config.direction || 'east',
         metadata: {}
       })
     }

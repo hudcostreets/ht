@@ -2,7 +2,7 @@ import { TimePoint } from "./TimeVal"
 import { Pos } from "./types"
 import { Vehicle, Points, Props } from "./Vehicle"
 
-export class PaceVehicle extends Vehicle {
+export class Pace extends Vehicle {
   private paceMph: number
 
   constructor(props: Props & { paceMph: number }) {
