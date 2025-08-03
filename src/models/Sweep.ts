@@ -45,7 +45,7 @@ export class Sweep extends Vehicle {
     const { officialResetMins, sweepStartMin, } = eb.config
     let points: TimePoint<Pos>[] = []
 
-    // For staging positions, we don't include tunnelYOffset because it's added by the view
+    // Staging positions use the lane entrance coordinates (which now include y-offset)
     const eastStaging = { x: eb.r.entrance.x - this.stagingOffset, y: eb.r.entrance.y }
     const westStaging = { x: wb.r.entrance.x + this.stagingOffset, y: wb.r.entrance.y }
 

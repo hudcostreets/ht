@@ -1,7 +1,7 @@
 import React, { type FC } from 'react'
 import { LAYOUT } from '../models/Constants'
-import { VehicleI } from "../models/Tunnels"
 import { Tunnel as T } from "../models/Tunnel"
+import { VehicleI } from "../models/Tunnels"
 import { Direction } from "../models/types"
 
 interface Props {
@@ -76,9 +76,9 @@ export const Tunnel: FC<Props> = ({ dir, phase, displayTime, tunnel, colorRectan
       {/* Vehicles */}
       {vehs.map(v => {
         const { id, dir, pos, type, } = v
-        // Calculate position
+        // Calculate position (y already includes tunnel offset)
         let x = pos.x + LAYOUT.QUEUE_AREA_WIDTH
-        let y = pos.y + yOffset
+        let y = pos.y
 
         // Vehicle emoji direction
         const transform = dir === 'east' ? `translate(${x * 2},0) scale(-1,1)` : undefined

@@ -1,5 +1,5 @@
 import { entries } from "@rdub/base"
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { HOLLAND_TUNNEL_CONFIG } from '../TunnelConfigs'
 import { Tunnels } from '../Tunnels'
 import { Pos } from '../types'
@@ -32,12 +32,14 @@ describe('Vehicle Subclasses', () => {
       // At 12mph, takes 10 minutes to cross 2 miles (800px)
 
       // Minute 0-5: Transitioning from east exit to west staging
-      check(sweep,  0  , { state:    'exiting', x: 800  , opacity: 1 })
-      check(sweep,  5  , { state:     'queued', x: 835  , opacity: 1 })
+      // Y offsets: E/b at y=200, W/b at y=100
+      // R lane: E/b at y=45, W/b at y=15
+      check(sweep,  0  , { state:    'exiting', x: 800  , y: 245, opacity: 1 })  // E/b R lane: 45 + 200
+      check(sweep,  5  , { state:     'queued', x: 835  , y: 115, opacity: 1 })  // W/b R lane: 15 + 100
 
       // Minute 5-18: Staging at west entrance
-      check(sweep, 10  , { state:     'queued', x: 835  , opacity: 1 })
-      check(sweep, 18  , { state:     'queued', x: 835  , opacity: 1 })
+      check(sweep, 10  , { state:     'queued', x: 835  , y: 115, opacity: 1 })
+      check(sweep, 18  , { state:     'queued', x: 835  , y: 115, opacity: 1 })
 
       // Minute 19-20: Moving from staging to entrance
       check(sweep, 19.5, { state:     'dequeueing', x: 817.5, opacity: 1 })
@@ -48,8 +50,8 @@ describe('Vehicle Subclasses', () => {
       check(sweep, 30  , { state:    'exiting', x:   0  , opacity: 1, tunnel: 'west' })
 
       // Minute 30-35: Transitioning from west exit to east staging
-      check(sweep, 30  , { state:     'exiting', x:   0  , opacity: 1 })
-      check(sweep, 35  , { state:     'queued', x: -35  , opacity: 1 })
+      check(sweep, 30  , { state:     'exiting', x:   0  , y: 115, opacity: 1 })  // W/b R lane: 15 + 100
+      check(sweep, 35  , { state:     'queued', x: -35  , y: 245, opacity: 1 })  // E/b R lane: 45 + 200
 
       // Minute 35-48: Staging at east entrance
       check(sweep, 40  , { state:     'queued', x: -35  , opacity: 1 })

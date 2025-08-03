@@ -45,6 +45,7 @@ export class Pace extends Vehicle {
     const { officialResetMins, paceStartMin, } = eb.config
     let points: TimePoint<Pos>[] = []
 
+    // Staging positions use the lane entrance coordinates (which now include y-offset)
     const westStaging = { x: wb.r.entrance.x + this.stagingOffset, y: wb.r.entrance.y }
     const eastStaging = { x: eb.r.entrance.x - this.stagingOffset, y: eb.r.entrance.y }
 

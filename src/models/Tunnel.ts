@@ -74,12 +74,12 @@ export class Tunnel {
     this.nbikes = period * bikesPerMin
     const { nbikes, d } = this
 
-    // Create lanes
+    // Create lanes with absolute positions (including tunnel's y-offset)
     const start = direction === 'east' ? 0 : laneWidthPx
     const end = direction === 'east' ? laneWidthPx : 0
-    // Lane positions relative to tunnel model (0-based)
-    const lLaneY = laneHeightPx * (1 - d / 2)
-    const rLaneY = laneHeightPx * (1 + d / 2)
+    // Lane positions include tunnel's y-offset for absolute positioning
+    const lLaneY = laneHeightPx * (1 - d / 2) + config.y
+    const rLaneY = laneHeightPx * (1 + d / 2) + config.y
     this.l = new Lane({
       id: 'L',
       entrance: xy(start, lLaneY),

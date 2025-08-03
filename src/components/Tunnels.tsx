@@ -3,9 +3,9 @@ import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
 import { AnalogClock } from './AnalogClock'
 import { Tunnel } from './Tunnel.tsx'
+import { LAYOUT } from '../models/Constants'
 import { HOLLAND_TUNNEL_CONFIG } from '../models/TunnelConfigs'
 import { Tunnels as HT } from '../models/Tunnels'
-import { LAYOUT } from '../models/Constants'
 import './Tunnels.scss'
 
 // Create the tunnels instance
@@ -229,12 +229,11 @@ export function Tunnels() {
             // Render sweep
             if (sweepPos) {
               const sweepTunnel = sweep.currentTunnel
-              const yOffset = sweepTunnel?.config.y || eb.config.y
               vehicles.push(
                 <text
                   key="sweep"
                   x={sweepPos.x + LAYOUT.QUEUE_AREA_WIDTH}
-                  y={sweepPos.y + yOffset}
+                  y={sweepPos.y}  // No yOffset needed - positions are absolute
                   fontSize="20"
                   textAnchor="middle"
                   dominantBaseline="middle"
@@ -250,12 +249,11 @@ export function Tunnels() {
             // Render pace
             if (pacePos) {
               const paceTunnel = pace.currentTunnel
-              const yOffset = paceTunnel?.config.y || eb.config.y
               vehicles.push(
                 <text
                   key="pace"
                   x={pacePos.x + LAYOUT.QUEUE_AREA_WIDTH}
-                  y={pacePos.y + yOffset}
+                  y={pacePos.y}  // No yOffset needed - positions are absolute
                   fontSize="20"
                   textAnchor="middle"
                   dominantBaseline="middle"
