@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
 import { AnalogClock } from './AnalogClock'
-import { TunnelViewSimple } from './TunnelViewSimple'
+import { Tunnel } from './Tunnel.tsx'
 import { HOLLAND_TUNNEL_CONFIG } from '../models/TunnelConfigs'
 import { Tunnels } from '../models/Tunnels'
 import './HollandTunnel.css'
@@ -10,7 +10,7 @@ import './HollandTunnel.css'
 // Create the tunnels instance
 const tunnels = new Tunnels(HOLLAND_TUNNEL_CONFIG)
 
-export function HollandTunnelNew() {
+export function HollandTunnel() {
   // Check URL parameter for initial time
   const urlParams = new URLSearchParams(window.location.search)
   const urlMinute = urlParams.get('t')
@@ -207,14 +207,14 @@ export function HollandTunnelNew() {
       <div className="tunnel-visualization-svg">
         <svg width="1100" height="400" viewBox="0 0 1100 400">
           {/* Both tunnels */}
-          <TunnelViewSimple
+          <Tunnel
             direction="west"
             phase={phases.west}
             vehicles={vehicles}
             colorRectangles={colorRectangles}
           />
 
-          <TunnelViewSimple
+          <Tunnel
             direction="east"
             phase={phases.east}
             vehicles={vehicles}

@@ -2,9 +2,9 @@ import { Bike } from "./Bike"
 import { Car } from "./Car"
 import { Lane } from "./Lane"
 import { Start, Interp, Num, TimePoint, TimeVal } from "./TimeVal"
+import { VehicleI } from "./Tunnels.ts"
 import { Direction } from "./types"
 import { XY, xy } from "./XY"
-import {VehicleI} from "./Tunnels.ts";
 const { floor, max, } = Math
 
 export interface TunnelConfig {
@@ -103,7 +103,7 @@ export class Tunnel {
     // Instead of checking phase at spawn time, check if tunnel is blocked when car arrives
     let queueLen = 0
     let prvSpawnMin = 0
-    console.log(`${rcars.length} rcars`)
+    // console.log(`${rcars.length} rcars`)
     for (const rcar of rcars) {
       // Tunnel is blocked from minute 0 (bikes enter) until pace car starts at minute 10
       const { spawnMin } = rcar

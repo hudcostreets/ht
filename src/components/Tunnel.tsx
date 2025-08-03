@@ -1,17 +1,12 @@
 import React, { type FC } from 'react'
 import { LAYOUT } from '../models/Constants'
+import { VehicleI } from "../models/Tunnels"
 import { Direction } from "../models/types"
 
-interface TunnelViewProps {
+interface Props {
   direction: Direction
   phase: string
-  vehicles: Array<{
-    id: string
-    type: 'car' | 'bike' | 'sweep' | 'pace'
-    position: { x: number; y: number; state: string; opacity: number }
-    direction: Direction
-    metadata: any
-  }>
+  vehicles: VehicleI[]
   colorRectangles: Array<{
     direction: Direction
     color: 'green' | 'red'
@@ -22,15 +17,15 @@ interface TunnelViewProps {
   }>
 }
 
-export const TunnelViewSimple: FC<TunnelViewProps> = ({ direction, phase, vehicles, colorRectangles }) => {
+export const Tunnel: FC<Props> = ({ direction, phase, vehicles, colorRectangles }) => {
   // Filter vehicles and rectangles for this direction
   // Special case: sweep/pace in 'origin' state should render with both tunnels
-  const directionVehicles = vehicles.filter(v => {
-    if ((v.type === 'sweep' || v.type === 'pace') && v.position.state === 'origin') {
+  const directionVehicles = vehicles.filter(({ type, pos, dir }) => {
+    if ((type === 'sweep' || type === 'pace') && pos.state === 'origin') {
       // Render sweep/pace with both tunnel views during staging
       return true
     }
-    return v.direction === direction
+    return dir === direction
   })
   const directionRectangles = colorRectangles.filter(r => r.direction === direction)
 
@@ -87,45 +82,43 @@ export const TunnelViewSimple: FC<TunnelViewProps> = ({ direction, phase, vehicl
       ))}
 
       {/* Vehicles */}
-      {directionVehicles.map(vehicle => {
+      {directionVehicles.map(v => {
+        const { id, dir, pos, type, } = v
         // Calculate position
-        let x = vehicle.position.x + LAYOUT.QUEUE_AREA_WIDTH
-        let y = vehicle.position.y + yOffset
+        let x = pos.x + LAYOUT.QUEUE_AREA_WIDTH
+        let y = pos.y + yOffset
 
         // Handle special states
-        if (vehicle.position.state === 'pen' || vehicle.position.state === 'staging') {
-          x = vehicle.position.x
-          y = vehicle.position.y
-        } else if ((vehicle.type === 'sweep' || vehicle.type === 'pace') && vehicle.position.state === 'origin') {
+        if ((type === 'sweep' || type === 'pace') && pos.state === 'origin') {
           // Special handling for sweep/pace staging positions
           // Determine which tunnel they're staging for based on x position
-          if (vehicle.position.x < 400) {
+          if (pos.x < 400) {
             // Staging for eastbound (x < 400 means near east entrance)
-            y = vehicle.position.y + 200 // Eastbound yOffset
+            y = pos.y + 200 // Eastbound yOffset
           } else {
             // Staging for westbound (x >= 400 means near west entrance)
-            y = vehicle.position.y + 100 // Westbound yOffset
+            y = pos.y + 100 // Westbound yOffset
           }
         }
 
         // Vehicle emoji direction
-        const transform = vehicle.direction === 'east' ? `translate(${x * 2},0) scale(-1,1)` : undefined
+        const transform = dir === 'east' ? `translate(${x * 2},0) scale(-1,1)` : undefined
 
         return (
           <text
-            key={vehicle.id}
+            key={id}
             x={x}
             y={y}
             fontSize="20"
             textAnchor="middle"
             dominantBaseline="middle"
-            opacity={vehicle.position.opacity}
+            opacity={pos.opacity}
             style={{ userSelect: 'none', cursor: 'pointer' }}
             transform={transform}
-            data-tooltip-id={vehicle.position.state !== 'origin' ? 'vehicle-tooltip' : undefined}
-            data-tooltip-content={vehicle.position.state !== 'origin' ? getTooltip(vehicle) : undefined}
+            data-tooltip-id={pos.state !== 'origin' ? 'vehicle-tooltip' : undefined}
+            data-tooltip-content={pos.state !== 'origin' ? getTooltip(v) : undefined}
           >
-            {getEmoji(vehicle.type)}
+            {getEmoji(type)}
           </text>
         )
       })}
@@ -142,8 +135,8 @@ function getEmoji(type: string): string {
   }
 }
 
-function getTooltip(vehicle: any): string {
-  const dir = vehicle.direction === 'east' ? 'E/b' : 'W/b'
+function getTooltip(vehicle: VehicleI): string {
+  const dir = vehicle.dir === 'east' ? 'E/b' : 'W/b'
 
   if (vehicle.type === 'car') {
     const { laneId } = vehicle.metadata

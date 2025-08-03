@@ -2,8 +2,8 @@ import { ColorRectangles } from './ColorRectangles'
 import { Pace } from './Pace'
 import { Sweep } from './Sweep'
 import { Tunnel, type TunnelConfig } from './Tunnel'
-import {Direction, State} from './types'
-import {XY} from "./XY"
+import { Direction, State } from './types'
+import { XY } from "./XY"
 
 export type SupportProps = {
   mph: number

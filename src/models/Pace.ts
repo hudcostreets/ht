@@ -1,7 +1,7 @@
-import {TimePoint} from "./TimeVal"
-import {Tunnel} from "./Tunnel"
-import {Pos} from "./types"
-import {Points, Vehicle} from "./Vehicle"
+import { TimePoint } from "./TimeVal"
+import { Tunnel } from "./Tunnel"
+import { Pos } from "./types"
+import { Points, Vehicle } from "./Vehicle"
 
 export type Props = {
   eb: Tunnel
@@ -49,20 +49,20 @@ export class Pace extends Vehicle {
     const eastStaging = { x: eb.r.entrance.x - this.stagingOffset, y: eb.r.entrance.y }
 
     const eTransitingMin = eb.offset + paceStartMin
-    points.push({ min: eTransitingMin - 1, val: { ...eastStaging, state: 'dequeueing', opacity: 1 }})
+    points.push({ min: eTransitingMin - 1, val: { ...eastStaging, state: 'dequeueing', opacity: 1 } })
     points.push({ min: eTransitingMin, val: { ...eb.r.entrance, state: 'transiting', opacity: 1 } })
     const eExitingMin = eTransitingMin + transitingMins
     points.push({ min: eExitingMin, val: { ...eb.r.exit, state: 'exiting', opacity: 1 } })
 
     const wStageMin = eExitingMin + officialResetMins
-    points.push({ min: wStageMin, val: { ...westStaging, state: 'origin', opacity: 1 }})
+    points.push({ min: wStageMin, val: { ...westStaging, state: 'origin', opacity: 1 } })
     const wTransitingMin = wb.offset + paceStartMin
-    points.push({ min: wTransitingMin - 1, val: { ...westStaging, state: 'dequeueing', opacity: 1 }})
-    points.push({ min: wTransitingMin, val: { ...westStaging, state: 'transiting', opacity: 1 }})
+    points.push({ min: wTransitingMin - 1, val: { ...westStaging, state: 'dequeueing', opacity: 1 } })
+    points.push({ min: wTransitingMin, val: { ...westStaging, state: 'transiting', opacity: 1 } })
     const wExitingMin = wTransitingMin + transitingMins
-    points.push({ min: wExitingMin, val: { ...wb.r.exit, state: 'exiting', opacity: 1 }})
+    points.push({ min: wExitingMin, val: { ...wb.r.exit, state: 'exiting', opacity: 1 } })
     const eStageMin = wExitingMin + officialResetMins
-    points.push({ min: eStageMin, val: { ...eastStaging, state: 'origin', opacity: 1 }})
+    points.push({ min: eStageMin, val: { ...eastStaging, state: 'origin', opacity: 1 } })
 
     return points
   }

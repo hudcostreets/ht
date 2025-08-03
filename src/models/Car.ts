@@ -1,6 +1,6 @@
 import { TimePoint } from "./TimeVal"
 import { Pos } from "./types"
-import {Points, Vehicle} from "./Vehicle"
+import { Points, Vehicle } from "./Vehicle"
 import { XY } from "./XY"
 
 export class Car extends Vehicle {
