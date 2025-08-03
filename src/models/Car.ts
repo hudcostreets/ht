@@ -1,21 +1,30 @@
 import { TimePoint } from "./TimeVal"
 import { Pos } from "./types"
-import { Vehicle } from "./Vehicle"
+import {Points, Vehicle} from "./Vehicle"
 import { XY } from "./XY"
 
 export class Car extends Vehicle {
-  get fadeMph(): number {
+  get exitMph(): number {
+    return this.mph
+  }
+
+  get mph(): number {
     return this.config.carMph
   }
 
+  get transitingMins(): number {
+    const { config, mph } = this
+    const { lengthMi, } = config
+    return (lengthMi / mph) * 60
+  }
+
   get _points(): TimePoint<Pos>[] {
-    const { tunnel, spawnQueue, lane, fadeDist } = this
+    const { tunnel, spawnQueue, lane, fadeDist, transitingMins, } = this
     const { d, config } = tunnel
-    const { lengthMi, carMph, period, fadeMins, } = config
-    const tunnelMins = (lengthMi / carMph) * 60 // Convert hours to minutes
+    const { period, fadeMins, } = config
     let transitingMin: number
     let initPos: XY
-    let points: TimePoint<Pos>[] = []
+    let points: Points = []
     if (spawnQueue) {
       // Car needs to queue
       const { offset, minsBeforeDequeueing, minsDequeueing } = spawnQueue
@@ -37,7 +46,7 @@ export class Car extends Vehicle {
     }
     const origin = { ...initPos }
     origin.x -= fadeDist * d
-    const exitingMin = transitingMin + tunnelMins
+    const exitingMin = transitingMin + transitingMins
     const fadedMin = exitingMin + fadeMins
     const fadeDest = { x: lane.exit.x + fadeDist * d, y: lane.exit.y }
     return [

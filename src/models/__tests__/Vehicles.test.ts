@@ -12,14 +12,17 @@ describe('Vehicle Subclasses', () => {
   })
 
   function check(
-    vehicle: { getPos: (mins: number) => Pos },
+    vehicle: { getPos: (mins: number) => Pos; currentTunnel?: { config: { direction: string } } },
     min: number,
-    expected: Partial<Pos>,
+    expected: Partial<Pos> & { tunnel?: string },
   ) {
     const pos = vehicle.getPos(min)
     entries(expected).forEach(([key, value]) => {
-      if (key === 'x' || key === 'y') {
-        expect(pos![key]).toBeCloseTo(value as number, 5)
+      if (key === 'tunnel') {
+        // Check which tunnel the vehicle is currently in
+        expect(vehicle.currentTunnel?.config.direction).toBe(value)
+      } else if (key === 'x' || key === 'y') {
+        expect(pos![key]).toBeCloseTo(value as number, 0)
       } else {
         expect(pos![key]).toBe(value)
       }
@@ -27,80 +30,100 @@ describe('Vehicle Subclasses', () => {
   }
 
   describe('GlobalSweep', () => {
-    it('should follow eastbound bikes from :50 to :00', () => {
-      // Sweep follows bikes through tunnels
+    it('should transition between tunnels with continuous movement', () => {
+      // Sweep follows bikes through tunnels with transitions
       // At 12mph, takes 10 minutes to cross 2 miles (800px)
 
-      // Minute 0-19: Staging east (from previous eastbound run)
-      check(tunnels.sweep, 0, { state: 'origin', x: 835, opacity: 1 })
-      check(tunnels.sweep, 10, { state: 'origin', x: 835, opacity: 1 })
-      check(tunnels.sweep, 19, { state: 'origin', x: 835, opacity: 1 })
+      // Minute 0-5: Transitioning from east exit to west staging
+      check(tunnels.sweep,  0  , { state:     'origin', x: 800  , opacity: 1 })
+      check(tunnels.sweep,  2.5, { state:     'origin', x: 817.5, opacity: 1 }) // Halfway through transition
+      check(tunnels.sweep,  5  , { state:     'origin', x: 835  , opacity: 1 })
 
-      // Minute 20: Start westbound
-      check(tunnels.sweep, 20, { state: 'transiting', x: 800, opacity: 1 })
+      // Minute 5-19: Staging at west entrance
+      check(tunnels.sweep, 10  , { state:     'origin', x: 835  , opacity: 1 })
+      check(tunnels.sweep, 19  , { state:     'origin', x: 835  , opacity: 1 })
 
-      // Minute 25: Halfway through westbound
-      check(tunnels.sweep, 25, { state: 'transiting', x: 400, opacity: 1 })
+      // Minute 19-20: Moving from staging to entrance
+      check(tunnels.sweep, 19.5, { state:     'origin', x: 817.5, opacity: 1 })
+      check(tunnels.sweep, 20  , { state: 'transiting', x: 800  , opacity: 1 })
 
-      // Minute 30: Exit westbound
-      check(tunnels.sweep, 30, { state: 'exiting', x: 0, opacity: 1 })
+      // Minute 20-30: Transit westbound
+      check(tunnels.sweep, 25  , { state: 'transiting', x: 400  , opacity: 1, tunnel: 'west' })
+      check(tunnels.sweep, 30  , { state:    'exiting', x:   0  , opacity: 1, tunnel: 'west' })
 
-      // Minute 31-49: Staging west
-      check(tunnels.sweep, 31, { state: 'origin', x: -35, opacity: 1 })
-      check(tunnels.sweep, 40, { state: 'origin', x: -35, opacity: 1 })
-      check(tunnels.sweep, 49, { state: 'origin', x: -35, opacity: 1 })
+      // Minute 30-35: Transitioning from west exit to east staging
+      check(tunnels.sweep, 30.5, { state:     'origin', x:  -3.5, opacity: 1 })
+      check(tunnels.sweep, 32.5, { state:     'origin', x: -17.5, opacity: 1 })
+      check(tunnels.sweep, 35  , { state:     'origin', x: -35  , opacity: 1 })
 
-      // Minute 50: Start eastbound (following bikes that entered at :45)
-      check(tunnels.sweep, 50, { state: 'transiting', x: 0, opacity: 1 })
+      // Minute 35-49: Staging at east entrance
+      check(tunnels.sweep, 40  , { state:     'origin', x: -35  , opacity: 1 })
+      check(tunnels.sweep, 49  , { state:     'origin', x: -35  , opacity: 1 })
 
-      // Minute 55: Halfway through eastbound
-      check(tunnels.sweep, 55, { state: 'transiting', x: 400, opacity: 1 })
+      // Minute 49-50: Moving from staging to entrance
+      check(tunnels.sweep, 49.5, { state:     'origin', x: -17.5, opacity: 1 })
+      check(tunnels.sweep, 50  , { state: 'transiting', x:   0  , opacity: 1 })
 
-      // Minute 59.9: Just before exit eastbound
-      check(tunnels.sweep, 59.9, { state: 'transiting', x: 792, opacity: 1 })
+      // Minute 50-60: Transit eastbound
+      check(tunnels.sweep, 50  , { state: 'transiting', x:   0, opacity: 1, tunnel: 'east' }) // At :50, sweep at E/b entrance
+      check(tunnels.sweep, 55  , { state: 'transiting', x: 400, opacity: 1, tunnel: 'east' })
+      check(tunnels.sweep, 59.9, { state: 'transiting', x: 792, opacity: 1, tunnel: 'east' })
 
-      // Verify direction
-      tunnels.sweep.getPos(55)
-      expect(tunnels.sweep.currentTunnel?.config.direction).toBe('east')
+      // Verify opacity is always 1
+      check(tunnels.sweep,  0  , { opacity: 1 })
+      check(tunnels.sweep, 15  , { opacity: 1 })
+      check(tunnels.sweep, 30  , { opacity: 1 })
+      check(tunnels.sweep, 45  , { opacity: 1 })
+      check(tunnels.sweep, 59  , { opacity: 1 })
     })
   })
 
   describe('GlobalPace', () => {
-    it('should lead cars eastbound from :55 to :00', () => {
-      // Pace leads cars after bikes
+    it('should transition between tunnels with continuous movement', () => {
+      // Pace leads cars with transitions
       // At 24mph, takes 5 minutes to cross 2 miles (800px)
 
-      // Minute 0-24: Staging east (from previous eastbound run)
-      check(tunnels.pace, 0, { state: 'origin', x: 860, opacity: 1 })
-      check(tunnels.pace, 10, { state: 'origin', x: 860, opacity: 1 })
+      // Minute 0-5: Transitioning from east exit to west staging
+      check(tunnels.pace, 0, { state: 'origin', x: 800, opacity: 1 })
+      check(tunnels.pace, 2.5, { state: 'origin', x: 830, opacity: 1 }) // Halfway through transition
+      check(tunnels.pace, 5, { state: 'origin', x: 860, opacity: 1 })
+
+      // Minute 5-24: Staging at west entrance
+      check(tunnels.pace, 15, { state: 'origin', x: 860, opacity: 1 })
       check(tunnels.pace, 24, { state: 'origin', x: 860, opacity: 1 })
 
-      // Minute 25: Start westbound
+      // Minute 24-25: Moving from staging to entrance
+      check(tunnels.pace, 24.5, { state: 'origin', x: 830, opacity: 1 })
       check(tunnels.pace, 25, { state: 'transiting', x: 800, opacity: 1 })
 
-      // Minute 27.5: Halfway through westbound
-      check(tunnels.pace, 27.5, { state: 'transiting', x: 400, opacity: 1 })
+      // Minute 25-30: Transit westbound
+      check(tunnels.pace, 27.5, { state: 'transiting', x: 400, opacity: 1, tunnel: 'west' })
+      check(tunnels.pace, 30, { state: 'exiting', x: 0, opacity: 1, tunnel: 'west' })
 
-      // Minute 30: Exit westbound
-      check(tunnels.pace, 30, { state: 'exiting', x: 0, opacity: 1 })
+      // Minute 30-35: Transitioning from west exit to east staging
+      check(tunnels.pace, 30.5, { state: 'origin', x: -6, opacity: 1 })
+      check(tunnels.pace, 32.5, { state: 'origin', x: -30, opacity: 1 })
+      check(tunnels.pace, 35, { state: 'origin', x: -60, opacity: 1 })
 
-      // Minute 31-54: Staging west
-      check(tunnels.pace, 31, { state: 'origin', x: -60, opacity: 1 })
-      check(tunnels.pace, 40, { state: 'origin', x: -60, opacity: 1 })
+      // Minute 35-54: Staging at east entrance
+      check(tunnels.pace, 45, { state: 'origin', x: -60, opacity: 1 })
       check(tunnels.pace, 54, { state: 'origin', x: -60, opacity: 1 })
 
-      // Minute 55: Start eastbound (leading cars after bikes)
+      // Minute 54-55: Moving from staging to entrance
+      check(tunnels.pace, 54.5, { state: 'origin', x: -30, opacity: 1 })
       check(tunnels.pace, 55, { state: 'transiting', x: 0, opacity: 1 })
 
-      // Minute 57.5: Halfway through eastbound
-      check(tunnels.pace, 57.5, { state: 'transiting', x: 400, opacity: 1 })
+      // Minute 55-60: Transit eastbound
+      check(tunnels.pace, 55, { state: 'transiting', x: 0, opacity: 1, tunnel: 'east' }) // At :55, pace at E/b entrance
+      check(tunnels.pace, 57.5, { state: 'transiting', x: 400, opacity: 1, tunnel: 'east' })
+      check(tunnels.pace, 59.99, { state: 'transiting', x: 798, opacity: 1, tunnel: 'east' })
 
-      // Minute 59.9: Just before exit eastbound
-      check(tunnels.pace, 59.9, { state: 'transiting', x: 784, opacity: 1 })
-
-      // Verify direction
-      tunnels.pace.getPos(57)
-      expect(tunnels.pace.currentTunnel?.config.direction).toBe('east')
+      // Verify opacity is always 1
+      check(tunnels.pace, 0, { opacity: 1 })
+      check(tunnels.pace, 15, { opacity: 1 })
+      check(tunnels.pace, 30, { opacity: 1 })
+      check(tunnels.pace, 45, { opacity: 1 })
+      check(tunnels.pace, 59, { opacity: 1 })
     })
   })
 })

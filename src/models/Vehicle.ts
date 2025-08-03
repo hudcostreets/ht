@@ -52,7 +52,7 @@ export abstract class Vehicle {
 
   abstract get _points(): Points
 
-  abstract get fadeMph(): number
+  abstract get exitMph(): number
 
   get config(): TunnelConfig {
     return this.tunnel.config
@@ -62,14 +62,14 @@ export abstract class Vehicle {
     return this.config.period
   }
 
-  get pxPerMin(): number {
+  get exitPxPerMin(): number {
     const { lengthMi, laneWidthPx } = this.config
-    return (this.fadeMph / lengthMi) * laneWidthPx / 60
+    return (this.exitMph / lengthMi) * laneWidthPx / 60
   }
 
   get fadeDist(): number {
     const { fadeMins } = this.config
-    return this.pxPerMin * fadeMins
+    return this.exitPxPerMin * fadeMins
   }
 
   get pos(): TimeVal<Pos> {

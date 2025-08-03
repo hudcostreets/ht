@@ -9,7 +9,7 @@ describe('Tunnel', () => {
     let eb: Tunnel
 
     beforeEach(() => {
-      eb = new Tunnel(HOLLAND_TUNNEL_CONFIG.eastbound)
+      eb = new Tunnel(HOLLAND_TUNNEL_CONFIG.eb)
     })
 
     function check(
@@ -81,7 +81,7 @@ describe('Tunnel', () => {
     let westbound: Tunnel
 
     beforeEach(() => {
-      westbound = new Tunnel(HOLLAND_TUNNEL_CONFIG.westbound)
+      westbound = new Tunnel(HOLLAND_TUNNEL_CONFIG.wb)
     })
 
     describe('Time conversion', () => {
@@ -116,8 +116,8 @@ describe('Tunnel', () => {
 
   describe('Cross-tunnel coordination', () => {
     it('should have offset schedules (E at :45, W at :15)', () => {
-      const eastbound = new Tunnel(HOLLAND_TUNNEL_CONFIG.eastbound)
-      const westbound = new Tunnel(HOLLAND_TUNNEL_CONFIG.westbound)
+      const eastbound = new Tunnel(HOLLAND_TUNNEL_CONFIG.eb)
+      const westbound = new Tunnel(HOLLAND_TUNNEL_CONFIG.wb)
 
       // At absolute time :15, eastbound should be in normal phase, westbound in bikes-enter
       expect(eastbound.getPhase(eastbound.relMins(15))).toBe('normal')

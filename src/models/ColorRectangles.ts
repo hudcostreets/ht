@@ -21,7 +21,7 @@ export class ColorRectangles {
   private laneHeight: number
 
   constructor(tunnels: Tunnels) {
-    const { eastbound: e } = tunnels
+    const { eb: e } = tunnels
     const { laneWidthPx, laneHeightPx, period } = e.config
     this.laneWidth = laneWidthPx
     this.laneHeight = laneHeightPx

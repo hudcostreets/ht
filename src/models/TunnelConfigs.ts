@@ -10,11 +10,12 @@ export const Common = {
   bikeFlatMph: 12,
   penCloseMin: 3,
   sweepStartMin: 5,
-  paceCarStartMin: 10,
+  paceStartMin: 10,
   carsPerMin: 1,  // 60 cars per hour
   carsReleasedPerMin: 5,
   bikesPerMin: 0.25, // 15 bikes per hour
   bikesReleasedPerMin: 5,
+  officialResetMins: 5,
 
   // Layout (eastbound-specific coordinates)
   laneWidthPx: LAYOUT.TUNNEL_WIDTH,
@@ -28,7 +29,7 @@ export const Common = {
 
 // Default configuration for Holland Tunnel
 export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
-  eastbound: {
+  eb: {
     direction: 'east',
     offsetMin: 45,  // Bike pen opens at :45
     penOffset: {
@@ -38,7 +39,7 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
     ...Common,
   },
 
-  westbound: {
+  wb: {
     direction: 'west',
     offsetMin: 15,  // Bike pen opens at :15
     penOffset: {
@@ -48,13 +49,13 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
     ...Common,
   },
 
-  sweepConfig: {
-    speed: 12,
+  sweep: {
+    mph: 12,
     stagingOffset: 35
   },
 
-  paceConfig: {
-    speed: Common.carMph,
+  pace: {
+    mph: Common.carMph,
     stagingOffset: 60
   }
 }

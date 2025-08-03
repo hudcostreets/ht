@@ -5,7 +5,7 @@ import { HOLLAND_TUNNEL_CONFIG } from '../TunnelConfigs'
 
 describe('Car', () => {
   it('should create and position a normal flow car', () => {
-    const tunnel = new Tunnel(HOLLAND_TUNNEL_CONFIG.eastbound)
+    const tunnel = new Tunnel(HOLLAND_TUNNEL_CONFIG.eb)
     const car = new Car({
       tunnel,
       laneId: 'L',
@@ -21,7 +21,7 @@ describe('Car', () => {
   })
 
   it('should handle queued car', () => {
-    const tunnel = new Tunnel(HOLLAND_TUNNEL_CONFIG.eastbound)
+    const tunnel = new Tunnel(HOLLAND_TUNNEL_CONFIG.eb)
     const car = new Car({
       tunnel,
       laneId: 'R',

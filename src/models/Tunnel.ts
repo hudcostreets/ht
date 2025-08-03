@@ -4,6 +4,7 @@ import { Lane } from "./Lane"
 import { Start, Interp, Num, TimePoint, TimeVal } from "./TimeVal"
 import { Direction } from "./types"
 import { XY, xy } from "./XY"
+import {VehicleI} from "./Tunnels.ts";
 const { floor, max, } = Math
 
 export interface TunnelConfig {
@@ -20,7 +21,9 @@ export interface TunnelConfig {
   carsReleasedPerMin: number
   bikesPerMin: number
   bikesReleasedPerMin: number
-  paceCarStartMin: number
+  sweepStartMin: number
+  paceStartMin: number
+  officialResetMins: number
 
   // Layout
   laneWidthPx: number
@@ -58,7 +61,7 @@ export class Tunnel {
       carsPerMin, carsReleasedPerMin,
       laneWidthPx, laneHeightPx,
       direction,
-      paceCarStartMin, penCloseMin,
+      paceStartMin, penCloseMin,
       queuedCarWidthPx,
       period,
     } = config
@@ -104,7 +107,7 @@ export class Tunnel {
     for (const rcar of rcars) {
       // Tunnel is blocked from minute 0 (bikes enter) until pace car starts at minute 10
       const { spawnMin } = rcar
-      const queueOpenMin = paceCarStartMin
+      const queueOpenMin = paceStartMin
       if (spawnMin > queueOpenMin) {
         const elapsed = spawnMin - max(queueOpenMin, prvSpawnMin)
         const carsElapsed = elapsed * carsReleasedPerMin
@@ -206,6 +209,30 @@ export class Tunnel {
 
   public get allCars(): Car[] {
     return [ ...this.cars.l, ...this.cars.r ]
+  }
+
+  public allVehicles(absMins: number): VehicleI[] {
+    const { bikes, allCars } = this
+    return [
+      ...bikes.map(
+        ({ idx, spawnMin, getPos, }) => ({
+          id: `bike-w-${idx}`,
+          type: 'bike',
+          pos: getPos(absMins),
+          dir: 'west',
+          metadata: { spawnMin, idx }
+        }) as VehicleI
+      ),
+      ...allCars.map(
+        ({ laneId, idx, spawnMin, getPos, }) => ({
+          id: `car-w-${laneId}-${idx}`,
+          type: 'car',
+          pos: getPos(absMins),
+          dir: 'west',
+          metadata: { spawnMin, idx, laneId }
+        }) as VehicleI
+      ),
+    ]
   }
 
   public get offset(): number {

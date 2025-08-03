@@ -1,71 +1,73 @@
-import { TimePoint } from "./TimeVal"
-import { Pos } from "./types"
-import { Vehicle, Points, Props } from "./Vehicle"
+import {TimePoint} from "./TimeVal"
+import {Tunnel} from "./Tunnel"
+import {Pos} from "./types"
+import {Points, Vehicle} from "./Vehicle"
+
+export type GlobalSweepProps = {
+  eb: Tunnel
+  wb: Tunnel
+  mph: number
+  stagingOffset: number
+}
 
 export class Sweep extends Vehicle {
-  private sweepMph: number
+  public eb: Tunnel
+  public wb: Tunnel
+  public mph: number
+  public stagingOffset: number
+  public currentTunnel?: Tunnel
 
-  constructor(props: Props & { sweepMph: number }) {
-    super(props)
-    this.sweepMph = props.sweepMph
+  constructor({ eb, wb, mph, stagingOffset }: GlobalSweepProps) {
+    super({
+      tunnel: eb,
+      laneId: 'R',
+      idx: 0,
+      spawnMin: 0
+    })
+    this.eb = eb
+    this.wb = wb
+    this.mph = mph
+    this.stagingOffset = stagingOffset
   }
 
-  get fadeMph(): number {
-    return this.sweepMph
+  get exitMph(): number {
+    return this.mph
+  }
+
+  get transitingMins(): number {
+    const { eb, mph, } = this
+    const { lengthMi, } = eb.config
+    return (lengthMi / mph) * 60
   }
 
   get _points(): Points {
-    const { laneWidthPx, period } = this.config
-    const pxPerMin = this.pxPerMin
-
-    // Calculate transit time based on speed
-    const transitMins = laneWidthPx / pxPerMin
-
-    // For sweep, we need to handle the one-way trip
+    const { eb, wb, transitingMins, } = this
+    const { officialResetMins, sweepStartMin, } = eb.config
     const points: TimePoint<Pos>[] = []
 
-    // Origin state before spawning
-    const _origin: Pos = {
-      x: -this.fadeDist,
-      y: this.lane.entrance.y,
-      state: 'origin',
-      opacity: 0
-    }
+    const westStaging = { x: wb.r.entrance.x + this.stagingOffset, y: wb.r.entrance.y }
+    const eastStaging = { x: eb.r.entrance.x - this.stagingOffset, y: eb.r.entrance.y }
 
-    // Staging position (just outside tunnel)
-    const _staging: Pos = {
-      x: -35, // stagingOffset from config
-      y: this.lane.entrance.y,
-      state: 'origin',  // Use origin state for staging
-      opacity: 1
-    }
+    const eTransitingMin = eb.offset + sweepStartMin
+    points.push({ min: eTransitingMin - 1, val: { ...eastStaging, state: 'dequeueing', opacity: 1 }})
+    points.push({ min: eTransitingMin, val: { ...eb.r.entrance, state: 'transiting', opacity: 1 } })
+    const eExitingMin = eTransitingMin + transitingMins
+    points.push({ min: eExitingMin, val: { ...eb.r.exit, state: 'exiting', opacity: 1 } })
 
-    // Vehicle starts directly at tunnel entrance (no staging in points)
-    points.push({
-      min: 0,
-      val: { x: 0, y: this.lane.entrance.y, state: 'transiting', opacity: 1 }
-    })
-
-    // Reach end of tunnel after transitMins
-    const exitMin = transitMins
-    points.push({
-      min: exitMin,
-      val: { x: laneWidthPx, y: this.lane.exit.y, state: 'exiting', opacity: 1 }
-    })
-
-    // After exiting, move to staging position on the other side
-    const exitStaging: Pos = {
-      x: laneWidthPx + 35,
-      y: this.lane.exit.y,
-      state: 'origin',
-      opacity: 1
-    }
-
-    if (exitMin + 1 < period) {
-      points.push({ min: exitMin + 1, val: exitStaging })
-      points.push({ min: period - 1, val: exitStaging })
-    }
+    const wStageMin = eExitingMin + officialResetMins
+    points.push({ min: wStageMin, val: { ...westStaging, state: 'origin', opacity: 1 }})
+    const wTransitingMin = wb.offset + sweepStartMin
+    points.push({ min: wTransitingMin - 1, val: { ...westStaging, state: 'dequeueing', opacity: 1 }})
+    points.push({ min: wTransitingMin, val: { ...westStaging, state: 'transiting', opacity: 1 }})
+    const wExitingMin = wTransitingMin + transitingMins
+    points.push({ min: wExitingMin, val: { ...wb.r.exit, state: 'exiting', opacity: 1 }})
+    const eStageMin = wExitingMin + officialResetMins
+    points.push({ min: eStageMin, val: { ...eastStaging, state: 'origin', opacity: 1 }})
 
     return points
+  }
+
+  getPos(absMins: number): Pos {
+    return this.pos.at(absMins)
   }
 }

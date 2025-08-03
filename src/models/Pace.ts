@@ -1,61 +1,73 @@
-import { TimePoint } from "./TimeVal"
-import { Pos } from "./types"
-import { Vehicle, Points, Props } from "./Vehicle"
+import {TimePoint} from "./TimeVal"
+import {Tunnel} from "./Tunnel"
+import {Pos} from "./types"
+import {Points, Vehicle} from "./Vehicle"
+
+export type Props = {
+  eb: Tunnel
+  wb: Tunnel
+  mph: number
+  stagingOffset: number
+}
 
 export class Pace extends Vehicle {
-  private paceMph: number
+  public eb: Tunnel
+  public wb: Tunnel
+  public mph: number
+  public stagingOffset: number
+  public currentTunnel?: Tunnel
 
-  constructor(props: Props & { paceMph: number }) {
-    super(props)
-    this.paceMph = props.paceMph
+  constructor({ eb, wb, mph, stagingOffset }: Props) {
+    super({
+      tunnel: eb,
+      laneId: 'R',
+      idx: 0,
+      spawnMin: 0
+    })
+    this.eb = eb
+    this.wb = wb
+    this.mph = mph
+    this.stagingOffset = stagingOffset
   }
 
-  get fadeMph(): number {
-    return this.paceMph
+  get exitMph(): number {
+    return this.mph
+  }
+
+  get transitingMins(): number {
+    const { eb, mph, } = this
+    const { lengthMi, } = eb.config
+    return (lengthMi / mph) * 60
   }
 
   get _points(): Points {
-    const { laneWidthPx, period } = this.config
-    const pxPerMin = this.pxPerMin
-
-    // Calculate transit time based on speed
-    const transitMins = laneWidthPx / pxPerMin
-
-    // For pace car, we need to handle the round trip without fading
+    const { eb, wb, transitingMins, } = this
+    const { officialResetMins, paceStartMin, } = eb.config
     const points: TimePoint<Pos>[] = []
 
-    // Origin state before spawning
-    const origin: Pos = {
-      x: -this.fadeDist,
-      y: this.lane.entrance.y,
-      state: 'origin',
-      opacity: 0
-    }
+    const westStaging = { x: wb.r.entrance.x + this.stagingOffset, y: wb.r.entrance.y }
+    const eastStaging = { x: eb.r.entrance.x - this.stagingOffset, y: eb.r.entrance.y }
 
-    // Start transiting directly at vehicle time 0
-    points.push({
-      min: 0,
-      val: { x: 0, y: this.lane.entrance.y, state: 'transiting', opacity: 1 }
-    })
+    const eTransitingMin = eb.offset + paceStartMin
+    points.push({ min: eTransitingMin - 1, val: { ...eastStaging, state: 'dequeueing', opacity: 1 }})
+    points.push({ min: eTransitingMin, val: { ...eb.r.entrance, state: 'transiting', opacity: 1 } })
+    const eExitingMin = eTransitingMin + transitingMins
+    points.push({ min: eExitingMin, val: { ...eb.r.exit, state: 'exiting', opacity: 1 } })
 
-    // Reach end of tunnel after transitMins
-    const exitMin = transitMins
-    points.push({
-      min: exitMin,
-      val: { x: laneWidthPx, y: this.lane.exit.y, state: 'exiting', opacity: 1 }
-    })
-
-    // For pace car, instead of fading, it transitions to the other tunnel
-    // This will be handled by Tunnels class by updating the tunnel reference
-
-    // Reset to origin after exiting
-    points.push({ min: exitMin + 1, val: origin })
-
-    // Fill out the rest of the period
-    if (exitMin + 1 < period) {
-      points.push({ min: period - 1, val: origin })
-    }
+    const wStageMin = eExitingMin + officialResetMins
+    points.push({ min: wStageMin, val: { ...westStaging, state: 'origin', opacity: 1 }})
+    const wTransitingMin = wb.offset + paceStartMin
+    points.push({ min: wTransitingMin - 1, val: { ...westStaging, state: 'dequeueing', opacity: 1 }})
+    points.push({ min: wTransitingMin, val: { ...westStaging, state: 'transiting', opacity: 1 }})
+    const wExitingMin = wTransitingMin + transitingMins
+    points.push({ min: wExitingMin, val: { ...wb.r.exit, state: 'exiting', opacity: 1 }})
+    const eStageMin = wExitingMin + officialResetMins
+    points.push({ min: eStageMin, val: { ...eastStaging, state: 'origin', opacity: 1 }})
 
     return points
+  }
+
+  getPos(absMins: number): Pos {
+    return this.pos.at(absMins)
   }
 }

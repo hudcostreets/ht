@@ -1,165 +1,95 @@
 import { ColorRectangles } from './ColorRectangles'
-import { GlobalPace } from './GlobalPace'
-import { GlobalSweep } from './GlobalSweep'
+import { Pace } from './Pace'
+import { Sweep } from './Sweep'
 import { Tunnel, type TunnelConfig } from './Tunnel'
-import { Direction } from './types'
+import {Direction, State} from './types'
+import {XY} from "./XY"
 
-export interface TunnelsConfig {
-  eastbound: TunnelConfig
-  westbound: TunnelConfig
-  // Global vehicles
-  sweepConfig: {
-    speed: number
-    stagingOffset: number
-  }
-  paceConfig: {
-    speed: number
-    stagingOffset: number
-  }
+export type SupportProps = {
+  mph: number
+  stagingOffset: number
 }
 
-export type Vehicle<Metadata = any> = {
+export interface TunnelsConfig {
+  eb: TunnelConfig
+  wb: TunnelConfig
+  sweep: SupportProps
+  pace: SupportProps
+}
+
+export type VehicleI<Metadata = any> = {
   id: string
   type: 'bike' | 'car' | 'sweep' | 'pace'
-  position: { x: number, y: number, state: string, opacity: number }
-  direction: Direction
+  pos: XY & { state: State, opacity: number }
+  dir: Direction
   metadata: Metadata
 }
 
 export class Tunnels {
-  public eastbound: Tunnel
-  public westbound: Tunnel
-  public sweepConfig: { speed: number, stagingOffset: number }
-  public  paceConfig: { speed: number, stagingOffset: number }
-  public sweep: GlobalSweep
-  public pace: GlobalPace
+  public eb: Tunnel
+  public wb: Tunnel
+  public sweep: Sweep
+  public pace: Pace
   private colorRects: ColorRectangles
 
   constructor(config: TunnelsConfig) {
-    this.eastbound = new Tunnel(config.eastbound)
-    this.westbound = new Tunnel(config.westbound)
-    this.sweepConfig = config.sweepConfig
-    this.paceConfig = config.paceConfig
-    // Create global sweep vehicle that traverses both tunnels
-    this.sweep = new GlobalSweep({
-      eastbound: this.eastbound,
-      westbound: this.westbound,
-      sweepMph: config.sweepConfig.speed,
-      stagingOffset: config.sweepConfig.stagingOffset
+    this.eb = new Tunnel(config.eb)
+    this.wb = new Tunnel(config.wb)
+    const { eb, wb } = this
+    const { sweep, pace } = config
+    this.sweep = new Sweep({
+      eb,
+      wb,
+      mph: sweep.mph,
+      stagingOffset: sweep.stagingOffset
     })
-
-    // Create global pace vehicle that traverses both tunnels
-    this.pace = new GlobalPace({
-      eastbound: this.eastbound,
-      westbound: this.westbound,
-      paceMph: config.paceConfig.speed,
-      stagingOffset: config.paceConfig.stagingOffset
+    this.pace = new Pace({
+      eb,
+      wb,
+      mph: pace.mph,
+      stagingOffset: pace.stagingOffset
     })
-
     this.colorRects = new ColorRectangles(this)
   }
 
   public get e(): Tunnel {
-    return this.eastbound
+    return this.eb
   }
 
   public get w(): Tunnel {
-    return this.westbound
+    return this.wb
   }
 
   // Get all vehicles for rendering
-  getAllVehicles(absMins: number): Array<Vehicle> {
-    const vehicles: Array<Vehicle> = []
-
-    // Eastbound vehicles
-
-    this.e.bikes.forEach(bike => {
-      const position = bike.getPos(absMins)
-      if (position) {
-        vehicles.push({
-          id: `bike-e-${bike.idx}`,
-          type: 'bike',
-          position,
-          direction: 'east',
-          metadata: { spawnMinute: bike.spawnMin, idx: bike.idx }
-        })
-      }
-    })
-
-    this.e.allCars.forEach(car => {
-      const position = car.getPos(absMins)
-      if (position) {
-        vehicles.push({
-          id: `car-e-${car.laneId}-${car.idx}`,
-          type: 'car',
-          position,
-          direction: 'east',
-          metadata: { spawnMinute: car.spawnMin, lane: car.laneId, idx: car.idx, }
-        })
-      }
-    })
-
-    // Westbound vehicles
-    this.w.bikes.forEach(bike => {
-      const position = bike.getPos(absMins)
-      if (position) {
-        vehicles.push({
-          id: `bike-w-${bike.idx}`,
-          type: 'bike',
-          position,
-          direction: 'west',
-          metadata: { spawnMinute: bike.spawnMin, idx: bike.idx }
-        })
-      }
-    })
-
-    this.w.allCars.forEach(car => {
-      const position = car.getPos(absMins)
-      if (position) {
-        vehicles.push({
-          id: `car-w-${car.laneId}-${car.idx}`,
-          type: 'car',
-          position,
-          direction: 'west',
-          metadata: { spawnMinute: car.spawnMin, lane: car.laneId }
-        })
-      }
-    })
-
-    // Global vehicles (sweep and pace)
-    const sweepPos = this.sweep.getPos(absMins)
-    if (sweepPos.state === 'transiting' || sweepPos.state === 'exiting') {
-      vehicles.push({
-        id: 'sweep',
-        type: 'sweep',
-        position: sweepPos,
-        direction: this.sweep.currentTunnel?.config.direction || 'east',
+  getAllVehicles(absMins: number): Array<VehicleI> {
+    const { e, w, sweep, pace } = this
+    return [
+      ...e.allVehicles(absMins),
+      ...w.allVehicles(absMins),
+      {
+        id: 'sweep', type: 'sweep',
+        pos: sweep.getPos(absMins),
+        dir: sweep.currentTunnel?.config.direction || 'east',
         metadata: {}
-      })
-    }
-
-    const pacePos = this.pace.getPos(absMins)
-    if (pacePos.state === 'transiting' || pacePos.state === 'exiting') {
-      vehicles.push({
-        id: 'pace',
-        type: 'pace',
-        position: pacePos,
-        direction: this.pace.currentTunnel?.config.direction || 'east',
+      },
+      {
+        id: 'pace', type: 'pace',
+        pos: pace.getPos(absMins),
+        dir: pace.currentTunnel?.config.direction || 'east',
         metadata: {}
-      })
-    }
-
-    return vehicles
+      },
+    ]
   }
 
   // Get current phase for each direction
   getPhases(absMins: number): { east: string, west: string } {
-    const eastRelativeTime = this.e.relMins(absMins)
-    const westRelativeTime = this.w.relMins(absMins)
+    const { e, w } = this
+    const eastRelativeTime = e.relMins(absMins)
+    const westRelativeTime = w.relMins(absMins)
 
     return {
-      east: this.e.getPhase(eastRelativeTime),
-      west: this.w.getPhase(westRelativeTime)
+      east: e.getPhase(eastRelativeTime),
+      west: w.getPhase(westRelativeTime)
     }
   }
 
@@ -172,8 +102,7 @@ export class Tunnels {
     y: number
     height: number
   }> {
-    // Calculate relative minutes from absolute minutes
-    const relMins = absMins % this.eastbound.config.period
+    const relMins = absMins % this.eb.config.period
     return this.colorRects.getRectangles(relMins)
   }
 }

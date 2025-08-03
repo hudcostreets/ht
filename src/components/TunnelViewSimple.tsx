@@ -24,7 +24,14 @@ interface TunnelViewProps {
 
 export const TunnelViewSimple: FC<TunnelViewProps> = ({ direction, phase, vehicles, colorRectangles }) => {
   // Filter vehicles and rectangles for this direction
-  const directionVehicles = vehicles.filter(v => v.direction === direction)
+  // Special case: sweep/pace in 'origin' state should render with both tunnels
+  const directionVehicles = vehicles.filter(v => {
+    if ((v.type === 'sweep' || v.type === 'pace') && v.position.state === 'origin') {
+      // Render sweep/pace with both tunnel views during staging
+      return true
+    }
+    return v.direction === direction
+  })
   const directionRectangles = colorRectangles.filter(r => r.direction === direction)
 
   // Y offset for this tunnel (westbound on top, eastbound on bottom)
@@ -89,6 +96,16 @@ export const TunnelViewSimple: FC<TunnelViewProps> = ({ direction, phase, vehicl
         if (vehicle.position.state === 'pen' || vehicle.position.state === 'staging') {
           x = vehicle.position.x
           y = vehicle.position.y
+        } else if ((vehicle.type === 'sweep' || vehicle.type === 'pace') && vehicle.position.state === 'origin') {
+          // Special handling for sweep/pace staging positions
+          // Determine which tunnel they're staging for based on x position
+          if (vehicle.position.x < 400) {
+            // Staging for eastbound (x < 400 means near east entrance)
+            y = vehicle.position.y + 200 // Eastbound yOffset
+          } else {
+            // Staging for westbound (x >= 400 means near west entrance)
+            y = vehicle.position.y + 100 // Westbound yOffset
+          }
         }
 
         // Vehicle emoji direction
@@ -129,10 +146,10 @@ function getTooltip(vehicle: any): string {
   const dir = vehicle.direction === 'east' ? 'E/b' : 'W/b'
 
   if (vehicle.type === 'car') {
-    const lane = vehicle.metadata.lane === 'L' ? 'L' : 'R'
-    return `#${vehicle.metadata.idx} - :${vehicle.metadata.spawnMinute.toString().padStart(2, '0')} - ${lane} lane - ${dir}`
+    const { laneId } = vehicle.metadata
+    return `#${vehicle.metadata.idx} - :${vehicle.metadata.spawnMin.toString().padStart(2, '0')} - ${laneId} lane - ${dir}`
   } else if (vehicle.type === 'bike') {
-    return `#${vehicle.metadata.idx} - :${vehicle.metadata.spawnMinute.toString().padStart(2, '0')} spawn - ${dir}`
+    return `#${vehicle.metadata.idx} - :${vehicle.metadata.spawnMin.toString().padStart(2, '0')} spawn - ${dir}`
   } else if (vehicle.type === 'sweep') {
     return `Sweep - ${dir}`
   } else {

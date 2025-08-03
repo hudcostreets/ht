@@ -4,7 +4,7 @@ import { Vehicle } from "./Vehicle"
 import { XY } from "./XY"
 
 export class Bike extends Vehicle {
-  get fadeMph(): number {
+  get exitMph(): number {
     return this.config.bikeFlatMph
   }
 
