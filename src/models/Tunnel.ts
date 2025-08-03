@@ -28,6 +28,7 @@ export interface TunnelConfig {
   // Layout
   laneWidthPx: number
   laneHeightPx: number
+  tunnelYOffset: number  // Y offset for this tunnel in the visualization
   penOffset: XY  // Relative to R Lane entrance
   penWidthPx: number
   penHeightPx: number
@@ -73,15 +74,19 @@ export class Tunnel {
     // Create lanes
     const start = direction === 'east' ? 0 : laneWidthPx
     const end = direction === 'east' ? laneWidthPx : 0
+    const { tunnelYOffset } = config
+    // Lane positions relative to tunnel model (0-based)
+    const lLaneY = laneHeightPx * (1 - d * .5)
+    const rLaneY = laneHeightPx * (1 + d * .5)
     this.l = new Lane({
       id: 'L',
-      entrance: xy(start, laneHeightPx * (1 - d * .5)),
-      exit: xy(end, laneHeightPx * (1 - d * .5)),
+      entrance: xy(start, lLaneY),
+      exit: xy(end, lLaneY),
     })
     this.r = new Lane({
       id: 'R',
-      entrance: xy(start, laneHeightPx * (1 + d * .5)),
-      exit: xy(end, laneHeightPx * (1 + d * .5)),
+      entrance: xy(start, rLaneY),
+      exit: xy(end, rLaneY),
     })
 
     if ((period - penCloseMin) * carsReleasedPerMin < carsPerMin * period) {

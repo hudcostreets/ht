@@ -35,12 +35,12 @@ describe('Vehicle Subclasses', () => {
       check(sweep,  0  , { state:    'exiting', x: 800  , opacity: 1 })
       check(sweep,  5  , { state:     'queued', x: 835  , opacity: 1 })
 
-      // Minute 5-19: Staging at west entrance
-      check(sweep, 10  , { state:     'origin', x: 835  , opacity: 1 })
-      check(sweep, 19  , { state:     'origin', x: 835  , opacity: 1 })
+      // Minute 5-18: Staging at west entrance
+      check(sweep, 10  , { state:     'queued', x: 835  , opacity: 1 })
+      check(sweep, 18  , { state:     'queued', x: 835  , opacity: 1 })
 
       // Minute 19-20: Moving from staging to entrance
-      check(sweep, 19.5, { state:     'origin', x: 817.5, opacity: 1 })
+      check(sweep, 19.5, { state:     'dequeueing', x: 817.5, opacity: 1 })
       check(sweep, 20  , { state: 'transiting', x: 800  , opacity: 1 })
 
       // Minute 20-30: Transit westbound
@@ -48,16 +48,15 @@ describe('Vehicle Subclasses', () => {
       check(sweep, 30  , { state:    'exiting', x:   0  , opacity: 1, tunnel: 'west' })
 
       // Minute 30-35: Transitioning from west exit to east staging
-      check(sweep, 30.5, { state:     'origin', x:  -3.5, opacity: 1 })
-      check(sweep, 32.5, { state:     'origin', x: -17.5, opacity: 1 })
-      check(sweep, 35  , { state:     'origin', x: -35  , opacity: 1 })
+      check(sweep, 30  , { state:     'exiting', x:   0  , opacity: 1 })
+      check(sweep, 35  , { state:     'queued', x: -35  , opacity: 1 })
 
-      // Minute 35-49: Staging at east entrance
-      check(sweep, 40  , { state:     'origin', x: -35  , opacity: 1 })
-      check(sweep, 49  , { state:     'origin', x: -35  , opacity: 1 })
+      // Minute 35-48: Staging at east entrance
+      check(sweep, 40  , { state:     'queued', x: -35  , opacity: 1 })
+      check(sweep, 48  , { state:     'queued', x: -35  , opacity: 1 })
 
       // Minute 49-50: Moving from staging to entrance
-      check(sweep, 49.5, { state:     'origin', x: -17.5, opacity: 1 })
+      check(sweep, 49.5, { state:     'dequeueing', x: -17.5, opacity: 1 })
       check(sweep, 50  , { state: 'transiting', x:   0  , opacity: 1 })
 
       // Minute 50-60: Transit eastbound
@@ -80,16 +79,15 @@ describe('Vehicle Subclasses', () => {
       // At 24mph, takes 5 minutes to cross 2 miles (800px)
 
       // Minute 0-5: Transitioning from east exit to west staging
-      check(pace, 0, { state: 'origin', x: 800, opacity: 1 })
-      check(pace, 2.5, { state: 'origin', x: 830, opacity: 1 }) // Halfway through transition
-      check(pace, 5, { state: 'origin', x: 860, opacity: 1 })
+      check(pace, 0, { state: 'exiting', x: 800, opacity: 1 })
+      check(pace, 5, { state: 'queued', x: 860, opacity: 1 })
 
-      // Minute 5-24: Staging at west entrance
-      check(pace, 15, { state: 'origin', x: 860, opacity: 1 })
-      check(pace, 24, { state: 'origin', x: 860, opacity: 1 })
+      // Minute 5-23: Staging at west entrance
+      check(pace, 15, { state: 'queued', x: 860, opacity: 1 })
+      check(pace, 23, { state: 'queued', x: 860, opacity: 1 })
 
       // Minute 24-25: Moving from staging to entrance
-      check(pace, 24.5, { state: 'origin', x: 830, opacity: 1 })
+      check(pace, 24.5, { state: 'dequeueing', x: 830, opacity: 1 })
       check(pace, 25, { state: 'transiting', x: 800, opacity: 1 })
 
       // Minute 25-30: Transit westbound
@@ -97,16 +95,15 @@ describe('Vehicle Subclasses', () => {
       check(pace, 30, { state: 'exiting', x: 0, opacity: 1, tunnel: 'west' })
 
       // Minute 30-35: Transitioning from west exit to east staging
-      check(pace, 30.5, { state: 'origin', x: -6, opacity: 1 })
-      check(pace, 32.5, { state: 'origin', x: -30, opacity: 1 })
-      check(pace, 35, { state: 'origin', x: -60, opacity: 1 })
+      check(pace, 30, { state: 'exiting', x: 0, opacity: 1 })
+      check(pace, 35, { state: 'queued', x: -60, opacity: 1 })
 
-      // Minute 35-54: Staging at east entrance
-      check(pace, 45, { state: 'origin', x: -60, opacity: 1 })
-      check(pace, 54, { state: 'origin', x: -60, opacity: 1 })
+      // Minute 35-53: Staging at east entrance
+      check(pace, 45, { state: 'queued', x: -60, opacity: 1 })
+      check(pace, 53, { state: 'queued', x: -60, opacity: 1 })
 
       // Minute 54-55: Moving from staging to entrance
-      check(pace, 54.5, { state: 'origin', x: -30, opacity: 1 })
+      check(pace, 54.5, { state: 'dequeueing', x: -30, opacity: 1 })
       check(pace, 55, { state: 'transiting', x: 0, opacity: 1 })
 
       // Minute 55-60: Transit eastbound

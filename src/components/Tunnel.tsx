@@ -23,8 +23,8 @@ export const Tunnel: FC<Props> = ({ dir, phase, displayTime, tunnel, colorRectan
   const vehs = tunnel.allVehicles(displayTime)
   const rects = colorRectangles.filter(r => r.direction === dir)
 
-  // Y offset for this tunnel (westbound on top, eastbound on bottom)
-  const yOffset = dir === 'west' ? 100 : 200
+  // Y offset for this tunnel from config
+  const yOffset = tunnel.config.tunnelYOffset
 
   return (
     <g>
@@ -39,20 +39,18 @@ export const Tunnel: FC<Props> = ({ dir, phase, displayTime, tunnel, colorRectan
       <rect x={LAYOUT.QUEUE_AREA_WIDTH} y={yOffset + 30} width={LAYOUT.TUNNEL_WIDTH} height={LAYOUT.LANE_HEIGHT} fill="#666" stroke="#333" />
 
       {/* Bike pen */}
-      {dir === 'east' ? (
-        <>
-          <rect x={20} y={yOffset + 90} width={LAYOUT.BIKE_PEN_WIDTH} height={LAYOUT.BIKE_PEN_HEIGHT}
-            fill="#e3f2fd" stroke="#2196f3" strokeWidth="2" strokeDasharray="5,5" rx="6" />
-          <text x={80} y={yOffset + 80} fontSize="12" textAnchor="middle">Bike Pen</text>
-        </>
-      ) : (
-        <>
-          <rect x={LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + 20} y={yOffset - 60}
-            width={LAYOUT.BIKE_PEN_WIDTH} height={LAYOUT.BIKE_PEN_HEIGHT}
-            fill="#e3f2fd" stroke="#2196f3" strokeWidth="2" strokeDasharray="5,5" rx="6" />
-          <text x={LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + 80} y={yOffset - 70} fontSize="12" textAnchor="middle">Bike Pen</text>
-        </>
-      )}
+      {(() => {
+        const { penOffset, penWidthPx, penHeightPx } = tunnel.config
+        const penX = penOffset.x + LAYOUT.QUEUE_AREA_WIDTH
+        const penY = penOffset.y + yOffset
+        return (
+          <>
+            <rect x={penX} y={penY} width={penWidthPx} height={penHeightPx}
+              fill="#e3f2fd" stroke="#2196f3" strokeWidth="2" strokeDasharray="5,5" rx="6" />
+            <text x={penX + penWidthPx / 2} y={penY - 10} fontSize="12" textAnchor="middle">Bike Pen</text>
+          </>
+        )
+      })()}
 
       {/* Lane markers */}
       <text x={LAYOUT.QUEUE_AREA_WIDTH + 10} y={yOffset + 20} fontSize="12" fill="white">

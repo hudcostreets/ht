@@ -5,6 +5,7 @@ import { AnalogClock } from './AnalogClock'
 import { Tunnel } from './Tunnel.tsx'
 import { HOLLAND_TUNNEL_CONFIG } from '../models/TunnelConfigs'
 import { Tunnels } from '../models/Tunnels'
+import { LAYOUT } from '../models/Constants'
 import './HollandTunnel.css'
 
 // Create the tunnels instance
@@ -218,6 +219,57 @@ export function HollandTunnel() {
             tunnel={eb}
             colorRectangles={colorRectangles}
           />
+
+          {/* Global vehicles (Sweep and Pace) */}
+          {(() => {
+            const sweepPos = sweep.getPos(displayTime)
+            const pacePos = pace.getPos(displayTime)
+            const vehicles = []
+
+            // Render sweep
+            if (sweepPos) {
+              const sweepTunnel = sweep.currentTunnel
+              const yOffset = sweepTunnel?.config.tunnelYOffset || eb.config.tunnelYOffset
+              vehicles.push(
+                <text
+                  key="sweep"
+                  x={sweepPos.x + LAYOUT.QUEUE_AREA_WIDTH}
+                  y={sweepPos.y + yOffset}
+                  fontSize="20"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  opacity={sweepPos.opacity}
+                  style={{ userSelect: 'none', cursor: 'pointer' }}
+                  transform={sweepTunnel?.config.direction === 'east' ? `translate(${(sweepPos.x + LAYOUT.QUEUE_AREA_WIDTH) * 2},0) scale(-1,1)` : undefined}
+                >
+                  🚐
+                </text>
+              )
+            }
+
+            // Render pace
+            if (pacePos) {
+              const paceTunnel = pace.currentTunnel
+              const yOffset = paceTunnel?.config.tunnelYOffset || eb.config.tunnelYOffset
+              vehicles.push(
+                <text
+                  key="pace"
+                  x={pacePos.x + LAYOUT.QUEUE_AREA_WIDTH}
+                  y={pacePos.y + yOffset}
+                  fontSize="20"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  opacity={pacePos.opacity}
+                  style={{ userSelect: 'none', cursor: 'pointer' }}
+                  transform={paceTunnel?.config.direction === 'east' ? `translate(${(pacePos.x + LAYOUT.QUEUE_AREA_WIDTH) * 2},0) scale(-1,1)` : undefined}
+                >
+                  🚓
+                </text>
+              )
+            }
+
+            return vehicles
+          })()}
         </svg>
       </div>
 
