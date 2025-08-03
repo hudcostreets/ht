@@ -17,7 +17,7 @@ Each `Tunnel` contains pre-instantiated `Car` and `Bike` objects that represent 
 ## Key Features
 - **Time-based Animation**: Virtual 60-minute cycle with adjustable speed
 - **Deterministic System**: All vehicle positions calculated from spawn time
-- **Phase Management**: 
+- **Phase Management**:
   - Normal traffic (cars only)
   - Bikes enter (dedicated bike lane)
   - Clearing phase

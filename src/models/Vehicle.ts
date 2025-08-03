@@ -1,6 +1,7 @@
-import { Lane, LaneId } from "./Lane.ts"
-import { TimePoint, TimeVal } from "./TimeVal.ts"
-import { field, Pos, SpawnQueue, Tunnel, TunnelConfig } from "./Tunnel.ts"
+import { Lane, LaneId } from "./Lane"
+import { TimePoint, TimeVal } from "./TimeVal"
+import { field, Pos, SpawnQueue } from "./types"
+import type { Tunnel, TunnelConfig } from "./Tunnel"
 
 export type Points = TimePoint<Pos>[]
 

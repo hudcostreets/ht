@@ -88,16 +88,16 @@ export class TimeVal<T> {
   // Get the value at a specific minute
   at(mins: number): T {
     const { points, period } = this
-    
+
     // If periodic, normalize mins to be within [0, period)
     if (period !== undefined) {
       mins = mins % period
       if (mins < 0) mins += period
     }
-    
+
     // Find the first point with min > mins
     let endIdx = points.findIndex(p => mins < p.min)
-    
+
     if (endIdx < 0) {
       // mins is >= all points
       if (period !== undefined && points.length > 1) {
@@ -110,7 +110,7 @@ export class TimeVal<T> {
         return points[points.length - 1].val
       }
     }
-    
+
     if (endIdx === 0) {
       // mins is before first point
       if (period !== undefined && points.length > 1) {
@@ -123,7 +123,7 @@ export class TimeVal<T> {
         return points[0].val
       }
     }
-    
+
     // Normal case: interpolate between adjacent points
     const start = points[endIdx - 1]
     const end = points[endIdx]

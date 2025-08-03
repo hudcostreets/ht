@@ -1,3 +1,5 @@
+/* eslint-env node */
+/* global process, console */
 import { chromium } from '@playwright/test';
 import { mkdir } from 'fs/promises';
 import { fileURLToPath } from 'url';
@@ -18,7 +20,7 @@ await page.setViewportSize({ width: 1400, height: 800 });
 
 // Screenshots to take - either from command line args or defaults
 const times = process.argv.slice(2).map(t => parseInt(t));
-const screenshots = times.length > 0 
+const screenshots = times.length > 0
   ? times.map(t => ({ time: t, desc: `t=${t}` }))
   : [
     { time: 0, desc: 'Normal traffic' },
@@ -30,11 +32,11 @@ const screenshots = times.length > 0
 
 for (const { time, desc } of screenshots) {
   console.log(`Taking screenshot at t=${time} - ${desc}`);
-  
+
   await page.goto(`http://localhost:5173/?t=${time}`);
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(1000); // Wait for animations to settle
-  
+
   const filename = join(tmpDir, `${time}.png`);
   await page.screenshot({ path: filename, fullPage: true });
   console.log(`  Saved to ${filename}`);

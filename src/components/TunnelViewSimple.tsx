@@ -1,6 +1,6 @@
 import React, { type FC } from 'react'
 import { LAYOUT } from '../models/Constants'
-import { Direction } from "../models/Tunnel"
+import { Direction } from "../models/types"
 
 interface TunnelViewProps {
   direction: Direction
@@ -26,10 +26,10 @@ export const TunnelViewSimple: FC<TunnelViewProps> = ({ direction, phase, vehicl
   // Filter vehicles and rectangles for this direction
   const directionVehicles = vehicles.filter(v => v.direction === direction)
   const directionRectangles = colorRectangles.filter(r => r.direction === direction)
-  
+
   // Y offset for this tunnel (westbound on top, eastbound on bottom)
   const yOffset = direction === 'west' ? 100 : 200
-  
+
   return (
     <g>
       {/* Direction label */}
@@ -37,27 +37,27 @@ export const TunnelViewSimple: FC<TunnelViewProps> = ({ direction, phase, vehicl
         {direction === 'east' ? 'Eastbound (Manhattan →) - 12th St' : 'Westbound (← NJ) - 14th St'}
       </text>
       <text x={20} y={yOffset} fontSize="12" fill="#666">Phase: {phase}</text>
-      
+
       {/* Lanes */}
       <rect x={LAYOUT.QUEUE_AREA_WIDTH} y={yOffset} width={LAYOUT.TUNNEL_WIDTH} height={LAYOUT.LANE_HEIGHT} fill="#666" stroke="#333" />
       <rect x={LAYOUT.QUEUE_AREA_WIDTH} y={yOffset + 30} width={LAYOUT.TUNNEL_WIDTH} height={LAYOUT.LANE_HEIGHT} fill="#666" stroke="#333" />
-      
+
       {/* Bike pen */}
       {direction === 'east' ? (
         <>
-          <rect x={20} y={yOffset + 90} width={LAYOUT.BIKE_PEN_WIDTH} height={LAYOUT.BIKE_PEN_HEIGHT} 
+          <rect x={20} y={yOffset + 90} width={LAYOUT.BIKE_PEN_WIDTH} height={LAYOUT.BIKE_PEN_HEIGHT}
             fill="#e3f2fd" stroke="#2196f3" strokeWidth="2" strokeDasharray="5,5" rx="6" />
           <text x={80} y={yOffset + 80} fontSize="12" textAnchor="middle">Bike Pen</text>
         </>
       ) : (
         <>
-          <rect x={LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + 20} y={yOffset - 60} 
-            width={LAYOUT.BIKE_PEN_WIDTH} height={LAYOUT.BIKE_PEN_HEIGHT} 
+          <rect x={LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + 20} y={yOffset - 60}
+            width={LAYOUT.BIKE_PEN_WIDTH} height={LAYOUT.BIKE_PEN_HEIGHT}
             fill="#e3f2fd" stroke="#2196f3" strokeWidth="2" strokeDasharray="5,5" rx="6" />
           <text x={LAYOUT.TUNNEL_WIDTH + LAYOUT.QUEUE_AREA_WIDTH + 80} y={yOffset - 70} fontSize="12" textAnchor="middle">Bike Pen</text>
         </>
       )}
-      
+
       {/* Lane markers */}
       <text x={LAYOUT.QUEUE_AREA_WIDTH + 10} y={yOffset + 20} fontSize="12" fill="white">
         {direction === 'east' ? 'L Lane (Cars Only)' : 'R Lane'}
@@ -65,7 +65,7 @@ export const TunnelViewSimple: FC<TunnelViewProps> = ({ direction, phase, vehicl
       <text x={LAYOUT.QUEUE_AREA_WIDTH + 10} y={yOffset + 50} fontSize="12" fill="white">
         {direction === 'east' ? 'R Lane' : 'L Lane (Cars Only)'}
       </text>
-      
+
       {/* Color rectangles */}
       {directionRectangles.map((rect, index) => (
         <rect
@@ -78,22 +78,22 @@ export const TunnelViewSimple: FC<TunnelViewProps> = ({ direction, phase, vehicl
           opacity={0.3}
         />
       ))}
-      
+
       {/* Vehicles */}
       {directionVehicles.map(vehicle => {
         // Calculate position
         let x = vehicle.position.x + LAYOUT.QUEUE_AREA_WIDTH
         let y = vehicle.position.y + yOffset
-        
+
         // Handle special states
         if (vehicle.position.state === 'pen' || vehicle.position.state === 'staging') {
           x = vehicle.position.x
           y = vehicle.position.y
         }
-        
+
         // Vehicle emoji direction
         const transform = vehicle.direction === 'east' ? `translate(${x * 2},0) scale(-1,1)` : undefined
-        
+
         return (
           <text
             key={vehicle.id}
@@ -127,7 +127,7 @@ function getEmoji(type: string): string {
 
 function getTooltip(vehicle: any): string {
   const dir = vehicle.direction === 'east' ? 'E/b' : 'W/b'
-  
+
   if (vehicle.type === 'car') {
     const lane = vehicle.metadata.lane === 'L' ? 'L' : 'R'
     return `#${vehicle.metadata.idx} - :${vehicle.metadata.spawnMinute.toString().padStart(2, '0')} - ${lane} lane - ${dir}`

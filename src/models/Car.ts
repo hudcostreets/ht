@@ -1,11 +1,11 @@
 import { TimePoint } from "./TimeVal"
-import { Pos } from "./Tunnel"
+import { Pos } from "./types"
 import { Vehicle } from "./Vehicle"
 import { XY } from "./XY"
 
 export class Car extends Vehicle {
   get fadeMph(): number {
-    return this.config.bikeFlatMph
+    return this.config.carMph
   }
 
   get _points(): TimePoint<Pos>[] {
@@ -33,7 +33,7 @@ export class Car extends Vehicle {
     } else {
       transitingMin = 0
       // Car flows normally (no queueing)
-      initPos = {...lane.entrance}
+      initPos = { ...lane.entrance }
     }
     const origin = { ...initPos }
     origin.x -= fadeDist * d

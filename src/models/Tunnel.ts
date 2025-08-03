@@ -1,17 +1,10 @@
 import { Bike } from "./Bike"
 import { Car } from "./Car"
 import { Lane } from "./Lane"
-import { Field, Start, Interp, Num, TimePoint, TimeVal } from "./TimeVal"
-import { XY, xy } from "./XY.ts"
+import { Start, Interp, Num, TimePoint, TimeVal } from "./TimeVal"
+import { Direction } from "./types"
+import { XY, xy } from "./XY"
 const { floor, max, } = Math
-
-export type Direction = 'east' | 'west'
-
-export type SpawnQueue = {
-  offset: XY
-  minsBeforeDequeueing: number // Minutes before dequeueing starts
-  minsDequeueing: number
-}
 
 export interface TunnelConfig {
   direction: Direction
@@ -39,20 +32,6 @@ export interface TunnelConfig {
   queuedCarWidthPx: number
 }
 
-export type State = 'origin' | 'queued' | 'dequeueing' | 'transiting' | 'exiting' | 'done'
-export type Pos = {
-  x: number
-  y: number
-  state: State
-  opacity: number
-}
-
-export const field: Field<Pos> = {
-  add: (l: Pos, r: Pos): Pos => ({ x: l.x + r.x, y: l.y + r.y, state: l.state, opacity: l.opacity + r.opacity }),
-  sub: (l: Pos, r: Pos): Pos => ({ x: l.x - r.x, y: l.y - r.y, state: l.state, opacity: l.opacity - r.opacity }),
-  mul: (l: Pos, r: number): Pos => ({ x: l.x * r, y: l.y * r, state: l.state, opacity: l.opacity * r }),
-}
-
 export type Cars = {
   l: Car[]
   r: Car[]
@@ -71,7 +50,7 @@ export class Tunnel {
   // public nQueueCars0: number  // Number of cars that queue on spawn before pace car departs
   // public nQueueCars1: number  // Number of cars that queue on spawn after pace car departs
   // public nQueueCars: number   // Number of cars that queue on spawn (total, before and after pace car)
-  
+
   constructor(config: TunnelConfig) {
     this.config = config
     const {
@@ -239,18 +218,18 @@ export class Tunnel {
 
     // Shift time so that our offset minute becomes "minute 0"
     const shiftedMins = absMins - offsetMin
-    
+
     // Normalize to [0, period)
     let relMins = shiftedMins % period
     if (relMins < 0) relMins += period
-    
+
     return relMins
   }
 
   // Get phase at relative time (0 = pen opens)
   getPhase(relMins: number): 'normal' | 'bikes-enter' | 'clearing' | 'sweep' | 'pace-car' {
     const minute = floor(relMins)
-    
+
     if (minute >= 0 && minute < this.config.penCloseMin) {
       return 'bikes-enter'
     } else if (minute >= this.config.penCloseMin && minute < 5) {

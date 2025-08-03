@@ -1,5 +1,5 @@
 import { Start, TimePoint } from "./TimeVal"
-import { Pos } from "./Tunnel"
+import { Pos } from "./types"
 import { Vehicle } from "./Vehicle"
 import { XY } from "./XY"
 

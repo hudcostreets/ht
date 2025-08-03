@@ -29,11 +29,11 @@ export function HollandTunnelNew() {
   // Animation for smooth transitions (in minutes)
   const [displayTime, setDisplayTime] = useState(initialMinute)
   const animationRef = useRef<number | undefined>(undefined)
-  
+
   // State for arrow key transitions
   const [targetTime, setTargetTime] = useState(initialMinute)
   const [isTransitioning, setIsTransitioning] = useState(false)
-  
+
   // Update current minute when display time changes
   useEffect(() => {
     // Ensure displayTime stays within bounds
@@ -57,19 +57,19 @@ export function HollandTunnelNew() {
       // Smooth transition for arrow key navigation
       setDisplayTime(prevTime => {
         let diff = targetTime - prevTime
-        
+
         // Handle wraparound at hour boundaries
         if (diff > 30) { // More than 30 minutes backward, must be :59→:00
           diff = diff - 60 // Convert to small forward step
         } else if (diff < -30) { // More than 30 minutes forward, must be :00→:59
           diff = diff + 60 // Convert to small backward step
         }
-        
+
         if (Math.abs(diff) < 0.01) {
           setIsTransitioning(false)
           return targetTime
         }
-        
+
         // Linear transition: move at constant speed (8 minutes per second at 60fps)
         const step = 8 / 60
         if (diff > 0) {
@@ -109,10 +109,10 @@ export function HollandTunnelNew() {
         const currentMinute = Math.floor(baseTime) % 60
         const newMinute = (currentMinute + 1) % 60
         const newTime = newMinute
-        
+
         setTargetTime(newTime)
         setIsTransitioning(true)
-        
+
         // Update URL
         const url = new URL(window.location.href)
         url.searchParams.set('t', newMinute.toString())
@@ -123,10 +123,10 @@ export function HollandTunnelNew() {
         const currentMinute = Math.floor(baseTime) % 60
         const newMinute = (currentMinute - 1 + 60) % 60
         const newTime = newMinute
-        
+
         setTargetTime(newTime)
         setIsTransitioning(true)
-        
+
         // Update URL
         const url = new URL(window.location.href)
         url.searchParams.set('t', newMinute.toString())
@@ -151,7 +151,7 @@ export function HollandTunnelNew() {
     setTargetTime(newTime)
     setIsTransitioning(false)
     setIsPaused(true)
-    
+
     // Update URL
     const url = new URL(window.location.href)
     url.searchParams.set('t', minute.toString())
@@ -161,7 +161,7 @@ export function HollandTunnelNew() {
   return (
     <div className="holland-tunnel">
       <Tooltip id="vehicle-tooltip" />
-      
+
       <div className="header">
         <div className="header-content">
           <h1>Holland Tunnel Bike Lane Visualization</h1>
@@ -207,18 +207,18 @@ export function HollandTunnelNew() {
       <div className="tunnel-visualization-svg">
         <svg width="1100" height="400" viewBox="0 0 1100 400">
           {/* Both tunnels */}
-          <TunnelViewSimple 
-            direction="west" 
-            phase={phases.west} 
-            vehicles={vehicles} 
-            colorRectangles={colorRectangles} 
+          <TunnelViewSimple
+            direction="west"
+            phase={phases.west}
+            vehicles={vehicles}
+            colorRectangles={colorRectangles}
           />
-          
-          <TunnelViewSimple 
-            direction="east" 
-            phase={phases.east} 
-            vehicles={vehicles} 
-            colorRectangles={colorRectangles} 
+
+          <TunnelViewSimple
+            direction="east"
+            phase={phases.east}
+            vehicles={vehicles}
+            colorRectangles={colorRectangles}
           />
         </svg>
       </div>

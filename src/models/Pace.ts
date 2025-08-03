@@ -1,5 +1,5 @@
 import { TimeVal, TimePoint, Num } from './TimeVal'
-import { Direction } from "./Tunnel"
+import { Direction } from "./types"
 import type { Tunnels } from './Tunnels'
 
 export type PaceState = 'staging' | 'tunnel' | 'exiting'
@@ -17,12 +17,12 @@ export class Pace {
   private yPos: TimeVal<number>
   private state: TimeVal<number> // 0=staging, 1=tunnel, 2=exiting
   private direction: TimeVal<number> // 0=east, 1=west
-  
+
   constructor(tunnels: Tunnels) {
     const { eastbound: e, paceConfig } = tunnels
     const { stagingOffset } = paceConfig
     const { laneWidthPx, laneHeightPx, period } = e.config
-    
+
     // Define time points for x position throughout the cycle
     const xPoints: TimePoint<number>[] = [
       // Start at westbound staging
@@ -37,7 +37,7 @@ export class Pace {
       { min: 55, val: 0 },
       { min: period - 1, val: laneWidthPx * 0.8 }, // Most of the way through tunnel
     ]
-    
+
     // Y position changes based on direction
     const yPoints: TimePoint<number>[] = [
       // Westbound R lane (top)
@@ -47,7 +47,7 @@ export class Pace {
       { min: 34, val: laneHeightPx * 1.5 },
       { min: period - 1, val: laneHeightPx * 1.5 },
     ]
-    
+
     // State: 0=staging, 1=tunnel, 2=exiting
     const statePoints: TimePoint<number>[] = [
       { min: 0, val: 0 }, // staging
@@ -61,7 +61,7 @@ export class Pace {
       { min: 55, val: 1 }, // tunnel
       { min: period - 1, val: 1 }, // still in tunnel
     ]
-    
+
     // Direction: 0=east, 1=west
     const directionPoints: TimePoint<number>[] = [
       { min: 0, val: 1 }, // west
@@ -69,22 +69,22 @@ export class Pace {
       { min: 34, val: 0 }, // east
       { min: period - 1, val: 0 }, // east
     ]
-    
+
     this.xPos = new TimeVal(xPoints, Num, period)
     this.yPos = new TimeVal(yPoints, Num, period)
     this.state = new TimeVal(statePoints, Num, period)
     this.direction = new TimeVal(directionPoints, Num, period)
   }
-  
+
   getPosition(relMins: number): PacePosition | null {
     const x = this.xPos.at(relMins)
     const y = this.yPos.at(relMins)
     const stateNum = Math.round(this.state.at(relMins))
     const dirNum = Math.round(this.direction.at(relMins))
-    
+
     const states: PaceState[] = ['staging', 'tunnel', 'exiting']
     const directions: (Direction)[] = ['east', 'west']
-    
+
     return {
       x,
       y,

@@ -6,37 +6,33 @@ import { HOLLAND_TUNNEL_CONFIG } from '../TunnelConfigs'
 describe('Car', () => {
   it('should create and position a normal flow car', () => {
     const tunnel = new Tunnel(HOLLAND_TUNNEL_CONFIG.eastbound)
-    const car = new Car({ 
-      tunnel, 
+    const car = new Car({
+      tunnel,
       laneId: 'L',
       idx: 0,
       spawnMin: 5,
     })
-    
+
     // At spawn time, car should be at tunnel entrance
-    const pos = car.getPos(5) // Absolute minute 45 = relative minute 0 for eastbound
-    // console.log('Car timePositions:', car.pos)
-    // console.log('Car position at 45:', pos)
-    // console.log('Tunnel relMins(45):', tunnel.relMins(45))
+    // Eastbound offset is 45, so relative minute 5 = absolute minute 50
+    const pos = car.getPos(50)
     expect(pos.state).toBe('transiting')
     expect(pos.x).toBe(0) // Tunnel entrance
   })
-  
+
   it('should handle queued car', () => {
     const tunnel = new Tunnel(HOLLAND_TUNNEL_CONFIG.eastbound)
-    const car = new Car({ 
-      tunnel, 
+    const car = new Car({
+      tunnel,
       laneId: 'R',
       idx: 0,
       spawnMin: 0,
-      spawnQueue: { offset: { x: 30, y: 0 }, minsBeforeDequeueing: 9, minsDequeueing: 0, }
+      spawnQueue: { offset: { x: 30, y: 0 }, minsBeforeDequeueing: 9, minsDequeueing: 1, }
     })
-    
-    const pos = car.getPos(0)
-    // console.log('Queued car timePositions:', car.pos)
-    // console.log('Queued car position at 45:', pos)
-    // console.log('Car spawnMin:', car.spawnMin)
-    
+
+    // Check at absolute minute 45 (relative minute 0) when car spawns
+    const pos = car.getPos(45)
+
     expect(pos).toBeTruthy()
     expect(pos!.state).toBe('queued')
   })

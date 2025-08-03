@@ -1,5 +1,5 @@
 import { TimeVal, TimePoint, Num } from './TimeVal'
-import { Direction } from "./Tunnel"
+import { Direction } from "./types"
 import type { Tunnels } from './Tunnels'
 
 export interface ColorRectangle {
@@ -14,18 +14,18 @@ export interface ColorRectangle {
 export class ColorRectangles {
   // East green marker position (0 to laneWidth during bike phases)
   private eastGreenEnd: TimeVal<number>
-  // West green marker position (laneWidth to 0 during bike phases) 
+  // West green marker position (laneWidth to 0 during bike phases)
   private westGreenStart: TimeVal<number>
-  
+
   private laneWidth: number
   private laneHeight: number
-  
+
   constructor(tunnels: Tunnels) {
     const { eastbound: e } = tunnels
     const { laneWidthPx, laneHeightPx, period } = e.config
     this.laneWidth = laneWidthPx
     this.laneHeight = laneHeightPx
-    
+
     // East green rectangle grows from 0 to full width during bike phases
     // It represents the area where bikes are allowed
     const eastGreenPoints: TimePoint<number>[] = [
@@ -42,7 +42,7 @@ export class ColorRectangles {
       { min: 56, val: 0 },
       { min: period - 1, val: 0 },
     ]
-    
+
     // West green rectangle shrinks from full width to 0 during bike phases
     const westGreenPoints: TimePoint<number>[] = [
       // Before bikes enter, no green
@@ -58,14 +58,14 @@ export class ColorRectangles {
       { min: 26, val: laneWidthPx },
       { min: period - 1, val: laneWidthPx },
     ]
-    
+
     this.eastGreenEnd = new TimeVal(eastGreenPoints, Num, period)
     this.westGreenStart = new TimeVal(westGreenPoints, Num, period)
   }
-  
+
   getRectangles(relMins: number): ColorRectangle[] {
     const rectangles: ColorRectangle[] = []
-    
+
     // Eastbound rectangles
     const eastGreenEndX = this.eastGreenEnd.at(relMins)
     if (eastGreenEndX > 0) {
@@ -78,11 +78,11 @@ export class ColorRectangles {
         y: this.laneHeight, // R lane for eastbound (bottom)
         height: this.laneHeight
       })
-      
+
       // Red rectangle (bikes not allowed yet)
       if (eastGreenEndX < this.laneWidth) {
         rectangles.push({
-          direction: 'east', 
+          direction: 'east',
           color: 'red',
           x: eastGreenEndX,
           width: this.laneWidth - eastGreenEndX,
@@ -91,7 +91,7 @@ export class ColorRectangles {
         })
       }
     }
-    
+
     // Westbound rectangles
     const westGreenStartX = this.westGreenStart.at(relMins)
     if (westGreenStartX < this.laneWidth) {
@@ -104,12 +104,12 @@ export class ColorRectangles {
         y: 0, // R lane for westbound (top)
         height: this.laneHeight
       })
-      
+
       // Red rectangle (bikes not allowed yet)
       if (westGreenStartX > 0) {
         rectangles.push({
           direction: 'west',
-          color: 'red', 
+          color: 'red',
           x: 0,
           width: westGreenStartX,
           y: 0, // R lane for westbound (top)
@@ -117,7 +117,7 @@ export class ColorRectangles {
         })
       }
     }
-    
+
     return rectangles
   }
 }

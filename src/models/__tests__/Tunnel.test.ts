@@ -1,13 +1,13 @@
-import {beforeEach, describe, expect, it} from 'vitest'
-import {Pos, Tunnel} from '../Tunnel'
-import {HOLLAND_TUNNEL_CONFIG} from '../TunnelConfigs'
-import {entries} from "@rdub/base";
-
+import { entries } from "@rdub/base"
+import { beforeEach, describe, expect, it } from 'vitest'
+import { Tunnel } from '../Tunnel'
+import { HOLLAND_TUNNEL_CONFIG } from '../TunnelConfigs'
+import { Pos } from '../types'
 
 describe('Tunnel', () => {
   describe('Eastbound Tunnel', () => {
     let eb: Tunnel
-    
+
     beforeEach(() => {
       eb = new Tunnel(HOLLAND_TUNNEL_CONFIG.eastbound)
     })
@@ -32,7 +32,7 @@ describe('Tunnel', () => {
         expect(eb.relMins(60 + 45)).toBe(0) // Next hour, minute 45
       })
     })
-    
+
     describe('Phase detection', () => {
       it('should return correct phases for relative times', () => {
         expect(eb.getPhase( 0)).toBe('bikes-enter') // :45 (minute 0 relative)
@@ -44,7 +44,7 @@ describe('Tunnel', () => {
         expect(eb.getPhase(15)).toBe('normal') // :00 (minute 15 relative)
       })
     })
-    
+
     describe('Early bikes (spawn before pen opens)', () => {
       it('should position bike 1.2 correctly', () => {
         // At pen opening (:45), first bike should be released immediately
@@ -76,27 +76,27 @@ describe('Tunnel', () => {
       })
     })
   })
-  
+
   describe('Westbound Tunnel', () => {
     let westbound: Tunnel
-    
+
     beforeEach(() => {
       westbound = new Tunnel(HOLLAND_TUNNEL_CONFIG.westbound)
     })
-    
+
     describe('Time conversion', () => {
       it('should convert absolute time to relative time correctly', () => {
         // At 15 minutes (pen opens), relative time should be 0
         expect(westbound.relMins(15)).toBe(0)
-        
+
         // At 16 minutes, relative time should be 1
         expect(westbound.relMins(16)).toBe(1)
-        
+
         // At 14 minutes (before pen opens), should wrap around
         expect(westbound.relMins(14)).toBe(59) // 59 minutes later in relative time
       })
     })
-    
+
     describe('Westbound-specific behavior', () => {
       it('should handle :16 westbound bike correctly', () => {
         // A bike spawning at :16 should be able to join the traveling group
@@ -104,7 +104,7 @@ describe('Tunnel', () => {
         const phase = westbound.getPhase(relativeTime)
         expect(phase).toBe('bikes-enter')
       })
-      
+
       it('should queue :20 westbound bike for next cycle', () => {
         // A bike spawning at :20 should wait for next cycle
         const relativeTime = 5 // 5 minutes after pen opens (:20)
@@ -113,16 +113,16 @@ describe('Tunnel', () => {
       })
     })
   })
-  
+
   describe('Cross-tunnel coordination', () => {
     it('should have offset schedules (E at :45, W at :15)', () => {
       const eastbound = new Tunnel(HOLLAND_TUNNEL_CONFIG.eastbound)
       const westbound = new Tunnel(HOLLAND_TUNNEL_CONFIG.westbound)
-      
+
       // At absolute time :15, eastbound should be in normal phase, westbound in bikes-enter
       expect(eastbound.getPhase(eastbound.relMins(15))).toBe('normal')
       expect(westbound.getPhase(westbound.relMins(15))).toBe('bikes-enter')
-      
+
       // At absolute time :45, eastbound should be in bikes-enter, westbound in normal
       expect(eastbound.getPhase(eastbound.relMins(45))).toBe('bikes-enter')
       expect(westbound.getPhase(westbound.relMins(45))).toBe('normal')

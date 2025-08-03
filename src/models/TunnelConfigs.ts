@@ -37,7 +37,7 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
     },
     ...Common,
   },
-  
+
   westbound: {
     direction: 'west',
     offsetMin: 15,  // Bike pen opens at :15
@@ -47,12 +47,12 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
     },
     ...Common,
   },
-  
+
   sweepConfig: {
     speed: 12,
     stagingOffset: 35
   },
-  
+
   paceConfig: {
     speed: Common.carMph,
     stagingOffset: 60
