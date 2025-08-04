@@ -119,9 +119,13 @@ function getTooltip(vehicle: VehicleI): string {
 
   if (vehicle.type === 'car') {
     const { laneId } = vehicle.metadata
-    return `#${vehicle.metadata.id} - :${vehicle.metadata.spawnMin.toString().padStart(2, '0')} - ${laneId} lane - ${dir}`
+    // Round to 1 decimal place and remove trailing .0
+    const spawnMinStr = parseFloat(vehicle.metadata.spawnMin.toFixed(1)).toString()
+    return `#${vehicle.metadata.id} - :${spawnMinStr} - ${laneId} lane - ${dir}`
   } else if (vehicle.type === 'bike') {
-    return `#${vehicle.metadata.id} - :${vehicle.metadata.spawnMin.toString().padStart(2, '0')} spawn - ${dir}`
+    // Round to 1 decimal place and remove trailing .0
+    const spawnMinStr = parseFloat(vehicle.metadata.spawnMin.toFixed(1)).toString()
+    return `#${vehicle.metadata.id} - :${spawnMinStr} spawn - ${dir}`
   } else if (vehicle.type === 'sweep') {
     return `Sweep - ${dir}`
   } else {
