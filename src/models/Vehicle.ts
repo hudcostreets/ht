@@ -9,7 +9,7 @@ export type PartialPoints = TimePoint<PartialPos>[]
 export type Props = {
   tunnel: Tunnel
   laneId: LaneId
-  idx: number
+  id: string
   spawnMin: number
   spawnQueue?: SpawnQueue
   points?: Points
@@ -20,15 +20,15 @@ export abstract class Vehicle {
   public tunnel: Tunnel
   public laneId: LaneId
   public lane: Lane
-  public idx: number
+  public id: string
   public spawnMin: number
   public spawnQueue?: SpawnQueue
   protected __points?: Points
   private _normalized?: boolean
 
-  constructor({ tunnel, laneId, idx, spawnMin, spawnQueue, points, }: Props) {
+  constructor({ tunnel, laneId, id, spawnMin, spawnQueue, points, }: Props) {
     this.tunnel = tunnel
-    this.idx = idx
+    this.id = id
     this.laneId = laneId
     this.lane = laneId === 'L' ? tunnel.l : tunnel.r
     this.spawnMin = spawnMin
@@ -56,7 +56,7 @@ export abstract class Vehicle {
     // Get raw points from _points getter
     let rawPoints = this._points
     if (!rawPoints.length) {
-      throw new Error(`Vehicle ${this.laneId}${this.idx} has no points defined`)
+      throw new Error(`Vehicle ${this.laneId}${this.id} has no points defined`)
     }
 
     // Fill in missing values from previous point
@@ -89,7 +89,7 @@ export abstract class Vehicle {
     // Validate strictly ascending order
     for (let i = 1; i < this.__points.length; i++) {
       if (this.__points[i].min <= this.__points[i - 1].min) {
-        throw new Error(`Vehicle ${this.laneId}${this.idx} points must be strictly ascending by mins. Found: ${this.__points[i - 1].min} and ${this.__points[i].min}`)
+        throw new Error(`Vehicle ${this.laneId}${this.id} points must be strictly ascending by mins. Found: ${this.__points[i - 1].min} and ${this.__points[i].min}`)
       }
     }
 

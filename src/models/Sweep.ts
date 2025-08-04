@@ -20,7 +20,7 @@ export class Sweep extends Vehicle {
     super({
       tunnel: eb,
       laneId: 'R',
-      idx: 0,
+      id: 'sweep',
       spawnMin: 0
     })
     this.eb = eb

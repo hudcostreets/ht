@@ -102,8 +102,8 @@ export class Tunnel {
     this.ncars = period * carsPerMin
     const { ncars } = this
     for (let idx = 0; idx < ncars; idx++) {
-      lcars.push(new Car({ tunnel: this, laneId: 'L', idx, spawnMin: period * (idx + .5) / ncars, })) // Stagger L cars by half a phase
-      rcars.push(new Car({ tunnel: this, laneId: 'R', idx, spawnMin: period *  idx       / ncars, }))
+      lcars.push(new Car({ tunnel: this, laneId: 'L', id: idx.toString(), spawnMin: period * (idx + .5) / ncars, })) // Stagger L cars by half a phase
+      rcars.push(new Car({ tunnel: this, laneId: 'R', id: idx.toString(), spawnMin: period *  idx       / ncars, }))
     }
 
     // Populate rcars' spawnQueue elems
@@ -146,7 +146,7 @@ export class Tunnel {
     const bikes1 = []
     for (let idx = 0; idx < nbikes; idx++) {
       const spawnMin = period * idx / nbikes
-      const bike = new Bike({ tunnel: this, laneId: 'R', idx, spawnMin })
+      const bike = new Bike({ tunnel: this, laneId: 'R', id: idx.toString(), spawnMin })
       if (spawnMin >= penCloseMin) {
         bikes1.push(bike)
       } else {
@@ -216,25 +216,25 @@ export class Tunnel {
     return [
       ...bikes.map(
         bike => {
-          const { idx, spawnMin, } = bike
+          const { id, spawnMin, } = bike
           return ({
-            id: `bike-${dir[0]}-${idx}`,
+            id: `bike-${dir[0]}-${id}`,
             type: 'bike',
             pos: bike.getPos(absMins),
             dir,
-            metadata: { spawnMin, idx }
+            metadata: { spawnMin, id }
           }) as VehicleI
         }
       ),
       ...allCars.map(
         car => {
-          const { laneId, idx, spawnMin, } = car
+          const { laneId, id, spawnMin, } = car
           return ({
-            id: `car-${dir[0]}-${laneId}-${idx}`,
+            id: `car-${dir[0]}-${laneId}-${id}`,
             type: 'car',
             pos: car.getPos(absMins),
             dir,
-            metadata: { spawnMin, idx, laneId }
+            metadata: { spawnMin, id, laneId }
           }) as VehicleI
         }
       ),

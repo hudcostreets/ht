@@ -179,14 +179,14 @@ export class Bike extends Vehicle {
   }
 
   split(): [ Bike ] | [ Bike, Bike ] {
-    let { spawnQueue, period, resetMin, idx, } = this
+    let { spawnQueue, period, resetMin, id, } = this
     if (resetMin < period) {
       return [this]
     }
     resetMin -= period
     const { minsBeforeDequeueing } = spawnQueue || {}
     if (minsBeforeDequeueing === undefined || resetMin >= minsBeforeDequeueing) {
-      throw new Error(`Bike ${this.idx}: resetMin ${resetMin} >= ${minsBeforeDequeueing}`)
+      throw new Error(`Bike ${this.id}: resetMin ${resetMin} >= ${minsBeforeDequeueing}`)
     }
     const splitAt = resetMin + 1
 
@@ -239,8 +239,8 @@ export class Bike extends Vehicle {
     })
 
     const { laneId, spawnMin, tunnel, } = this
-    const bike1 = new Bike({ tunnel, laneId, idx: idx + .1, spawnMin, points: bikePts1, })
-    const bike2 = new Bike({ tunnel, laneId, idx: idx + .2, spawnMin: spawnMin + splitAt, points: bikePts2, })
+    const bike1 = new Bike({ tunnel, laneId, id: id + '.1', spawnMin, points: bikePts1, })
+    const bike2 = new Bike({ tunnel, laneId, id: id + '.2', spawnMin: spawnMin + splitAt, points: bikePts2, })
     return [ bike1, bike2 ]
   }
 }

@@ -20,7 +20,7 @@ export class Pace extends Vehicle {
     super({
       tunnel: eb,
       laneId: 'R',
-      idx: 0,
+      id: 'pace',
       spawnMin: 0
     })
     this.eb = eb

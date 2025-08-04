@@ -17,7 +17,7 @@ describe('Tunnel', () => {
       min: number,
       expected: Partial<Pos>,
     ) {
-      const bike = eb.bikes.find(({ idx }) => idx == bikeIdx)!
+      const bike = eb.bikes.find(({ id }) => id == bikeIdx.toString())!
       const pos = bike.getPos(min)
       entries(expected).forEach(([key, value]) => {
         expect(pos![key]).toBe(value)

@@ -9,7 +9,7 @@ describe('Car', () => {
     const car = new Car({
       tunnel,
       laneId: 'L',
-      idx: 0,
+      id: '0',
       spawnMin: 5,
     })
 
@@ -25,7 +25,7 @@ describe('Car', () => {
     const car = new Car({
       tunnel,
       laneId: 'R',
-      idx: 0,
+      id: '0',
       spawnMin: 0,
       spawnQueue: { offset: { x: 30, y: 0 }, minsBeforeDequeueing: 9, minsDequeueing: 1, }
     })

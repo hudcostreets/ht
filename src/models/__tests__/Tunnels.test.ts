@@ -55,7 +55,7 @@ describe('Tunnels', () => {
       const eastboundBikes = vehicles.filter(v => v.type === 'bike' && v.dir === 'east')
 
       // First eastbound bike should be in position
-      const firstBike = eastboundBikes.find(v => v.metadata.idx === 1.2) // First bike that enters
+      const firstBike = eastboundBikes.find(v => v.metadata.id === '1.2') // First bike that enters
       expect(firstBike).toBeTruthy()
       expect(firstBike!.pos.state).toBe('dequeueing') // Just starting to dequeue at :45
     })
