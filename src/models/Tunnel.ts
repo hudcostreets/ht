@@ -204,6 +204,7 @@ export class Tunnel {
       const split = bike.split()
       this.bikes.push(...split)
     }
+
   }
 
   public get allCars(): Car[] {
