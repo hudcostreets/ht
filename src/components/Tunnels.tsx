@@ -10,7 +10,7 @@ import './Tunnels.scss'
 
 // Create the tunnels instance
 const tunnels = new HT(HOLLAND_TUNNEL_CONFIG)
-const { eb, wb, sweep, pace } = tunnels
+const { eb, wb } = tunnels
 
 export function Tunnels() {
   // Check URL parameter for initial time

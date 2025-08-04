@@ -1,6 +1,4 @@
-import { TimePoint } from "./TimeVal"
-import { Pos } from "./types"
-import { Points, Vehicle } from "./Vehicle"
+import { Points, PartialPoints, Vehicle } from "./Vehicle"
 import { XY } from "./XY"
 
 export class Car extends Vehicle {
@@ -18,7 +16,7 @@ export class Car extends Vehicle {
     return (lengthMi / mph) * 60
   }
 
-  get _points(): TimePoint<Pos>[] {
+  get _points(): PartialPoints {
     const { tunnel, spawnQueue, lane, fadeDist, transitingMins, } = this
     const { d, config } = tunnel
     const { period, fadeMins, } = config
@@ -51,11 +49,11 @@ export class Car extends Vehicle {
     const fadeDest = { x: lane.exit.x + fadeDist * d, y: lane.exit.y }
     return [
       ...points,
-      { min: transitingMin, val: { ...lane.entrance, state: 'transiting', opacity: 1 }, },
-      { min: exitingMin, val: { ...lane.exit, state: 'exiting', opacity: 1 }, },
-      { min: fadedMin, val: { ...fadeDest, state: 'done', opacity: 0 }, },
-      { min: fadedMin + 1, val: { ...origin, state: 'origin', opacity: 0 }, },
-      { min: period - 1, val: { ...origin, state: 'origin', opacity: 0 }, },
-    ]
+      { min: transitingMin, val: { ...lane.entrance, state: 'transiting', opacity: 1 } },
+      { min: exitingMin, val: { ...lane.exit, state: 'exiting', opacity: 1 } },
+      { min: fadedMin, val: { ...fadeDest, state: 'done', opacity: 0 } },
+      { min: fadedMin + 1, val: { ...origin, state: 'origin', opacity: 0 } },
+      { min: period - 1, val: { ...origin, state: 'origin', opacity: 0 } },
+    ] as PartialPoints
   }
 }

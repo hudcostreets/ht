@@ -1,7 +1,6 @@
-import { TimePoint } from "./TimeVal"
 import { Tunnel } from "./Tunnel"
 import { Pos } from "./types"
-import { Points, Vehicle } from "./Vehicle"
+import { PartialPoints, Vehicle } from "./Vehicle"
 
 export type Props = {
   eb: Tunnel
@@ -40,33 +39,34 @@ export class Pace extends Vehicle {
     return (lengthMi / mph) * 60
   }
 
-  get _points(): Points {
-    const { eb, wb, transitingMins, period, } = this
+  get _points(): PartialPoints {
+    const { eb, wb, transitingMins } = this
     const { officialResetMins, paceStartMin, } = eb.config
-    let points: TimePoint<Pos>[] = []
+    let points: PartialPoints = []
 
     // Staging positions use the lane entrance coordinates (which now include y-offset)
     const westStaging = { x: wb.r.entrance.x + this.stagingOffset, y: wb.r.entrance.y }
     const eastStaging = { x: eb.r.entrance.x - this.stagingOffset, y: eb.r.entrance.y }
 
     const eTransitingMin = eb.offset + paceStartMin
+    // Starting point - need all values
     points.push({ min: eTransitingMin - 1, val: { ...eastStaging, state: 'dequeueing', opacity: 1, direction: 'east' } })
-    points.push({ min: eTransitingMin, val: { ...eb.r.entrance, state: 'transiting', opacity: 1, direction: 'east' } })
+    // Only change what's different
+    points.push({ min: eTransitingMin, val: { x: eb.r.entrance.x, state: 'transiting' } })
     const eExitingMin = eTransitingMin + transitingMins
-    points.push({ min: eExitingMin, val: { ...eb.r.exit, state: 'exiting', opacity: 1, direction: 'east' } })
+    points.push({ min: eExitingMin, val: { x: eb.r.exit.x, state: 'exiting' } })
     const wStageMin = eExitingMin + officialResetMins
-    points.push({ min: wStageMin, val: { ...westStaging, state: 'queued', opacity: 1, direction: 'west' } })
+    points.push({ min: wStageMin, val: { ...westStaging, state: 'queued', direction: 'west' } })
 
     const wTransitingMin = wb.offset + paceStartMin
-    points.push({ min: wTransitingMin - 1, val: { ...westStaging, state: 'dequeueing', opacity: 1, direction: 'west' } })
-    points.push({ min: wTransitingMin, val: { ...wb.r.entrance, state: 'transiting', opacity: 1, direction: 'west' } })
+    points.push({ min: wTransitingMin - 1, val: { state: 'dequeueing' } })
+    points.push({ min: wTransitingMin, val: { x: wb.r.entrance.x, state: 'transiting' } })
     const wExitingMin = wTransitingMin + transitingMins
-    points.push({ min: wExitingMin, val: { ...wb.r.exit, state: 'exiting', opacity: 1, direction: 'west' } })
+    points.push({ min: wExitingMin, val: { x: wb.r.exit.x, state: 'exiting' } })
     const eStageMin = wExitingMin + officialResetMins
-    points.push({ min: eStageMin, val: { ...eastStaging, state: 'queued', opacity: 1, direction: 'east' } })
+    points.push({ min: eStageMin, val: { ...eastStaging, state: 'queued', direction: 'east' } })
 
-    points = points.map(({ min, val }) => ({ min: min % period, val }))
-    points.sort((a, b) => a.min - b.min)
+    // No need to manually sort - normalizePoints in Vehicle will handle it
     return points
   }
 

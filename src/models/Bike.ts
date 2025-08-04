@@ -1,6 +1,6 @@
-import { Start, TimePoint } from "./TimeVal"
-import { Pos } from "./types"
-import { Vehicle } from "./Vehicle"
+import { TimePoint } from "./TimeVal"
+import { PartialPos } from "./types"
+import { PartialPoints, Points, Vehicle } from "./Vehicle"
 import { XY } from "./XY"
 
 export class Bike extends Vehicle {
@@ -116,41 +116,47 @@ export class Bike extends Vehicle {
     return period - 1 // Respawn at the end of the period
   }
 
-  get downhill(): TimePoint<Pos> {
+  get downhill(): TimePoint<PartialPos> {
     const { lane, transitingMin } = this
     return { min: transitingMin, val: { ...lane.entrance, state: 'transiting', opacity: 1, }, }
   }
 
-  get uphill(): TimePoint<Pos> {
+  get uphill(): TimePoint<PartialPos> {
     const { halfway, halfwayMin } = this
     return { min: halfwayMin, val: { ...halfway, state: 'transiting', opacity: 1 }, }
   }
 
-  get exiting(): TimePoint<Pos> {
+  get exiting(): TimePoint<PartialPos> {
     const { lane, exitingMin } = this
     return { min: exitingMin, val: { ...lane.exit, state: 'exiting', opacity: 1 }, }
   }
 
-  get faded(): TimePoint<Pos> {
+  get faded(): TimePoint<PartialPos> {
     const { fadedMin, fadeDest } = this
     return { min: fadedMin, val: { ...fadeDest, state: 'done', opacity: 0 }, }
   }
 
-  get reset(): TimePoint<Pos> {
+  get reset(): TimePoint<PartialPos> {
     const { origin, resetMin } = this
     return { min: resetMin, val: { ...origin, state: 'origin', opacity: 0 }, }
   }
 
-  get respawn(): TimePoint<Pos> {
+  get respawn(): TimePoint<PartialPos> {
     const { origin, respawnMin } = this
     return { min: respawnMin, val: { ...origin, state: 'origin', opacity: 0 }, }
   }
 
-  get _points(): TimePoint<Pos>[] {
+  get _points(): PartialPoints {
+    // If points were provided in constructor (split bike), return them as PartialPoints
+    if (this.__points) {
+      // Convert Points to PartialPoints
+      return this.__points.map(({ min, val }) => ({ min, val: { ...val } }))
+    }
+
     // Calculate the full trajectory for this bike
     const { spawnQueue, initPos, downhill, uphill, exiting, faded, reset, respawn, } = this
 
-    let points: TimePoint<Pos>[] = []
+    let points: PartialPoints = []
     if (spawnQueue) {
       // Car needs to queue
       const { minsBeforeDequeueing } = spawnQueue
@@ -170,47 +176,91 @@ export class Bike extends Vehicle {
       reset,
       respawn,
     ]
+
     points.sort((a, b) => a.min - b.min)
     return points
   }
 
   split(): [ Bike ] | [ Bike, Bike ] {
-    let { spawnQueue, period, resetMin, idx, } = this
+    const { spawnQueue, period, resetMin, idx } = this
+
+    // Only split if the bike's journey extends beyond the period
     if (resetMin < period) {
       return [this]
     }
-    resetMin -= period
-    const { minsBeforeDequeueing } = spawnQueue || {}
-    if (minsBeforeDequeueing === undefined || resetMin >= minsBeforeDequeueing) {
-      throw new Error(`Bike ${this.idx}: resetMin ${resetMin} >= ${minsBeforeDequeueing}`)
-    }
-    const splitAt = resetMin + 1
-    const points = this.points()
-    // console.log(`Bike ${idx}: splitting at ${splitAt} (resetMin: ${resetMin}, period: ${period})`, points)
-    if (points.length !== 8) {
-      throw new Error(`Bike ${this.idx}: Expected 8 points, got ${points.length}: ${JSON.stringify(points)}`)
-    }
-    const { downhill, uphill, exiting, faded, reset, respawn, } = this
-    const [ queued, dequeueing, ] = points
-    const bikePts1 = [
-      { ...queued, interp: Start, },
-      { ...reset, min: splitAt, },
-      respawn
+
+    // Calculate how much into the next period the bike extends
+    const overflowMin = resetMin - period
+    const splitMin = overflowMin + 1
+
+    // For bike that needs splitting, we create two bikes:
+    // 1. A "stub" bike that exists at the end of the period
+    // 2. The main bike that does the actual journey in the next period
+
+    // Bike 1: Just sits at origin for the end of the period
+    const bike1Points: Points = [
+      { min: 0, val: { x: this.origin.x, y: this.origin.y, state: 'origin', opacity: 0 } },
+      { min: period - 1, val: { x: this.origin.x, y: this.origin.y, state: 'origin', opacity: 0 } }
     ]
-    const bikePts2 = [
-      queued,
-      ...[
-        dequeueing,
-        downhill,
-        uphill,
-        exiting,
-        faded,
-        reset,
-      ].map(({ min, ...rest }) => ({ min: min - splitAt, ...rest }))
-    ]
-    const { laneId, spawnMin, tunnel, } = this
-    const bike1 = new Bike({ tunnel, laneId, idx: idx + .1, spawnMin, points: bikePts1, })
-    const bike2 = new Bike({ tunnel, laneId, idx: idx + .2, spawnMin: spawnMin + splitAt, points: bikePts2, })
-    return [ bike1, bike2 ]
+
+    // Bike 2: The actual journey
+    // We need to build the points fresh without relying on this.points()
+    // because that would normalize them
+    const bike2Points: Points = []
+
+    if (spawnQueue) {
+      // Start queued
+      bike2Points.push({
+        min: 0,
+        val: { ...this.initPos, state: 'queued', opacity: 1 }
+      })
+
+      // Adjust dequeueing time
+      const adjustedDequeueing = spawnQueue.minsBeforeDequeueing - splitMin
+      if (adjustedDequeueing > 0) {
+        bike2Points.push({
+          min: adjustedDequeueing,
+          val: { ...this.initPos, state: 'dequeueing', opacity: 1 }
+        })
+      }
+    }
+
+    // Add the journey points, adjusting times by splitMin
+    bike2Points.push({
+      min: this.transitingMin - splitMin,
+      val: { ...this.lane.entrance, state: 'transiting', opacity: 1 }
+    })
+    bike2Points.push({
+      min: this.halfwayMin - splitMin,
+      val: { ...this.halfway, state: 'transiting', opacity: 1 }
+    })
+    bike2Points.push({
+      min: this.exitingMin - splitMin,
+      val: { ...this.lane.exit, state: 'exiting', opacity: 1 }
+    })
+    const adjustedFadedMin = this.fadedMin - splitMin
+    bike2Points.push({
+      min: adjustedFadedMin,
+      val: { ...this.fadeDest, state: 'done', opacity: 0 }
+    })
+
+    // Reset happens 1 minute after fading
+    bike2Points.push({
+      min: adjustedFadedMin + 1,
+      val: { ...this.origin, state: 'origin', opacity: 0 }
+    })
+
+    // Add respawn point at end of period (accounting for spawnMin adjustment)
+    const adjustedRespawnMin = (this.respawnMin - splitMin + period) % period
+    bike2Points.push({
+      min: adjustedRespawnMin,
+      val: { ...this.origin, state: 'origin', opacity: 0 }
+    })
+
+    const { laneId, spawnMin, tunnel } = this
+    const bike1 = new Bike({ tunnel, laneId, idx: idx + .1, spawnMin, points: bike1Points })
+    const bike2 = new Bike({ tunnel, laneId, idx: idx + .2, spawnMin: spawnMin + splitMin, points: bike2Points })
+
+    return [bike1, bike2]
   }
 }

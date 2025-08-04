@@ -19,6 +19,15 @@ export type Pos = {
   direction?: Direction
 }
 
+// Partial position for building points - missing values will be filled from previous point
+export type PartialPos = {
+  x?: number
+  y?: number
+  state?: State
+  opacity?: number
+  direction?: Direction
+}
+
 export const field: Field<Pos> = {
   add: (l: Pos, r: Pos): Pos => ({ x: l.x + r.x, y: l.y + r.y, state: l.state, opacity: l.opacity + r.opacity, direction: l.direction }),
   sub: (l: Pos, r: Pos): Pos => ({ x: l.x - r.x, y: l.y - r.y, state: l.state, opacity: l.opacity - r.opacity, direction: l.direction }),
