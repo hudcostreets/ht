@@ -14,7 +14,6 @@ export class Sweep extends Vehicle {
   public wb: Tunnel
   public mph: number
   public stagingOffset: number
-  public currentTunnel?: Tunnel
 
   constructor({ eb, wb, mph, stagingOffset }: GlobalSweepProps) {
     super({
@@ -71,24 +70,6 @@ export class Sweep extends Vehicle {
   }
 
   getPos(absMins: number): Pos {
-    const pos = this.pos.at(absMins)
-
-    // Update currentTunnel based on the schedule
-    const relMins = absMins % this.period
-    const { eb, wb } = this
-    const eTransitingMin = eb.offset + eb.config.sweepStartMin
-    const wTransitingMin = wb.offset + wb.config.sweepStartMin
-
-    // Determine which tunnel sweep is associated with
-    if (relMins >= wTransitingMin && relMins <= wTransitingMin + this.transitingMins) {
-      this.currentTunnel = wb
-    } else if (relMins >= eTransitingMin || relMins < wTransitingMin) {
-      this.currentTunnel = eb
-    } else {
-      // During transitions between tunnels (after west exit, before east entrance)
-      this.currentTunnel = eb
-    }
-
-    return pos
+    return this.pos.at(absMins)
   }
 }

@@ -9,16 +9,13 @@ describe('Vehicle Subclasses', () => {
   const { sweep, pace } = tunnels
 
   function check(
-    vehicle: { getPos: (mins: number) => Pos; currentTunnel?: { config: { direction: string } } },
+    vehicle: { getPos: (mins: number) => Pos },
     min: number,
-    expected: Partial<Pos> & { tunnel?: string },
+    expected: Partial<Pos>,
   ) {
     const pos = vehicle.getPos(min)
     entries(expected).forEach(([key, value]) => {
-      if (key === 'tunnel') {
-        // Check which tunnel the vehicle is currently in
-        expect(vehicle.currentTunnel?.config.direction).toBe(value)
-      } else if (key === 'x' || key === 'y') {
+      if (key === 'x' || key === 'y') {
         expect(pos![key]).toBeCloseTo(value as number, 0)
       } else {
         expect(pos![key]).toBe(value)
@@ -46,8 +43,8 @@ describe('Vehicle Subclasses', () => {
       check(sweep, 20  , { state: 'transiting', x: 800  , opacity: 1 })
 
       // Minute 20-30: Transit westbound
-      check(sweep, 25  , { state: 'transiting', x: 400  , opacity: 1, tunnel: 'west' })
-      check(sweep, 30  , { state:    'exiting', x:   0  , opacity: 1, tunnel: 'west' })
+      check(sweep, 25  , { state: 'transiting', x: 400  , opacity: 1 })
+      check(sweep, 30  , { state:    'exiting', x:   0  , opacity: 1 })
 
       // Minute 30-35: Transitioning from west exit to east staging
       check(sweep, 30  , { state:     'exiting', x:   0  , y: 115, opacity: 1 })  // W/b R lane: 15 + 100
@@ -62,9 +59,9 @@ describe('Vehicle Subclasses', () => {
       check(sweep, 50  , { state: 'transiting', x:   0  , opacity: 1 })
 
       // Minute 50-60: Transit eastbound
-      check(sweep, 50  , { state: 'transiting', x:   0, opacity: 1, tunnel: 'east' }) // At :50, sweep at E/b entrance
-      check(sweep, 55  , { state: 'transiting', x: 400, opacity: 1, tunnel: 'east' })
-      check(sweep, 59.9, { state: 'transiting', x: 792, opacity: 1, tunnel: 'east' })
+      check(sweep, 50  , { state: 'transiting', x:   0, opacity: 1 }) // At :50, sweep at E/b entrance
+      check(sweep, 55  , { state: 'transiting', x: 400, opacity: 1 })
+      check(sweep, 59.9, { state: 'transiting', x: 792, opacity: 1 })
 
       // Verify opacity is always 1
       check(sweep,  0  , { opacity: 1 })
@@ -93,8 +90,8 @@ describe('Vehicle Subclasses', () => {
       check(pace, 25, { state: 'transiting', x: 800, opacity: 1 })
 
       // Minute 25-30: Transit westbound
-      check(pace, 27.5, { state: 'transiting', x: 400, opacity: 1, tunnel: 'west' })
-      check(pace, 30, { state: 'exiting', x: 0, opacity: 1, tunnel: 'west' })
+      check(pace, 27.5, { state: 'transiting', x: 400, opacity: 1 })
+      check(pace, 30, { state: 'exiting', x: 0, opacity: 1 })
 
       // Minute 30-35: Transitioning from west exit to east staging
       check(pace, 30, { state: 'exiting', x: 0, opacity: 1 })
@@ -109,9 +106,9 @@ describe('Vehicle Subclasses', () => {
       check(pace, 55, { state: 'transiting', x: 0, opacity: 1 })
 
       // Minute 55-60: Transit eastbound
-      check(pace, 55, { state: 'transiting', x: 0, opacity: 1, tunnel: 'east' }) // At :55, pace at E/b entrance
-      check(pace, 57.5, { state: 'transiting', x: 400, opacity: 1, tunnel: 'east' })
-      check(pace, 59.99, { state: 'transiting', x: 798, opacity: 1, tunnel: 'east' })
+      check(pace, 55, { state: 'transiting', x: 0, opacity: 1 }) // At :55, pace at E/b entrance
+      check(pace, 57.5, { state: 'transiting', x: 400, opacity: 1 })
+      check(pace, 59.99, { state: 'transiting', x: 798, opacity: 1 })
 
       // Verify opacity is always 1
       check(pace, 0, { opacity: 1 })
