@@ -25,7 +25,7 @@ export function Tunnels() {
     defaultValue: urlMinute !== null // Pause if URL param is set
   })
   const [speed, setSpeed] = useSessionStorageState<number>('ht-speed', {
-    defaultValue: 1
+    defaultValue: 4
   })
 
   // Animation for smooth transitions (in minutes)
