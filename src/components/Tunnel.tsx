@@ -30,6 +30,26 @@ export const Tunnel: FC<Props> = ({ dir, phase, displayTime, tunnel }) => {
       <rect x={LAYOUT.QUEUE_AREA_WIDTH} y={yOffset} width={LAYOUT.TUNNEL_WIDTH} height={LAYOUT.LANE_HEIGHT} fill="#666" stroke="#333" />
       <rect x={LAYOUT.QUEUE_AREA_WIDTH} y={yOffset + 30} width={LAYOUT.TUNNEL_WIDTH} height={LAYOUT.LANE_HEIGHT} fill="#666" stroke="#333" />
 
+      {/* Downhill/Uphill indicators */}
+      <g opacity="0.6">
+        {/* Vertical divider at midpoint */}
+        <line x1={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH / 2} y1={yOffset}
+          x2={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH / 2} y2={yOffset + 60}
+          stroke="white" strokeWidth="1" strokeDasharray="3,3" />
+
+        {/* Left half */}
+        <text x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH * 0.25} y={yOffset + (dir === 'east' ? 45 : 15)}
+          fontSize="14" textAnchor="middle" dominantBaseline="middle" fill="white">
+          {dir === 'east' ? 'downhill ↘' : '↖ uphill'}
+        </text>
+
+        {/* Right half */}
+        <text x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH * 0.75} y={yOffset + (dir === 'east' ? 45 : 15)}
+          fontSize="14" textAnchor="middle" dominantBaseline="middle" fill="white">
+          {dir === 'east' ? 'uphill ↗' : '↙ downhill'}
+        </text>
+      </g>
+
       {/* Bike pen */}
       {(() => {
         const { pen } = tunnel.config
@@ -45,11 +65,15 @@ export const Tunnel: FC<Props> = ({ dir, phase, displayTime, tunnel }) => {
       })()}
 
       {/* Lane markers */}
-      <text x={LAYOUT.QUEUE_AREA_WIDTH + 10} y={yOffset + 20} fontSize="12" fill="white">
-        {dir === 'east' ? 'L Lane (Cars Only)' : 'R Lane'}
+      <text x={dir === 'east' ? LAYOUT.QUEUE_AREA_WIDTH + 10 : LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - 10}
+        y={yOffset + 20} fontSize="12" fill="white" opacity="0.6"
+        textAnchor={dir === 'east' ? 'start' : 'end'}>
+        {dir === 'east' ? 'L Lane' : 'R Lane'}
       </text>
-      <text x={LAYOUT.QUEUE_AREA_WIDTH + 10} y={yOffset + 50} fontSize="12" fill="white">
-        {dir === 'east' ? 'R Lane' : 'L Lane (Cars Only)'}
+      <text x={dir === 'east' ? LAYOUT.QUEUE_AREA_WIDTH + 10 : LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - 10}
+        y={yOffset + 50} fontSize="12" fill="white" opacity="0.6"
+        textAnchor={dir === 'east' ? 'start' : 'end'}>
+        {dir === 'east' ? 'R Lane' : 'L Lane'}
       </text>
 
       {/* Color rectangles - positioned on R lane */}
