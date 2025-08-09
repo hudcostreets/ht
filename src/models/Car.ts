@@ -2,7 +2,7 @@ import { Points, PartialPoints, Vehicle } from "./Vehicle"
 import { XY } from "./XY"
 
 export class Car extends Vehicle {
-  get exitMph(): number {
+  get exitingMph(): number {
     return this.mph
   }
 

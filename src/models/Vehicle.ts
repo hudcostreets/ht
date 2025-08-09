@@ -98,7 +98,10 @@ export abstract class Vehicle {
 
   abstract get _points(): PartialPoints
 
-  abstract get exitMph(): number
+  /**
+   * Speed while "exiting" tunnel (and fading out)
+   */
+  abstract get exitingMph(): number
 
   get config(): TunnelConfig {
     return this.tunnel.config
@@ -110,7 +113,7 @@ export abstract class Vehicle {
 
   get exitPxPerMin(): number {
     const { lengthMi, laneWidthPx } = this.config
-    return (this.exitMph / lengthMi) * laneWidthPx / 60
+    return (this.exitingMph / lengthMi) * laneWidthPx / 60
   }
 
   get fadeDist(): number {

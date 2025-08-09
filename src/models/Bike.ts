@@ -5,7 +5,7 @@ import { PartialPoints, Points, Vehicle } from "./Vehicle"
 import { XY } from "./XY"
 
 export class Bike extends Vehicle {
-  get exitMph(): number {
+  get exitingMph(): number {
     return this.config.bikeFlatMph
   }
 

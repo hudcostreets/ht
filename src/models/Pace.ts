@@ -29,7 +29,7 @@ export class Pace extends Vehicle {
     this.stagingOffset = stagingOffset
   }
 
-  get exitMph(): number {
+  get exitingMph(): number {
     return this.mph
   }
 
