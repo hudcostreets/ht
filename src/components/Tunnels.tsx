@@ -51,7 +51,7 @@ function generateTimeline(tunnel: typeof eb | typeof wb) {
   entries.push({
     start: toAbsolute(paceStartMin),
     end: toAbsolute(paceStartMin + officialResetMins),
-    label: 'Pace car + cars resume',
+    label: 'Pace car (cars resume)',
     relStart: paceStartMin
   })
 
@@ -534,7 +534,7 @@ export function Tunnels() {
           <h2>How?</h2>
           <ul>
             <li>Bikes allowed into tunnel for a 3-minute "pulse", each hour (like catching a train)</li>
-            <li>Cars restricted from 1 lane for 10mins</li>
+            <li>Cars restricted from that lane for 10mins</li>
             <li>Bikes get 12-15mins to cross</li>
             <li>Requires just 2 official vehicles:
               <ul>
