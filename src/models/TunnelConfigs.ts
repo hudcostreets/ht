@@ -4,10 +4,11 @@ import type { TunnelsConfig } from './Tunnels'
 export const Common = {
   period: 60,             // Cycle repeats every 60mins
   lengthMi: 2,            // Total tunnel length
-  carMph: 24,             // MPH
+  carMph: 24,             // Car speed through tunnels
+  carExitingMph: 24,      // Speed while exiting/fading (same as carMph)
   bikeDownMph: 15,        // Bike downhill speed
   bikeUpMph: 8,           // Bike uphill speed
-  bikeFlatMph: 12,        // Bike flat speed (entering and exiting tunnel)
+  bikeExitingMph: 12,     // Speed while exiting/fading (on flat ground)
   penCloseMin: 3,         // "Bike pen" stays open for this many minutes, beginning from ":00" (tunnel's "origin" time)
   sweepStartMin: 5,       // "Sweep" van embarks at this minute mark (tunnel-relative)
   paceStartMin: 10,       // "Pace" car embarks at this minute mark (tunnel-relative)
@@ -21,8 +22,6 @@ export const Common = {
   laneWidthPx: LAYOUT.TUNNEL_WIDTH,
   laneHeightPx: LAYOUT.LANE_HEIGHT,
   queuedCarWidthPx: 30,   // Queued car spacing
-  fadeDistancePx: 100,  // Pixels to travel while fading out
-  fadeMins: 1,
 }
 
 // Default configuration for Holland Tunnel

@@ -6,7 +6,7 @@ import { XY } from "./XY"
 
 export class Bike extends Vehicle {
   get exitingMph(): number {
-    return this.config.bikeFlatMph
+    return this.config.bikeExitingMph
   }
 
   get transitingMin(): number {
@@ -134,8 +134,7 @@ export class Bike extends Vehicle {
   }
 
   get fadedMin(): number {
-    const { exitingMin, config } = this
-    const { fadeMins } = config
+    const { exitingMin, fadeMins } = this
     return exitingMin + fadeMins
   }
 

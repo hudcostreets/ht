@@ -21,9 +21,10 @@ export interface TunnelConfig {
   lengthMi: number
   period: number
   carMph: number
+  carExitingMph: number
   bikeUpMph: number
   bikeDownMph: number
-  bikeFlatMph: number
+  bikeExitingMph: number
   penCloseMin: number
   carsPerMin: number
   carsReleasedPerMin: number
@@ -38,7 +39,6 @@ export interface TunnelConfig {
   laneHeightPx: number
   y: number  // Y offset for this tunnel in the visualization
   pen: Pen  // Relative to R Lane entrance
-  fadeMins: number
   queuedCarWidthPx: number
 }
 

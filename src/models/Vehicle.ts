@@ -2,6 +2,7 @@ import { Lane, LaneId } from "./Lane"
 import { TimePoint, TimeVal } from "./TimeVal"
 import { field, Pos, PartialPos, SpawnQueue } from "./types"
 import type { Tunnel, TunnelConfig } from "./Tunnel"
+import { LAYOUT } from "./Constants"
 
 export type Points = TimePoint<Pos>[]
 export type PartialPoints = TimePoint<PartialPos>[]
@@ -117,8 +118,12 @@ export abstract class Vehicle {
   }
 
   get fadeDist(): number {
-    const { fadeMins } = this.config
-    return this.exitPxPerMin * fadeMins
+    return LAYOUT.FADE_DISTANCE_PX
+  }
+
+  get fadeMins(): number {
+    // Calculate fade time based on fade distance and exit speed
+    return this.fadeDist / this.exitPxPerMin
   }
 
   get pos(): TimeVal<Pos> {

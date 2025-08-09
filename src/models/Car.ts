@@ -3,7 +3,7 @@ import { XY } from "./XY"
 
 export class Car extends Vehicle {
   get exitingMph(): number {
-    return this.mph
+    return this.config.carExitingMph
   }
 
   get mph(): number {
@@ -17,9 +17,9 @@ export class Car extends Vehicle {
   }
 
   get _points(): PartialPoints {
-    const { tunnel, spawnQueue, lane, fadeDist, transitingMins, } = this
+    const { tunnel, spawnQueue, lane, fadeDist, fadeMins, transitingMins, } = this
     const { d, config } = tunnel
-    const { period, fadeMins, } = config
+    const { period, } = config
     let transitingMin: number
     let initPos: XY
     let points: Points = []

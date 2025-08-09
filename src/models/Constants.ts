@@ -19,6 +19,9 @@ export const LAYOUT = {
 
   // Bike pen positioning
   BIKE_PEN_INSET: 0, // How far inside the tunnel entrance to place the pen
+
+  // Fade animation
+  FADE_DISTANCE_PX: 100, // Pixels to travel while fading in/out
 }
 
 // Computed layout values
@@ -44,8 +47,9 @@ export const COMPUTED_LAYOUT = {
 
   // SVG dimensions
   get SVG_WIDTH() {
-    // Need space for: queue area + tunnel + pace staging
+    // Need space for: queue area + tunnel + pace staging + fade distance buffer
     // Pens are now inside the tunnel bounds, so don't need extra width for them
-    return LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + LAYOUT.PACE_STAGING_OFFSET
+    // Add fade distance on both ends (vehicles fade in from left, fade out to right)
+    return LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + LAYOUT.PACE_STAGING_OFFSET + LAYOUT.FADE_DISTANCE_PX
   }
 }
