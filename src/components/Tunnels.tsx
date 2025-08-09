@@ -320,6 +320,19 @@ export function Tunnels() {
               tunnel={eb}
             />
 
+            {/* NJ | NY label at tunnel midpoint */}
+            <text
+              x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH / 2}
+              y={180}
+              fontSize="14"
+              fontWeight="bold"
+              textAnchor="middle"
+              fill="#333"
+              opacity="0.6"
+            >
+              NJ | NY
+            </text>
+
             {/* Global vehicles (Sweep and Pace) */}
             {(() => {
               const allVehicles = tunnels.getAllVehicles(displayTime)
@@ -372,11 +385,11 @@ export function Tunnels() {
 
                   {/* Sweep icon */}
                   <text x="10" y="65" fontSize="16" textAnchor="middle">🚐</text>
-                  <text x="25" y="65" fontSize="12">"Sweep" van (picks up stragglers)</text>
+                  <text x="25" y="65" fontSize="12">"Sweep" clears stragglers</text>
 
                   {/* Pace icon */}
                   <text x="10" y="82" fontSize="16" textAnchor="middle">🚓</text>
-                  <text x="25" y="82" fontSize="12">"Pace" car (reopens R lane to cars)</text>
+                  <text x="25" y="82" fontSize="12">"Pace car" reopens 🚗 lane</text>
                 </g>
               )
             })()}

@@ -22,7 +22,7 @@ export const Tunnel: FC<Props> = ({ dir, phase, displayTime, tunnel }) => {
     <g>
       {/* Direction label */}
       <text x={20} y={yOffset - 20} fontSize="16" fontWeight="bold">
-        {dir === 'east' ? 'Eastbound (Manhattan →) - 12th St' : 'Westbound (← NJ) - 14th St'}
+        {dir === 'east' ? 'East-bound (NJ → NY)' : 'West-bound (NJ ← NY)'}
       </text>
       <text x={20} y={yOffset} fontSize="12" fill="#666">Phase: {phase}</text>
 
@@ -75,6 +75,39 @@ export const Tunnel: FC<Props> = ({ dir, phase, displayTime, tunnel }) => {
         textAnchor={dir === 'east' ? 'start' : 'end'}>
         {dir === 'east' ? 'R Lane' : 'L Lane'}
       </text>
+
+      {/* Location labels at entrances and exits */}
+      <g opacity="0.5">
+        {dir === 'east' ? (
+          <>
+            {/* E/b entrance (left): 12th St (Jersey City) */}
+            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 25} fontSize="11" textAnchor="end" fill="#333">
+              12th St
+            </text>
+            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 40} fontSize="11" textAnchor="end" fill="#333">
+              (Jersey City)
+            </text>
+            {/* E/b exit (right): NYC */}
+            <text x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + 10} y={yOffset + 30} fontSize="11" textAnchor="start" fill="#333">
+              NYC
+            </text>
+          </>
+        ) : (
+          <>
+            {/* W/b entrance (right): NYC */}
+            <text x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + 10} y={yOffset + 30} fontSize="11" textAnchor="start" fill="#333">
+              NYC
+            </text>
+            {/* W/b exit (left): 14th St (Jersey City) */}
+            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 25} fontSize="11" textAnchor="end" fill="#333">
+              14th St
+            </text>
+            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 40} fontSize="11" textAnchor="end" fill="#333">
+              (Jersey City)
+            </text>
+          </>
+        )}
+      </g>
 
       {/* Color rectangles - positioned on R lane */}
       {rects.map((rect, index) => (
