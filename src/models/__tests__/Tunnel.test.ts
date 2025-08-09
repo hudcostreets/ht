@@ -48,31 +48,32 @@ describe('Tunnel', () => {
     describe('Early bikes (spawn before pen opens)', () => {
       it('should position bike 1.2 correctly', () => {
         // At pen opening (:45), first bike should be released immediately
-        check(1.2, 45  , { state: 'dequeueing', x:  -80, opacity: 1, }) // In queue
-        check(1.2, 45.1, { state: 'dequeueing', x:  -40, opacity: 1, }) // Dequeueing
+        // Note: This is a split bike, so positions are from pre-calculated points
+        check(1.2, 45  , { state: 'dequeueing', x:  -70, opacity: 1, }) // In queue at pen (with 10px margin)
+        check(1.2, 45.1, { state: 'dequeueing', x:  -35, opacity: 1, }) // Dequeueing from pen
         check(1.2, 45.2, { state: 'transiting', x:    0, opacity: 1, }) // Entering
         check(1.2, 49.2, { state: 'transiting', x:  400, opacity: 1, }) // Halfway
         check(1.2, 56.7, { state:    'exiting', x:  800, opacity: 1, }) // Exiting
         check(1.2, 57.7, { state:       'done', x:  880, opacity: 0, }) // Faded out
-        check(1.2, 58.7, { state:     'origin', x: -160, opacity: 0, }) // Reset
-        check(1.2, 59.7, { state:     'queued', x:  -80, opacity: 1, }) // Re-enqueued
-        check(1.2,  0  , { state:     'queued', x:  -80, opacity: 1, }) // In queue
-        check(1.2,  1  , { state:     'queued', x:  -80, opacity: 1, }) // In queue
-        check(1.2, 44  , { state:     'queued', x:  -80, opacity: 1, }) // In queue
+        check(1.2, 58.7, { state:     'origin', x: -150, opacity: 0, }) // Reset at origin
+        check(1.2, 59.7, { state:     'queued', x:  -70, opacity: 1, }) // Re-enqueued at pen
+        check(1.2,  0  , { state:     'queued', x:  -70, opacity: 1, }) // In queue at pen
+        check(1.2,  1  , { state:     'queued', x:  -70, opacity: 1, }) // In queue at pen
+        check(1.2, 44  , { state:     'queued', x:  -70, opacity: 1, }) // In queue at pen
       })
 
       it('should position bike 0 correctly', () => {
         // Bike "0" arrives at :45 to a full queue, enters tunnel just before pen closes at :48
-        check(0, 44  , { state:     'origin', x: -240, opacity: 0, })
-        check(0, 45  , { state: 'dequeueing', x: -160, opacity: 1, })
-        check(0, 46.5, { state: 'dequeueing', x:  -80, opacity: 1, })
-        check(0, 48  , { state: 'transiting', x:    0, opacity: 1, })
-        check(0, 52  , { state: 'transiting', x:  400, opacity: 1, })
-        check(0, 59.5, { state:    'exiting', x:  800, opacity: 1, })
-        check(0,  0.5, { state:       'done', x:  880, opacity: 0, })
-        check(0,  1.5, { state:     'origin', x: -240, opacity: 0, })
-        check(0,  2.5, { state:     'origin', x: -240, opacity: 0, })
-        check(0, 43  , { state:     'origin', x: -240, opacity: 0, })
+        check(0, 44  , { state:     'origin', x: -70, opacity: 0, }) // Origin near pen
+        check(0, 45  , { state: 'dequeueing', x:  10, opacity: 1, }) // Dequeueing from pen
+        check(0, 46.5, { state: 'dequeueing', x:   5, opacity: 1, }) // Moving towards entrance
+        check(0, 48  , { state: 'transiting', x:   0, opacity: 1, })
+        check(0, 52  , { state: 'transiting', x: 400, opacity: 1, })
+        check(0, 59.5, { state:    'exiting', x: 800, opacity: 1, })
+        check(0,  0.5, { state:       'done', x: 880, opacity: 0, })
+        check(0,  1.5, { state:     'origin', x: -70, opacity: 0, }) // Origin near pen
+        check(0,  2.5, { state:     'origin', x: -70, opacity: 0, }) // Origin near pen
+        check(0, 43  , { state:     'origin', x: -70, opacity: 0, }) // Origin near pen
       })
     })
   })

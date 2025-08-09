@@ -21,11 +21,29 @@ export class Bike extends Vehicle {
     const { pen } = config
     const { d } = tunnel
     if (spawnQueue) {
-      // Car needs to queue
+      // Bike needs to queue in the pen
       const { offset } = spawnQueue
+
+      // Position bikes inside the pen
+      // pen.x is relative to tunnel start (x=0)
+      // pen.y is relative to tunnel lanes
+      const { y: tunnelY } = tunnel.config
+
+      // Calculate starting position based on direction
+      // For E/b (d=1): bikes fill left-to-right from pen left edge
+      // For W/b (d=-1): bikes fill right-to-left from pen right edge
+      // Add margins so bikes don't hang outside the pen
+      const leftMargin = 10
+      const bikeWidth = 20
+
+      const startX = d > 0
+        ? pen.x + leftMargin  // E/b: start from left edge with margin
+        : pen.x + pen.w - leftMargin - bikeWidth  // W/b: start from right edge with margin
+      const startY = pen.y + tunnelY + pen.h - 20 // Start from bottom of pen
+
       return {
-        x: lane.entrance.x + (pen.x - offset.x) * d,
-        y: lane.entrance.y + (pen.y - offset.y) * d,
+        x: startX + offset.x * d,
+        y: startY - offset.y,
       }
     } else {
       // No queueing
