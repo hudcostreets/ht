@@ -1,3 +1,4 @@
+import { A } from "@rdub/base"
 import { Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Tooltip } from 'react-tooltip'
@@ -249,94 +250,94 @@ export function Tunnels() {
 
             return (
               <svg width="100%" height={svgHeight} viewBox={`0 0 ${COMPUTED_LAYOUT.SVG_WIDTH} ${svgHeight}`} preserveAspectRatio="xMidYMid meet">
-            {/* Both tunnels */}
-            <Tunnel
-              dir="west"
-              displayTime={displayTime}
-              phase={phases.west}
-              tunnel={wb}
-            />
+                {/* Both tunnels */}
+                <Tunnel
+                  dir="west"
+                  displayTime={displayTime}
+                  phase={phases.west}
+                  tunnel={wb}
+                />
 
-            <Tunnel
-              dir="east"
-              displayTime={displayTime}
-              phase={phases.east}
-              tunnel={eb}
-            />
+                <Tunnel
+                  dir="east"
+                  displayTime={displayTime}
+                  phase={phases.east}
+                  tunnel={eb}
+                />
 
-            {/* NJ | NY label at tunnel midpoint */}
-            <text
-              x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH / 2}
-              y={180}
-              fontSize="14"
-              fontWeight="bold"
-              textAnchor="middle"
-              fill="#333"
-              opacity="0.6"
-            >
+                {/* NJ | NY label at tunnel midpoint */}
+                <text
+                  x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH / 2}
+                  y={180}
+                  fontSize="14"
+                  fontWeight="bold"
+                  textAnchor="middle"
+                  fill="#333"
+                  opacity="0.6"
+                >
               NJ | NY
-            </text>
+                </text>
 
-            {/* Global vehicles (Sweep and Pace) */}
-            {(() => {
-              const allVehicles = tunnels.getAllVehicles(displayTime)
-              const globalVehicles = allVehicles.filter(v => v.type === 'sweep' || v.type === 'pace')
+                {/* Global vehicles (Sweep and Pace) */}
+                {(() => {
+                  const allVehicles = tunnels.getAllVehicles(displayTime)
+                  const globalVehicles = allVehicles.filter(v => v.type === 'sweep' || v.type === 'pace')
 
-              return globalVehicles.map(v => {
-                const { id, dir, pos, type } = v
-                const x = pos.x + LAYOUT.QUEUE_AREA_WIDTH
-                const y = pos.y  // No yOffset needed - positions are absolute
+                  return globalVehicles.map(v => {
+                    const { id, dir, pos, type } = v
+                    const x = pos.x + LAYOUT.QUEUE_AREA_WIDTH
+                    const y = pos.y  // No yOffset needed - positions are absolute
 
-                return (
-                  <text
-                    key={id}
-                    x={x}
-                    y={y}
-                    fontSize="20"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    opacity={pos.opacity}
-                    style={{ userSelect: 'none', cursor: 'pointer' }}
-                    transform={dir === 'east' ? `translate(${x * 2},0) scale(-1,1)` : undefined}
-                  >
-                    {type === 'sweep' ? '🚐' : '🚓'}
-                  </text>
-                )
-              })
-            })()}
+                    return (
+                      <text
+                        key={id}
+                        x={x}
+                        y={y}
+                        fontSize="20"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        opacity={pos.opacity}
+                        style={{ userSelect: 'none', cursor: 'pointer' }}
+                        transform={dir === 'east' ? `translate(${x * 2},0) scale(-1,1)` : undefined}
+                      >
+                        {type === 'sweep' ? '🚐' : '🚓'}
+                      </text>
+                    )
+                  })
+                })()}
 
-            {/* Legend positioned to the right of E/b bike pen */}
-            {(() => {
-              // Position legend to the right of the E/b bike pen
-              const legendX = LAYOUT.QUEUE_AREA_WIDTH + eb.config.pen.x + eb.config.pen.w + 20
-              const legendY = eb.config.y + eb.config.pen.y + 10
+                {/* Legend positioned to the right of E/b bike pen */}
+                {(() => {
+                  // Position legend to the right of the E/b bike pen
+                  const legendX = LAYOUT.QUEUE_AREA_WIDTH + eb.config.pen.x + eb.config.pen.w + 20
+                  const legendY = eb.config.y + eb.config.pen.y + 10
 
-              return (
-                <g transform={`translate(${legendX}, ${legendY})`}>
-                  <text x="0" y="0" fontSize="14" fontWeight="bold">Legend</text>
+                  return (
+                    <g transform={`translate(${legendX}, ${legendY})`}>
+                      <text x="0" y="0" fontSize="14" fontWeight="bold">Legend</text>
 
-                  {/* Green rect - bike space */}
-                  <rect x="0" y="10" width="20" height="10" fill="#4caf50" opacity="0.3" />
-                  <text x="25" y="19" fontSize="12">Bike space</text>
+                      {/* Green rect - bike space */}
+                      <rect x="0" y="10" width="20" height="10" fill="#4caf50" opacity="0.3" />
+                      <text x="25" y="19" fontSize="12">Bike space</text>
 
-                  {/* Red rect - clearing space */}
-                  <rect x="0" y="25" width="20" height="10" fill="#f44336" opacity="0.3" />
-                  <text x="25" y="34" fontSize="12">Clearing space</text>
+                      {/* Red rect - clearing space */}
+                      <rect x="0" y="25" width="20" height="10" fill="#f44336" opacity="0.3" />
+                      <text x="25" y="34" fontSize="12">Clearing space</text>
 
-                  {/* Grey rect - car space */}
-                  <rect x="0" y="40" width="20" height="10" fill="#666" />
-                  <text x="25" y="49" fontSize="12">Car space</text>
+                      {/* Grey rect - car space */}
+                      <rect x="0" y="40" width="20" height="10" fill="#666" />
+                      <text x="25" y="49" fontSize="12">Car space</text>
 
-                  {/* Sweep icon */}
-                  <text x="10" y="65" fontSize="16" textAnchor="middle">🚐</text>
-                  <text x="25" y="65" fontSize="12">"Sweep" clears stragglers</text>
+                      {/* Sweep icon */}
+                      <text x="10" y="65" fontSize="16" textAnchor="middle">🚐</text>
+                      <text x="25" y="65" fontSize="12">"Sweep" clears stragglers</text>
 
-                  {/* Pace icon */}
-                  <text x="10" y="82" fontSize="16" textAnchor="middle">🚓</text>
-                  <text x="25" y="82" fontSize="12">"Pace car" reopens 🚗 lane</text>
-                </g>
-              )
-            })()}
+                      {/* Pace icon */}
+                      <text x="10" y="82" fontSize="16" textAnchor="middle">🚓</text>
+                      <text x="25" y="82" fontSize="12">"Pace car" reopens 🚗 lane</text>
+                    </g>
+                  )
+                })()}
               </svg>
             )
           })()}
@@ -523,19 +524,18 @@ export function Tunnels() {
           <ol>
             <li>There's no way to bike or walk between NYC and Hudson County (not OK!)</li>
             <li>No one has a plan to fix this in the next 10 years (not OK!)</li>
-            <li>Bikes can fit more people (during a 10mins/hr window) than cars</li>
+            <li><A href={"https://www.instagram.com/p/DKXr7giSaeK/"}>Bike lanes have higher throughput (per lane-minute) than cars</A></li>
             <li>Alleviates weekend PATH over-crowding</li>
-            <li>Holland Tunnel is worst-performing Hudson River crossing (bc 98% 1-person cars)</li>
+            <li>The Holland Tunnel <A href={"https://github.com/hudcostreets/hudson-transit"}>is the worst-performing Hudson River crossing</A> (98% 1-person cars)</li>
           </ol>
         </div>
 
         <div className="info-section">
           <h2>How?</h2>
           <ul>
-            <li>Bikes queue for most of each hour.</li>
-            <li>Bikes allowed into tunnel for a 3-minute "pulse" each hour</li>
+            <li>Bikes allowed into tunnel for a 3-minute "pulse", each hour (like catching a train)</li>
             <li>Cars restricted from 1 lane for 10mins</li>
-            <li>Bikes have 12-15mins to cross</li>
+            <li>Bikes get 12-15mins to cross</li>
             <li>Requires just 2 official vehicles:
               <ul>
                 <li>"Sweep" van (picks up stragglers)</li>

@@ -11,7 +11,7 @@ interface Props {
   tunnel: T
 }
 
-export const Tunnel: FC<Props> = ({ dir, phase, displayTime, tunnel }) => {
+export const Tunnel: FC<Props> = ({ dir, displayTime, tunnel }) => {
   const vehs = tunnel.allVehicles(displayTime)
   const rects = tunnel.getColorRectangles(displayTime)
 
