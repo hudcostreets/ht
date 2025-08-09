@@ -233,7 +233,7 @@ export function Tunnels() {
 
       <div className="header">
         <div className="header-content">
-          <h1>Holland Tunnel should have a bike lane</h1>
+          <h1>The Holland Tunnel should have a bike lane</h1>
           <h2>(for 10mins per hour)</h2>
         </div>
       </div>
