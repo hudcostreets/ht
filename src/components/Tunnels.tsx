@@ -192,59 +192,89 @@ export function Tunnels() {
             <span className="hint">Space: play/pause | ←/→: step by 1 minute</span>
           </div>
         </div>
-        <div className="clock-container-large">
-          <AnalogClock minute={displayTime} />
-          <div className="digital-time-large">
-            0:{String(Math.floor(displayTime) % 60).padStart(2, '0')}
-          </div>
-        </div>
       </div>
 
       <div className="tunnel-visualization-svg">
-        <svg width={COMPUTED_LAYOUT.SVG_WIDTH} height="400" viewBox={`0 0 ${COMPUTED_LAYOUT.SVG_WIDTH} 400`}>
-          {/* Both tunnels */}
-          <Tunnel
-            dir="west"
-            displayTime={displayTime}
-            phase={phases.west}
-            tunnel={wb}
-          />
+        <div style={{ position: 'relative', width: COMPUTED_LAYOUT.SVG_WIDTH, margin: '0 auto' }}>
+          <svg width={COMPUTED_LAYOUT.SVG_WIDTH} height="400" viewBox={`0 0 ${COMPUTED_LAYOUT.SVG_WIDTH} 400`}>
+            {/* Both tunnels */}
+            <Tunnel
+              dir="west"
+              displayTime={displayTime}
+              phase={phases.west}
+              tunnel={wb}
+            />
 
-          <Tunnel
-            dir="east"
-            displayTime={displayTime}
-            phase={phases.east}
-            tunnel={eb}
-          />
+            <Tunnel
+              dir="east"
+              displayTime={displayTime}
+              phase={phases.east}
+              tunnel={eb}
+            />
 
-          {/* Global vehicles (Sweep and Pace) */}
+            {/* Global vehicles (Sweep and Pace) */}
+            {(() => {
+              const allVehicles = tunnels.getAllVehicles(displayTime)
+              const globalVehicles = allVehicles.filter(v => v.type === 'sweep' || v.type === 'pace')
+
+              return globalVehicles.map(v => {
+                const { id, dir, pos, type } = v
+                const x = pos.x + LAYOUT.QUEUE_AREA_WIDTH
+                const y = pos.y  // No yOffset needed - positions are absolute
+
+                return (
+                  <text
+                    key={id}
+                    x={x}
+                    y={y}
+                    fontSize="20"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    opacity={pos.opacity}
+                    style={{ userSelect: 'none', cursor: 'pointer' }}
+                    transform={dir === 'east' ? `translate(${x * 2},0) scale(-1,1)` : undefined}
+                  >
+                    {type === 'sweep' ? '🚐' : '🚓'}
+                  </text>
+                )
+              })
+            })()}
+
+          </svg>
+
+          {/* Clock positioned below E/b exit */}
           {(() => {
-            const allVehicles = tunnels.getAllVehicles(displayTime)
-            const globalVehicles = allVehicles.filter(v => v.type === 'sweep' || v.type === 'pace')
+            // E/b tunnel: y=200, height=60, pen: y=110 (relative), height=70
+            const ebTunnelBottom = 200 + 60 // 260
+            const ebPenBottom = 200 + 110 + COMPUTED_LAYOUT.BIKE_PEN_HEIGHT // 200 + 110 + 70 = 380
+            const clockTop = ebTunnelBottom + 8 // Small gap below tunnel
 
-            return globalVehicles.map(v => {
-              const { id, dir, pos, type } = v
-              const x = pos.x + LAYOUT.QUEUE_AREA_WIDTH
-              const y = pos.y  // No yOffset needed - positions are absolute
+            // E/b exit is at x = QUEUE_AREA_WIDTH + TUNNEL_WIDTH
+            const exitX = LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH
 
-              return (
-                <text
-                  key={id}
-                  x={x}
-                  y={y}
-                  fontSize="20"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  opacity={pos.opacity}
-                  style={{ userSelect: 'none', cursor: 'pointer' }}
-                  transform={dir === 'east' ? `translate(${x * 2},0) scale(-1,1)` : undefined}
-                >
-                  {type === 'sweep' ? '🚐' : '🚓'}
-                </text>
-              )
-            })
+            return (
+              <div style={{
+                position: 'absolute',
+                right: `${COMPUTED_LAYOUT.SVG_WIDTH - exitX}px`, // Right-align with E/b exit
+                top: `${clockTop}px`,
+                bottom: `${400 - ebPenBottom}px`, // Constrain to pen bottom
+                width: '100px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: '0'
+              }}>
+                <div style={{ transform: 'scale(1.0)', flex: '1', display: 'flex', alignItems: 'center' }}>
+                  <AnalogClock minute={displayTime} />
+                </div>
+                <div style={{ fontSize: '14px', marginBottom: '2px' }}>
+                  0:{String(Math.floor(displayTime) % 60).padStart(2, '0')}
+                </div>
+              </div>
+            )
           })()}
-        </svg>
+        </div>
       </div>
 
       <div className="legend">

@@ -409,10 +409,11 @@ export class Tunnel {
 
       if (d > 0) {
         // Eastbound: green = [sweepPos, exit], red = [entrance, sweepPos]
-        // Red zone clamped to entrance (0) when pace is staging
+        // Red zone is from entrance (0) to sweepPos, so redEnd = 0
         points.push({ min: relMin, val: [sweepPos, laneWidthPx, 0] })
       } else {
         // Westbound: green = [entrance, sweepPos], red = [sweepPos, exit]
+        // Red zone is from sweepPos to exit (800), so redEnd = 800
         points.push({ min: relMin, val: [0, sweepPos, laneWidthPx] })
       }
     }
