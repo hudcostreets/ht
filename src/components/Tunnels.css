@@ -321,8 +321,7 @@
   margin: 0 auto;
 }
 
-.legend {
-  margin-top: 40px;
+.timelines {
   background: #f8f9fa;
   padding: 20px;
   border-radius: 8px;
@@ -334,22 +333,22 @@
   flex: 1;
 }
 
-.legend h3 {
+.timelines h3 {
   margin: 0 0 15px 0;
   color: #333;
 }
 
-.legend ul {
+.timelines ul {
   margin: 0;
   padding-left: 20px;
 }
 
-.legend li {
+.timelines li {
   margin: 5px 0;
   color: #666;
 }
 
-.legend li.current-phase {
+.timelines li.current-phase {
   font-weight: bold;
   color: #333;
   background: #fff3cd;
@@ -358,19 +357,19 @@
   margin-left: -8px;
 }
 
-.legend li.timeline-item {
+.timelines li.timeline-item {
   cursor: pointer;
   transition: background-color 0.2s ease;
-}
-
-.legend li.timeline-item:hover {
-  background: #fff3cd;
   padding: 4px 8px;
-  border-radius: 4px;
   margin-left: -8px;
+  border-radius: 4px;
 }
 
-.legend li.timeline-item.current-phase:hover {
+.timelines li.timeline-item:hover {
+  background: #fff3cd;
+}
+
+.timelines li.timeline-item.current-phase:hover {
   background: #f0e5b8;
   color: #333;
 }

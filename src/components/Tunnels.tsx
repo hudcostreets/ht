@@ -240,7 +240,7 @@ export function Tunnels() {
 
       <div className="tunnel-visualization-svg">
         <div style={{ position: 'relative', width: '100%', maxWidth: COMPUTED_LAYOUT.SVG_WIDTH, margin: '0 auto' }}>
-          <svg width="100%" height="400" viewBox={`0 0 ${COMPUTED_LAYOUT.SVG_WIDTH} 400`} preserveAspectRatio="xMidYMid meet">
+          <svg width="100%" height="350" viewBox={`0 0 ${COMPUTED_LAYOUT.SVG_WIDTH} 350`} preserveAspectRatio="xMidYMid meet">
             {/* Both tunnels */}
             <Tunnel
               dir="west"
@@ -453,7 +453,7 @@ export function Tunnels() {
         </div>
       </div>
 
-      <div className="legend">
+      <div className="timelines">
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
