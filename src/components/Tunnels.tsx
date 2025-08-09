@@ -167,7 +167,8 @@ export function Tunnels() {
 
   return (
     <div className="holland-tunnel">
-      <Tooltip id="vehicle-tooltip" />
+      <Tooltip id="vehicle-tooltip" style={{ zIndex: 9999 }} />
+      <Tooltip id="speed-tooltip" style={{ zIndex: 9999 }} />
 
       <div className="header">
         <div className="header-content">
@@ -190,7 +191,9 @@ export function Tunnels() {
             }}>
               {isPaused ? 'Play' : 'Pause'}
             </button>
-            <label>
+            <label
+              data-tooltip-id="speed-tooltip"
+              data-tooltip-content="Simulation speed: virtual minutes per real-world second">
               Speed: {speed}x
               <input
                 type="range"

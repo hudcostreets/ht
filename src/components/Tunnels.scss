@@ -433,6 +433,11 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
   }
 }
 
+// Tooltip styles
+.react-tooltip {
+  z-index: 9999 !important;
+}
+
 // Media queries
 @media (max-width: 768px) {
   .controls {
