@@ -13,6 +13,58 @@ import './Tunnels.scss'
 const tunnels = new HT(HOLLAND_TUNNEL_CONFIG)
 const { eb, wb } = tunnels
 
+// Generate timeline entries from config
+function generateTimeline(tunnel: typeof eb | typeof wb) {
+  const { offsetMin, penCloseMin, sweepStartMin, paceStartMin, period, officialResetMins } = tunnel.config
+  const entries = []
+
+  // Convert tunnel-relative time to absolute minute
+  const toAbsolute = (relMin: number) => (relMin + offsetMin) % period
+
+  // Build phases in chronological order (relative to tunnel's cycle)
+  // Phase 1: Bikes enter tunnel (0 to penCloseMin)
+  entries.push({
+    start: toAbsolute(0),
+    end: toAbsolute(penCloseMin),
+    label: 'Bikes enter tunnel',
+    relStart: 0
+  })
+
+  // Phase 2: Clearing phase (penCloseMin to sweepStartMin)
+  entries.push({
+    start: toAbsolute(penCloseMin),
+    end: toAbsolute(sweepStartMin),
+    label: 'Clearing phase',
+    relStart: penCloseMin
+  })
+
+  // Phase 3: Sweep vehicle (sweepStartMin to paceStartMin)
+  entries.push({
+    start: toAbsolute(sweepStartMin),
+    end: toAbsolute(paceStartMin),
+    label: 'Sweep vehicle',
+    relStart: sweepStartMin
+  })
+
+  // Phase 4: Pace car + cars resume (paceStartMin for officialResetMins)
+  entries.push({
+    start: toAbsolute(paceStartMin),
+    end: toAbsolute(paceStartMin + officialResetMins),
+    label: 'Pace car + cars resume',
+    relStart: paceStartMin
+  })
+
+  // Phase 5: Normal traffic (from pace end to next cycle start)
+  entries.push({
+    start: toAbsolute(paceStartMin + officialResetMins),
+    end: toAbsolute(period), // Will wrap to 0
+    label: 'Normal traffic (cars)',
+    relStart: paceStartMin + officialResetMins
+  })
+
+  return entries
+}
+
 export function Tunnels() {
   // Check URL parameter for initial time
   const urlParams = new URLSearchParams(window.location.search)
@@ -339,21 +391,39 @@ export function Tunnels() {
         <div className="timeline-section">
           <h3>Eastbound Timeline</h3>
           <ul>
-            <li className={`timeline-item ${currentMinute < 45 ? 'current-phase' : ''}`} onClick={() => handleTimelineClick(0)}>:00-:44 - Normal traffic (cars)</li>
-            <li className={`timeline-item ${currentMinute >= 45 && currentMinute < 48 ? 'current-phase' : ''}`} onClick={() => handleTimelineClick(45)}>:45-:47 - Bikes enter tunnel</li>
-            <li className={`timeline-item ${currentMinute >= 48 && currentMinute < 50 ? 'current-phase' : ''}`} onClick={() => handleTimelineClick(48)}>:48-:49 - Clearing phase</li>
-            <li className={`timeline-item ${currentMinute >= 50 && currentMinute < 55 ? 'current-phase' : ''}`} onClick={() => handleTimelineClick(50)}>:50-:54 - Sweep vehicle</li>
-            <li className={`timeline-item ${currentMinute >= 55 ? 'current-phase' : ''}`} onClick={() => handleTimelineClick(55)}>:55-:59 - Pace car + cars resume</li>
+            {generateTimeline(eb).map((entry, i) => {
+              const isCurrentPhase = entry.end > entry.start
+                ? currentMinute >= entry.start && currentMinute < entry.end
+                : currentMinute >= entry.start || currentMinute < entry.end // Wraps around hour
+
+              return (
+                <li
+                  key={i}
+                  className={`timeline-item ${isCurrentPhase ? 'current-phase' : ''}`}
+                  onClick={() => handleTimelineClick(entry.start)}>
+                  :{String(entry.start).padStart(2, '0')}-:{String(entry.end).padStart(2, '0')} - {entry.label}
+                </li>
+              )
+            })}
           </ul>
         </div>
         <div className="timeline-section">
           <h3>Westbound Timeline</h3>
           <ul>
-            <li className={`timeline-item ${(currentMinute >= 30 || currentMinute < 15) ? 'current-phase' : ''}`} onClick={() => handleTimelineClick(30)}>:30-:14 - Normal traffic (cars)</li>
-            <li className={`timeline-item ${currentMinute >= 15 && currentMinute < 18 ? 'current-phase' : ''}`} onClick={() => handleTimelineClick(15)}>:15-:17 - Bikes enter tunnel</li>
-            <li className={`timeline-item ${currentMinute >= 18 && currentMinute < 20 ? 'current-phase' : ''}`} onClick={() => handleTimelineClick(18)}>:18-:19 - Clearing phase</li>
-            <li className={`timeline-item ${currentMinute >= 20 && currentMinute < 25 ? 'current-phase' : ''}`} onClick={() => handleTimelineClick(20)}>:20-:24 - Sweep vehicle</li>
-            <li className={`timeline-item ${currentMinute >= 25 && currentMinute < 30 ? 'current-phase' : ''}`} onClick={() => handleTimelineClick(25)}>:25-:29 - Pace car + cars resume</li>
+            {generateTimeline(wb).map((entry, i) => {
+              const isCurrentPhase = entry.end > entry.start
+                ? currentMinute >= entry.start && currentMinute < entry.end
+                : currentMinute >= entry.start || currentMinute < entry.end // Wraps around hour
+
+              return (
+                <li
+                  key={i}
+                  className={`timeline-item ${isCurrentPhase ? 'current-phase' : ''}`}
+                  onClick={() => handleTimelineClick(entry.start)}>
+                  :{String(entry.start).padStart(2, '0')}-:{String(entry.end).padStart(2, '0')} - {entry.label}
+                </li>
+              )
+            })}
           </ul>
         </div>
         <div className="info-section">
