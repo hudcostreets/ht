@@ -16,6 +16,9 @@ export const LAYOUT = {
   SWEEP_STAGING_OFFSET: 35,
   PACE_STAGING_OFFSET: 60,
   STAGING_VERTICAL_OFFSET: 30,
+
+  // Bike pen positioning
+  BIKE_PEN_INSET: 0, // How far inside the tunnel entrance to place the pen
 }
 
 // Computed layout values
@@ -41,7 +44,8 @@ export const COMPUTED_LAYOUT = {
 
   // SVG dimensions
   get SVG_WIDTH() {
-    // Need space for: queue area + tunnel + pen extending beyond tunnel + pace staging
-    return LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + 70 + this.BIKE_PEN_WIDTH + LAYOUT.PACE_STAGING_OFFSET
+    // Need space for: queue area + tunnel + pace staging
+    // Pens are now inside the tunnel bounds, so don't need extra width for them
+    return LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + LAYOUT.PACE_STAGING_OFFSET
   }
 }

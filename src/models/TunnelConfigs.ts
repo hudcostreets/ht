@@ -32,7 +32,7 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
     offsetMin: 45,  // Bike pen opens at :45
     y: 200,  // Eastbound tunnel is at bottom
     pen: {
-      x: -LAYOUT.QUEUE_AREA_WIDTH + 70,  // Relative to tunnel start
+      x: LAYOUT.BIKE_PEN_INSET,  // Left-aligned with tunnel entrance
       y: 110,  // Below the lanes
       w: COMPUTED_LAYOUT.BIKE_PEN_WIDTH,
       h: COMPUTED_LAYOUT.BIKE_PEN_HEIGHT,
@@ -45,7 +45,7 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
     offsetMin: 15,  // Bike pen opens at :15
     y: 100,  // Westbound tunnel is at top
     pen: {
-      x: LAYOUT.TUNNEL_WIDTH + 70,  // Relative to tunnel start
+      x: LAYOUT.TUNNEL_WIDTH - COMPUTED_LAYOUT.BIKE_PEN_WIDTH - LAYOUT.BIKE_PEN_INSET,  // Right-aligned with tunnel exit
       y: -80,  // Above the lanes
       w: COMPUTED_LAYOUT.BIKE_PEN_WIDTH,
       h: COMPUTED_LAYOUT.BIKE_PEN_HEIGHT,
