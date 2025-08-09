@@ -57,7 +57,8 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 // Header section
 .header {
   background: $secondary-bg;
-  padding: 20px 20px 10px;
+  padding: 20px 20px 0;
+  text-align: center;
 
   h1 {
     margin: 0 0 5px 0;
@@ -71,6 +72,16 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
     font-size: 1.2rem;
     font-weight: normal;
   }
+}
+
+// Controls bar (moved below visualization)
+.controls-bar {
+  background: $primary-bg;
+  padding: 15px 20px;
+  border-radius: $radius-lg;
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
 }
 
 // Control panel
@@ -186,7 +197,7 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 
   &-svg {
     background: $secondary-bg;
-    padding: 20px;
+    padding: 0 20px 20px;
     border-radius: $radius-lg;
     border: 2px solid $border-color;
     overflow-x: auto;
@@ -410,20 +421,17 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
       font-weight: bold;
       color: $text-color;
       background: $highlight-bg;
-      padding: 4px 8px;
-      border-radius: $radius-sm;
-      margin-left: -8px;
     }
 
     &.timeline-item {
       cursor: pointer;
       transition: background-color 0.2s ease;
+      padding: 4px 8px;
+      margin-left: -8px;
+      border-radius: $radius-sm;
 
       &:hover {
         background: $highlight-bg;
-        padding: 4px 8px;
-        border-radius: $radius-sm;
-        margin-left: -8px;
       }
 
       &.current-phase:hover {

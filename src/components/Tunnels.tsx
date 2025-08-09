@@ -235,79 +235,6 @@ export function Tunnels() {
         <div className="header-content">
           <h1>Holland Tunnel should have a bike lane</h1>
           <h2>(for 10mins per hour)</h2>
-          <div className="controls">
-            <div className="button-group">
-              <button onClick={() => {
-                setIsPaused(prev => !prev)
-                setShowDecimal(false)
-                // Update URL based on pause state
-                if (!isPaused) {
-                  const url = new URL(window.location.href)
-                  url.searchParams.set('t', currentMinute.toString())
-                  window.history.replaceState({}, '', url.toString())
-                } else {
-                // Clear URL param when playing
-                  const url = new URL(window.location.href)
-                  url.searchParams.delete('t')
-                  window.history.replaceState({}, '', url.toString())
-                }
-              }}>
-                {isPaused ? <Play size={18} /> : <Pause size={18} />}
-              </button>
-              <button
-                onClick={() => {
-                  if (isPaused) {
-                    const baseTime = isTransitioning ? targetTime : displayTime
-                    const newTime = (baseTime - 1 + 60) % 60
-                    setTargetTime(newTime)
-                    setIsTransitioning(true)
-                    setShowDecimal(false)
-
-                    // Update URL
-                    const url = new URL(window.location.href)
-                    url.searchParams.set('t', newTime.toFixed(1))
-                    window.history.replaceState({}, '', url.toString())
-                  }
-                }}
-                disabled={!isPaused}
-                title="Step backward 1 minute">
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                onClick={() => {
-                  if (isPaused) {
-                    const baseTime = isTransitioning ? targetTime : displayTime
-                    const newTime = (baseTime + 1) % 60
-                    setTargetTime(newTime)
-                    setIsTransitioning(true)
-                    setShowDecimal(false)
-
-                    // Update URL
-                    const url = new URL(window.location.href)
-                    url.searchParams.set('t', newTime.toFixed(1))
-                    window.history.replaceState({}, '', url.toString())
-                  }
-                }}
-                disabled={!isPaused}
-                title="Step forward 1 minute">
-                <ChevronRight size={18} />
-              </button>
-            </div>
-            <label
-              data-tooltip-id="speed-tooltip"
-              data-tooltip-content="Simulation speed: virtual minutes per real-world second">
-              Speed: {speed}x
-              <input
-                type="range"
-                min="0.5"
-                max="10"
-                step="0.5"
-                value={speed}
-                onChange={(e) => setSpeed(parseFloat(e.target.value))}
-              />
-            </label>
-            <span className="hint">Space: ▶/⏸ | ←/→: ±1 min | ⌥←/→: ±0.1 min</span>
-          </div>
         </div>
       </div>
 
@@ -447,6 +374,82 @@ export function Tunnels() {
               </div>
             )
           })()}
+        </div>
+      </div>
+
+      <div className="controls-bar">
+        <div className="controls">
+          <div className="button-group">
+            <button onClick={() => {
+              setIsPaused(prev => !prev)
+              setShowDecimal(false)
+              // Update URL based on pause state
+              if (!isPaused) {
+                const url = new URL(window.location.href)
+                url.searchParams.set('t', currentMinute.toString())
+                window.history.replaceState({}, '', url.toString())
+              } else {
+              // Clear URL param when playing
+                const url = new URL(window.location.href)
+                url.searchParams.delete('t')
+                window.history.replaceState({}, '', url.toString())
+              }
+            }}>
+              {isPaused ? <Play size={18} /> : <Pause size={18} />}
+            </button>
+            <button
+              onClick={() => {
+                if (isPaused) {
+                  const baseTime = isTransitioning ? targetTime : displayTime
+                  const newTime = (baseTime - 1 + 60) % 60
+                  setTargetTime(newTime)
+                  setIsTransitioning(true)
+                  setShowDecimal(false)
+
+                  // Update URL
+                  const url = new URL(window.location.href)
+                  url.searchParams.set('t', newTime.toFixed(1))
+                  window.history.replaceState({}, '', url.toString())
+                }
+              }}
+              disabled={!isPaused}
+              title="Step backward 1 minute">
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              onClick={() => {
+                if (isPaused) {
+                  const baseTime = isTransitioning ? targetTime : displayTime
+                  const newTime = (baseTime + 1) % 60
+                  setTargetTime(newTime)
+                  setIsTransitioning(true)
+                  setShowDecimal(false)
+
+                  // Update URL
+                  const url = new URL(window.location.href)
+                  url.searchParams.set('t', newTime.toFixed(1))
+                  window.history.replaceState({}, '', url.toString())
+                }
+              }}
+              disabled={!isPaused}
+              title="Step forward 1 minute">
+              <ChevronRight size={18} />
+            </button>
+          </div>
+          <label
+            data-tooltip-id="speed-tooltip"
+            data-tooltip-content="Simulation speed: virtual minutes per real-world second">
+            Speed: {speed}x
+            <input
+              type="range"
+              min="0.5"
+              max="10"
+              step="0.5"
+              value={speed}
+              onChange={(e) => setSpeed(parseFloat(e.target.value))}
+            />
+          </label>
+          <span className="hint">Space: ▶/⏸ | ←/→: ±1 min | ⌥←/→: ±0.1 min</span>
         </div>
       </div>
 

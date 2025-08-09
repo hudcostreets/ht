@@ -403,7 +403,7 @@
 
 @media (max-width: 1024px) {
   .tunnel-visualization-svg {
-    padding: 5px;
+    padding: 0 5px 5px;
   }
 }
 
