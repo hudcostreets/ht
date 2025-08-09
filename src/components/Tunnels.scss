@@ -391,8 +391,6 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
   background: $tertiary-bg;
   padding: 20px;
   border-radius: $radius-lg;
-  display: flex;
-  gap: 40px;
 
   h3 {
     margin: 0 0 15px 0;
@@ -437,7 +435,15 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 }
 
 .timeline-section {
-  flex: 1;
+  // Remove flex: 1 to allow custom positioning
+
+  &-left {
+    // E/b timeline - left aligned with tunnel
+  }
+
+  &-right {
+    // W/b timeline - right aligned with tunnel
+  }
 }
 
 // Vehicle styles

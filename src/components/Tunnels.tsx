@@ -451,43 +451,56 @@ export function Tunnels() {
       </div>
 
       <div className="legend">
-        <div className="timeline-section">
-          <h3>Eastbound Timeline</h3>
-          <ul>
-            {generateTimeline(eb).map((entry, i) => {
-              const isCurrentPhase = entry.end > entry.start
-                ? currentMinute >= entry.start && currentMinute < entry.end
-                : currentMinute >= entry.start || currentMinute < entry.end // Wraps around hour
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          width: '100%',
+          maxWidth: COMPUTED_LAYOUT.SVG_WIDTH,
+          margin: '0 auto',
+          gap: '20px'
+        }}>
+          <div className="timeline-section timeline-section-left" style={{
+            marginLeft: `${LAYOUT.QUEUE_AREA_WIDTH}px`
+          }}>
+            <h3>Eastbound Timeline</h3>
+            <ul>
+              {generateTimeline(eb).map((entry, i) => {
+                const isCurrentPhase = entry.end > entry.start
+                  ? currentMinute >= entry.start && currentMinute < entry.end
+                  : currentMinute >= entry.start || currentMinute < entry.end // Wraps around hour
 
-              return (
-                <li
-                  key={i}
-                  className={`timeline-item ${isCurrentPhase ? 'current-phase' : ''}`}
-                  onClick={() => handleTimelineClick(entry.start)}>
-                  :{String(entry.start).padStart(2, '0')}-:{String(entry.end).padStart(2, '0')} - {entry.label}
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-        <div className="timeline-section">
-          <h3>Westbound Timeline</h3>
-          <ul>
-            {generateTimeline(wb).map((entry, i) => {
-              const isCurrentPhase = entry.end > entry.start
-                ? currentMinute >= entry.start && currentMinute < entry.end
-                : currentMinute >= entry.start || currentMinute < entry.end // Wraps around hour
+                return (
+                  <li
+                    key={i}
+                    className={`timeline-item ${isCurrentPhase ? 'current-phase' : ''}`}
+                    onClick={() => handleTimelineClick(entry.start)}>
+                    :{String(entry.start).padStart(2, '0')}-:{String(entry.end).padStart(2, '0')} - {entry.label}
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+          <div className="timeline-section timeline-section-right" style={{
+            marginRight: `${LAYOUT.FADE_DISTANCE_PX}px`
+          }}>
+            <h3>Westbound Timeline</h3>
+            <ul>
+              {generateTimeline(wb).map((entry, i) => {
+                const isCurrentPhase = entry.end > entry.start
+                  ? currentMinute >= entry.start && currentMinute < entry.end
+                  : currentMinute >= entry.start || currentMinute < entry.end // Wraps around hour
 
-              return (
-                <li
-                  key={i}
-                  className={`timeline-item ${isCurrentPhase ? 'current-phase' : ''}`}
-                  onClick={() => handleTimelineClick(entry.start)}>
-                  :{String(entry.start).padStart(2, '0')}-:{String(entry.end).padStart(2, '0')} - {entry.label}
-                </li>
-              )
-            })}
-          </ul>
+                return (
+                  <li
+                    key={i}
+                    className={`timeline-item ${isCurrentPhase ? 'current-phase' : ''}`}
+                    onClick={() => handleTimelineClick(entry.start)}>
+                    :{String(entry.start).padStart(2, '0')}-:{String(entry.end).padStart(2, '0')} - {entry.label}
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
         </div>
       </div>
     </div>
