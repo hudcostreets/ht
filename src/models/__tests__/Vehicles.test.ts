@@ -32,15 +32,15 @@ describe('Vehicle Subclasses', () => {
       // Y offsets: E/b at y=200, W/b at y=100
       // R lane: E/b at y=45, W/b at y=15
       check(sweep,  0  , { state:    'exiting', x: 800  , y: 245, opacity: 1 })  // E/b R lane: 45 + 200
-      check(sweep,  5  , { state:     'queued', x: 835  , y: 115, opacity: 1 })  // W/b R lane: 15 + 100
+      check(sweep,  5  , { state:     'queued', x: 835  , y: 85, opacity: 1 })  // W/b staging: 115 - 30
 
-      // Minute 5-18: Staging at west entrance
-      check(sweep, 10  , { state:     'queued', x: 835  , y: 115, opacity: 1 })
-      check(sweep, 18  , { state:     'queued', x: 835  , y: 115, opacity: 1 })
+      // Minute 5-18: Staging at west entrance (above lane)
+      check(sweep, 10  , { state:     'queued', x: 835  , y: 85, opacity: 1 })
+      check(sweep, 18  , { state:     'queued', x: 835  , y: 85, opacity: 1 })
 
       // Minute 19-20: Moving from staging to entrance
-      check(sweep, 19.5, { state:     'dequeueing', x: 817.5, opacity: 1 })
-      check(sweep, 20  , { state: 'transiting', x: 800  , opacity: 1 })
+      check(sweep, 19.5, { state:     'dequeueing', x: 817.5, y: 100, opacity: 1 })  // Interpolating y from 85 to 115
+      check(sweep, 20  , { state: 'transiting', x: 800  , y: 115, opacity: 1 })
 
       // Minute 20-30: Transit westbound
       check(sweep, 25  , { state: 'transiting', x: 400  , opacity: 1 })
@@ -48,15 +48,15 @@ describe('Vehicle Subclasses', () => {
 
       // Minute 30-35: Transitioning from west exit to east staging
       check(sweep, 30  , { state:     'exiting', x:   0  , y: 115, opacity: 1 })  // W/b R lane: 15 + 100
-      check(sweep, 35  , { state:     'queued', x: -35  , y: 245, opacity: 1 })  // E/b R lane: 45 + 200
+      check(sweep, 35  , { state:     'queued', x: -35  , y: 275, opacity: 1 })  // E/b staging: 245 + 30
 
-      // Minute 35-48: Staging at east entrance
-      check(sweep, 40  , { state:     'queued', x: -35  , opacity: 1 })
-      check(sweep, 48  , { state:     'queued', x: -35  , opacity: 1 })
+      // Minute 35-48: Staging at east entrance (below lane)
+      check(sweep, 40  , { state:     'queued', x: -35  , y: 275, opacity: 1 })
+      check(sweep, 48  , { state:     'queued', x: -35  , y: 275, opacity: 1 })
 
       // Minute 49-50: Moving from staging to entrance
-      check(sweep, 49.5, { state:     'dequeueing', x: -17.5, opacity: 1 })
-      check(sweep, 50  , { state: 'transiting', x:   0  , opacity: 1 })
+      check(sweep, 49.5, { state:     'dequeueing', x: -17.5, y: 260, opacity: 1 })  // Interpolating y from 275 to 245
+      check(sweep, 50  , { state: 'transiting', x:   0  , y: 245, opacity: 1 })
 
       // Minute 50-60: Transit eastbound
       check(sweep, 50  , { state: 'transiting', x:   0, opacity: 1 }) // At :50, sweep at E/b entrance
@@ -79,15 +79,15 @@ describe('Vehicle Subclasses', () => {
 
       // Minute 0-5: Transitioning from east exit to west staging
       check(pace, 0, { state: 'exiting', x: 800, opacity: 1 })
-      check(pace, 5, { state: 'queued', x: 860, opacity: 1 })
+      check(pace, 5, { state: 'queued', x: 860, y: 85, opacity: 1 })  // W/b staging: 115 - 30
 
-      // Minute 5-23: Staging at west entrance
-      check(pace, 15, { state: 'queued', x: 860, opacity: 1 })
-      check(pace, 23, { state: 'queued', x: 860, opacity: 1 })
+      // Minute 5-23: Staging at west entrance (above lane)
+      check(pace, 15, { state: 'queued', x: 860, y: 85, opacity: 1 })
+      check(pace, 23, { state: 'queued', x: 860, y: 85, opacity: 1 })
 
       // Minute 24-25: Moving from staging to entrance
-      check(pace, 24.5, { state: 'dequeueing', x: 830, opacity: 1 })
-      check(pace, 25, { state: 'transiting', x: 800, opacity: 1 })
+      check(pace, 24.5, { state: 'dequeueing', x: 830, y: 100, opacity: 1 })  // Interpolating y from 85 to 115
+      check(pace, 25, { state: 'transiting', x: 800, y: 115, opacity: 1 })
 
       // Minute 25-30: Transit westbound
       check(pace, 27.5, { state: 'transiting', x: 400, opacity: 1 })
@@ -95,15 +95,15 @@ describe('Vehicle Subclasses', () => {
 
       // Minute 30-35: Transitioning from west exit to east staging
       check(pace, 30, { state: 'exiting', x: 0, opacity: 1 })
-      check(pace, 35, { state: 'queued', x: -60, opacity: 1 })
+      check(pace, 35, { state: 'queued', x: -60, y: 275, opacity: 1 })  // E/b staging: 245 + 30
 
-      // Minute 35-53: Staging at east entrance
-      check(pace, 45, { state: 'queued', x: -60, opacity: 1 })
-      check(pace, 53, { state: 'queued', x: -60, opacity: 1 })
+      // Minute 35-53: Staging at east entrance (below lane)
+      check(pace, 45, { state: 'queued', x: -60, y: 275, opacity: 1 })
+      check(pace, 53, { state: 'queued', x: -60, y: 275, opacity: 1 })
 
       // Minute 54-55: Moving from staging to entrance
-      check(pace, 54.5, { state: 'dequeueing', x: -30, opacity: 1 })
-      check(pace, 55, { state: 'transiting', x: 0, opacity: 1 })
+      check(pace, 54.5, { state: 'dequeueing', x: -30, y: 260, opacity: 1 })  // Interpolating y from 275 to 245
+      check(pace, 55, { state: 'transiting', x: 0, y: 245, opacity: 1 })
 
       // Minute 55-60: Transit eastbound
       check(pace, 55, { state: 'transiting', x: 0, opacity: 1 }) // At :55, pace at E/b entrance

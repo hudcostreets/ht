@@ -44,14 +44,22 @@ export class Pace extends Vehicle {
     let points: PartialPoints = []
 
     // Staging positions use the lane entrance coordinates (which now include y-offset)
-    const westStaging = { x: wb.r.entrance.x + this.stagingOffset, y: wb.r.entrance.y }
-    const eastStaging = { x: eb.r.entrance.x - this.stagingOffset, y: eb.r.entrance.y }
+    // Add vertical offset to keep vehicles out of the way of traffic
+    const verticalOffset = 30 // Enough to clearly separate from lane
+    const westStaging = {
+      x: wb.r.entrance.x + this.stagingOffset,
+      y: wb.r.entrance.y - verticalOffset  // Above W/b lane
+    }
+    const eastStaging = {
+      x: eb.r.entrance.x - this.stagingOffset,
+      y: eb.r.entrance.y + verticalOffset  // Below E/b lane
+    }
 
     const eTransitingMin = eb.offset + paceStartMin
     // Starting point - need all values
     points.push({ min: eTransitingMin - 1, val: { ...eastStaging, state: 'dequeueing', opacity: 1, direction: 'east' } })
-    // Only change what's different
-    points.push({ min: eTransitingMin, val: { x: eb.r.entrance.x, state: 'transiting' } })
+    // Move to entrance position (both x and y)
+    points.push({ min: eTransitingMin, val: { x: eb.r.entrance.x, y: eb.r.entrance.y, state: 'transiting' } })
     const eExitingMin = eTransitingMin + transitingMins
     points.push({ min: eExitingMin, val: { x: eb.r.exit.x, state: 'exiting' } })
     const wStageMin = eExitingMin + officialResetMins
@@ -59,7 +67,7 @@ export class Pace extends Vehicle {
 
     const wTransitingMin = wb.offset + paceStartMin
     points.push({ min: wTransitingMin - 1, val: { state: 'dequeueing' } })
-    points.push({ min: wTransitingMin, val: { x: wb.r.entrance.x, state: 'transiting' } })
+    points.push({ min: wTransitingMin, val: { x: wb.r.entrance.x, y: wb.r.entrance.y, state: 'transiting' } })
     const wExitingMin = wTransitingMin + transitingMins
     points.push({ min: wExitingMin, val: { x: wb.r.exit.x, state: 'exiting' } })
     const eStageMin = wExitingMin + officialResetMins
