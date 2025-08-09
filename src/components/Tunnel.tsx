@@ -21,10 +21,9 @@ export const Tunnel: FC<Props> = ({ dir, phase, displayTime, tunnel }) => {
   return (
     <g>
       {/* Direction label - aligned with tunnel left edge */}
-      <text x={LAYOUT.QUEUE_AREA_WIDTH} y={yOffset - 20} fontSize="16" fontWeight="bold">
+      <text x={LAYOUT.QUEUE_AREA_WIDTH} y={yOffset - 10} fontSize="16" fontWeight="bold">
         {dir === 'east' ? 'East-bound (NJ → NY)' : 'West-bound (NJ ← NY)'}
       </text>
-      <text x={LAYOUT.QUEUE_AREA_WIDTH} y={yOffset} fontSize="12" fill="#666">Phase: {phase}</text>
 
       {/* Lanes */}
       <rect x={LAYOUT.QUEUE_AREA_WIDTH} y={yOffset} width={LAYOUT.TUNNEL_WIDTH} height={LAYOUT.LANE_HEIGHT} fill="#666" stroke="#333" />
