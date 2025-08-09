@@ -45,7 +45,7 @@ Vehicle speeds, spawn frequencies, and layout sizes are parameterized, and posit
 
 ### Implementation
 - Color zones are calculated in `Tunnel.ts` via the `initColorZones()` method
-- Zones are represented as a tuple `[greenStart, greenEnd, redEnd] | null` indicating x-coord positions; when present, green and red rects are drawn in the tunnel's R lane, between `[greenStart,greenEnd]` and `[greenEnd,redEnd]`, resp.  
+- Zones are represented as a tuple `[greenStart, greenEnd, redEnd] | null` indicating x-coord positions; when present, green and red rects are drawn in the tunnel's R lane, between `[greenStart,greenEnd]` and `[greenEnd,redEnd]`, resp.
 - The `getColorRectangles()` method returns the current zones based on time
 - Zones are rendered as semi-transparent rectangles overlaid on the (grey) R lane.
 
