@@ -1,3 +1,4 @@
+import { LAYOUT } from "./Constants"
 import { TimePoint } from "./TimeVal"
 import { PartialPos } from "./types"
 import { PartialPoints, Points, Vehicle } from "./Vehicle"
@@ -29,21 +30,35 @@ export class Bike extends Vehicle {
       // pen.y is relative to tunnel lanes
       const { y: tunnelY } = tunnel.config
 
-      // Calculate starting position based on direction
-      // For E/b (d=1): bikes fill left-to-right from pen left edge
-      // For W/b (d=-1): bikes fill right-to-left from pen right edge
-      // Add margins so bikes don't hang outside the pen
-      const leftMargin = 10
-      const bikeWidth = 20
+      // Calculate actual number of bikes that will queue
+      // With evenly distributed spawn times, count how many spawn after pen closes
+      const bikesBeforePenClose = Math.floor(config.penCloseMin * tunnel.nbikes / config.period)
+      const queuedBikes = tunnel.nbikes - bikesBeforePenClose
+      const rows = Math.ceil(queuedBikes / LAYOUT.BIKES_PER_ROW)
 
-      const startX = d > 0
-        ? pen.x + leftMargin  // E/b: start from left edge with margin
-        : pen.x + pen.w - leftMargin - bikeWidth  // W/b: start from right edge with margin
-      const startY = pen.y + tunnelY + pen.h - 20 // Start from bottom of pen
+      // Calculate grid dimensions: (n-1)*spacing + width for last item
+      const gridWidth = (LAYOUT.BIKES_PER_ROW - 1) * LAYOUT.BIKE_SPACING_X + LAYOUT.BIKE_WIDTH
+      const gridHeight = (rows - 1) * LAYOUT.BIKE_SPACING_Y + LAYOUT.BIKE_WIDTH
+
+      // Center the grid within the pen
+      const gridLeft = pen.x + (pen.w - gridWidth) / 2
+      const gridTop = pen.y + tunnelY + (pen.h - gridHeight) / 2
+
+      // Calculate bike position within centered grid
+      // For E/b (d=1): bikes fill left-to-right
+      // For W/b (d=-1): bikes fill right-to-left
+      // Add half bike width to center on the position (since text is center-anchored)
+      const bikeX = d > 0
+        ? gridLeft + offset.x + LAYOUT.BIKE_WIDTH / 2  // E/b: center on grid position
+        : gridLeft + gridWidth - offset.x - LAYOUT.BIKE_WIDTH / 2  // W/b: center on grid position
+
+      // Adjust for emoji rendering (emojis render above their baseline)
+      // With fontSize=20 and 15px row spacing, need more offset to visually center
+      const visualOffset = LAYOUT.BIKE_WIDTH / 2 // Center vertically in the bike space
 
       return {
-        x: startX + offset.x * d,
-        y: startY - offset.y,
+        x: bikeX,
+        y: gridTop + offset.y + visualOffset,
       }
     } else {
       // No queueing

@@ -3,7 +3,7 @@ import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
 import { AnalogClock } from './AnalogClock'
 import { Tunnel } from './Tunnel.tsx'
-import { LAYOUT } from '../models/Constants'
+import { LAYOUT, COMPUTED_LAYOUT } from '../models/Constants'
 import { HOLLAND_TUNNEL_CONFIG } from '../models/TunnelConfigs'
 import { Tunnels as HT } from '../models/Tunnels'
 import './Tunnels.scss'
@@ -201,7 +201,7 @@ export function Tunnels() {
       </div>
 
       <div className="tunnel-visualization-svg">
-        <svg width="1100" height="400" viewBox="0 0 1100 400">
+        <svg width={COMPUTED_LAYOUT.SVG_WIDTH} height="400" viewBox={`0 0 ${COMPUTED_LAYOUT.SVG_WIDTH} 400`}>
           {/* Both tunnels */}
           <Tunnel
             dir="west"

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { HOLLAND_TUNNEL_CONFIG } from '../TunnelConfigs'
 import { Tunnel } from '../Tunnel'
+import { HOLLAND_TUNNEL_CONFIG } from '../TunnelConfigs'
 
 describe('Color Zones', () => {
   const eb = new Tunnel(HOLLAND_TUNNEL_CONFIG.eb)

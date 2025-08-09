@@ -1,5 +1,6 @@
 import { Bike } from "./Bike"
 import { Car } from "./Car"
+import { LAYOUT } from "./Constants"
 import { Lane } from "./Lane"
 import { Start, Interp, Num, TimePoint, TimeVal, Field } from "./TimeVal"
 import { VehicleI } from "./Tunnels.ts"
@@ -182,7 +183,7 @@ export class Tunnel {
       bikeQueueLenPts.push({ min: spawnMin, val: idx + 1, interp: Start })
     })
     const bikeQueueLen = new TimeVal(bikeQueueLenPts, Num, period)
-    const bikesPerRow = bikesReleasedPerMin
+    const bikesPerRow = LAYOUT.BIKES_PER_ROW
     const bikes = [ ...bikes0, ...bikes1 ]
     for (const bike of bikes) {
       const { spawnMin } = bike
@@ -193,7 +194,7 @@ export class Tunnel {
         const idx = queueLen - 1
         const row = floor(idx / bikesPerRow)
         const col = idx % bikesPerRow
-        const offset = { x: col * 20, y: row * 15, }
+        const offset = { x: col * LAYOUT.BIKE_SPACING_X, y: row * LAYOUT.BIKE_SPACING_Y, }
         const minsBeforeDequeueing = spawnMin >= penCloseMin ? (period - spawnMin) : 0
         bike.spawnQueue = {
           offset,

@@ -1,3 +1,4 @@
+import { LAYOUT } from "./Constants"
 import { Tunnel } from "./Tunnel"
 import { Pos } from "./types"
 import { PartialPoints, Vehicle } from "./Vehicle"
@@ -45,7 +46,7 @@ export class Pace extends Vehicle {
 
     // Staging positions use the lane entrance coordinates (which now include y-offset)
     // Add vertical offset to keep vehicles out of the way of traffic
-    const verticalOffset = 30 // Enough to clearly separate from lane
+    const verticalOffset = LAYOUT.STAGING_VERTICAL_OFFSET
     const westStaging = {
       x: wb.r.entrance.x + this.stagingOffset,
       y: wb.r.entrance.y - verticalOffset  // Above W/b lane

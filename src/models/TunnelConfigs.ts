@@ -1,4 +1,4 @@
-import { LAYOUT } from './Constants'
+import { LAYOUT, COMPUTED_LAYOUT } from './Constants'
 import type { TunnelsConfig } from './Tunnels'
 
 export const Common = {
@@ -34,8 +34,8 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
     pen: {
       x: -LAYOUT.QUEUE_AREA_WIDTH + 70,  // Relative to tunnel start
       y: 110,  // Below the lanes
-      w: LAYOUT.BIKE_PEN_WIDTH,
-      h: LAYOUT.BIKE_PEN_HEIGHT,
+      w: COMPUTED_LAYOUT.BIKE_PEN_WIDTH,
+      h: COMPUTED_LAYOUT.BIKE_PEN_HEIGHT,
     },
     ...Common,
   },
@@ -47,19 +47,19 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
     pen: {
       x: LAYOUT.TUNNEL_WIDTH + 70,  // Relative to tunnel start
       y: -80,  // Above the lanes
-      w: LAYOUT.BIKE_PEN_WIDTH,
-      h: LAYOUT.BIKE_PEN_HEIGHT,
+      w: COMPUTED_LAYOUT.BIKE_PEN_WIDTH,
+      h: COMPUTED_LAYOUT.BIKE_PEN_HEIGHT,
     },
     ...Common,
   },
 
   sweep: {
     mph: 12,
-    stagingOffset: 35
+    stagingOffset: LAYOUT.SWEEP_STAGING_OFFSET
   },
 
   pace: {
     mph: Common.carMph,
-    stagingOffset: 60
+    stagingOffset: LAYOUT.PACE_STAGING_OFFSET
   }
 }
