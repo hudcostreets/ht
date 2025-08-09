@@ -15,7 +15,7 @@ describe('Debug bike positions', () => {
       }
     })
   })
-  
+
   it('should show bike 0 positions', () => {
     const times = [44, 45, 1.5, 43]
     times.forEach(min => {
