@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
+import { Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
 import { AnalogClock } from './AnalogClock'
 import { Tunnel } from './Tunnel.tsx'
 import { LAYOUT, COMPUTED_LAYOUT } from '../models/Constants'
@@ -174,7 +175,8 @@ export function Tunnels() {
         <div className="header-content">
           <h1>Holland Tunnel Bike Lane Visualization</h1>
           <div className="controls">
-            <button onClick={() => {
+            <div className="button-group">
+              <button onClick={() => {
               setIsPaused(prev => !prev)
               setShowDecimal(false)
               // Update URL based on pause state
@@ -189,8 +191,47 @@ export function Tunnels() {
                 window.history.replaceState({}, '', url.toString())
               }
             }}>
-              {isPaused ? 'Play' : 'Pause'}
+              {isPaused ? <Play size={18} /> : <Pause size={18} />}
             </button>
+            <button
+              onClick={() => {
+                if (isPaused) {
+                  const baseTime = isTransitioning ? targetTime : displayTime
+                  const newTime = (baseTime - 1 + 60) % 60
+                  setTargetTime(newTime)
+                  setIsTransitioning(true)
+                  setShowDecimal(false)
+
+                  // Update URL
+                  const url = new URL(window.location.href)
+                  url.searchParams.set('t', newTime.toFixed(1))
+                  window.history.replaceState({}, '', url.toString())
+                }
+              }}
+              disabled={!isPaused}
+              title="Step backward 1 minute">
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              onClick={() => {
+                if (isPaused) {
+                  const baseTime = isTransitioning ? targetTime : displayTime
+                  const newTime = (baseTime + 1) % 60
+                  setTargetTime(newTime)
+                  setIsTransitioning(true)
+                  setShowDecimal(false)
+
+                  // Update URL
+                  const url = new URL(window.location.href)
+                  url.searchParams.set('t', newTime.toFixed(1))
+                  window.history.replaceState({}, '', url.toString())
+                }
+              }}
+              disabled={!isPaused}
+              title="Step forward 1 minute">
+              <ChevronRight size={18} />
+            </button>
+            </div>
             <label
               data-tooltip-id="speed-tooltip"
               data-tooltip-content="Simulation speed: virtual minutes per real-world second">
@@ -204,7 +245,7 @@ export function Tunnels() {
                 onChange={(e) => setSpeed(parseFloat(e.target.value))}
               />
             </label>
-            <span className="hint">Space: play/pause | ←/→: ±1 min | ⌥←/→: ±0.1 min</span>
+            <span className="hint">Space: ▶/⏸ | ←/→: ±1 min | ⌥←/→: ±0.1 min</span>
           </div>
         </div>
       </div>
