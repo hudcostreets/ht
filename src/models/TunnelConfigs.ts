@@ -21,7 +21,7 @@ export const Common = {
   laneWidthPx: LAYOUT.TUNNEL_WIDTH,
   laneHeightPx: LAYOUT.LANE_HEIGHT,
   queuedCarWidthPx: 30,   // Queued car spacing
-  fadeDistance: 100,  // Pixels to travel while fading out
+  fadeDistancePx: 100,  // Pixels to travel while fading out
   fadeMins: 1,
 }
 
