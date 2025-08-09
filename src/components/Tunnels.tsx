@@ -16,7 +16,7 @@ export function Tunnels() {
   // Check URL parameter for initial time
   const urlParams = new URLSearchParams(window.location.search)
   const urlMinute = urlParams.get('t')
-  const initialMinute = urlMinute !== null ? parseInt(urlMinute, 10) % 60 : 0
+  const initialMinute = urlMinute !== null ? parseFloat(urlMinute) % 60 : 0
 
   const [currentMinute, setCurrentMinute] = useSessionStorageState<number>('ht-current-minute', {
     defaultValue: initialMinute
@@ -35,6 +35,7 @@ export function Tunnels() {
   // State for arrow key transitions
   const [targetTime, setTargetTime] = useState(initialMinute)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [showDecimal, setShowDecimal] = useState(false)
 
   // Update current minute when display time changes
   useEffect(() => {
@@ -105,29 +106,38 @@ export function Tunnels() {
       if (e.code === 'Space') {
         e.preventDefault()
         setIsPaused(prev => !prev)
+        setShowDecimal(false)
       } else if (e.code === 'ArrowRight' && isPaused) {
         e.preventDefault()
         const baseTime = isTransitioning ? targetTime : displayTime
-        const currentMinute = Math.floor(baseTime) % 60
-        const newMin = (currentMinute + 1) % 60
-        setTargetTime(newMin)
-        setIsTransitioning(true)
 
-        // Update URL
+        // Alt/Option key: move by 0.1 minute, otherwise by 1 minute
+        const increment = e.altKey ? 0.1 : 1
+        const newTime = (baseTime + increment) % 60
+
+        setTargetTime(newTime)
+        setIsTransitioning(true)
+        setShowDecimal(e.altKey)
+
+        // Update URL with precise time
         const url = new URL(window.location.href)
-        url.searchParams.set('t', newMin.toString())
+        url.searchParams.set('t', newTime.toFixed(1))
         window.history.replaceState({}, '', url.toString())
       } else if (e.code === 'ArrowLeft' && isPaused) {
         e.preventDefault()
         const baseTime = isTransitioning ? targetTime : displayTime
-        const currentMinute = Math.floor(baseTime) % 60
-        const newMin = (currentMinute - 1 + 60) % 60
-        setTargetTime(newMin)
-        setIsTransitioning(true)
 
-        // Update URL
+        // Alt/Option key: move by 0.1 minute, otherwise by 1 minute
+        const decrement = e.altKey ? 0.1 : 1
+        const newTime = (baseTime - decrement + 60) % 60
+
+        setTargetTime(newTime)
+        setIsTransitioning(true)
+        setShowDecimal(e.altKey)
+
+        // Update URL with precise time
         const url = new URL(window.location.href)
-        url.searchParams.set('t', newMin.toString())
+        url.searchParams.set('t', newTime.toFixed(1))
         window.history.replaceState({}, '', url.toString())
       }
     }
@@ -147,6 +157,7 @@ export function Tunnels() {
     setTargetTime(newTime)
     setIsTransitioning(false)
     setIsPaused(true)
+    setShowDecimal(false)
 
     // Update URL
     const url = new URL(window.location.href)
@@ -164,6 +175,7 @@ export function Tunnels() {
           <div className="controls">
             <button onClick={() => {
               setIsPaused(prev => !prev)
+              setShowDecimal(false)
               // Update URL based on pause state
               if (!isPaused) {
                 const url = new URL(window.location.href)
@@ -189,7 +201,7 @@ export function Tunnels() {
                 onChange={(e) => setSpeed(parseFloat(e.target.value))}
               />
             </label>
-            <span className="hint">Space: play/pause | ←/→: step by 1 minute</span>
+            <span className="hint">Space: play/pause | ←/→: ±1 min | ⌥←/→: ±0.1 min</span>
           </div>
         </div>
       </div>
@@ -269,7 +281,9 @@ export function Tunnels() {
                   <AnalogClock minute={displayTime} />
                 </div>
                 <div style={{ fontSize: '14px', marginBottom: '2px' }}>
-                  0:{String(Math.floor(displayTime) % 60).padStart(2, '0')}
+                  _ : {showDecimal
+                    ? displayTime.toFixed(1).padStart(4, '0')
+                    : String(Math.floor(displayTime) % 60).padStart(2, '0')}
                 </div>
               </div>
             )
