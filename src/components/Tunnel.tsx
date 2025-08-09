@@ -29,6 +29,15 @@ export const Tunnel: FC<Props> = ({ dir, displayTime, tunnel }) => {
       <rect x={LAYOUT.QUEUE_AREA_WIDTH} y={yOffset} width={LAYOUT.TUNNEL_WIDTH} height={LAYOUT.LANE_HEIGHT} fill="#666" stroke="#333" />
       <rect x={LAYOUT.QUEUE_AREA_WIDTH} y={yOffset + 30} width={LAYOUT.TUNNEL_WIDTH} height={LAYOUT.LANE_HEIGHT} fill="#666" stroke="#333" />
 
+      {/* Double yellow line between lanes */}
+      <line x1={LAYOUT.QUEUE_AREA_WIDTH} y1={yOffset + 30}
+            x2={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH} y2={yOffset + 30}
+            stroke="#FFD700" strokeWidth="2" opacity="0.8" />
+      <line x1={LAYOUT.QUEUE_AREA_WIDTH} y1={yOffset + 30}
+            x2={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH} y2={yOffset + 30}
+            stroke="#FFD700" strokeWidth="2" opacity="0.8"
+            transform={`translate(0, -3)`} />
+
       {/* Downhill/Uphill indicators */}
       <g opacity="0.6">
         {/* Vertical divider at midpoint */}
