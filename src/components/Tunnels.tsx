@@ -30,11 +30,11 @@ function generateTimeline(tunnel: typeof eb | typeof wb) {
     relStart: 0
   })
 
-  // Phase 2: Clearing phase (penCloseMin to sweepStartMin)
+  // Phase 2: Buffer (before Sweep) (penCloseMin to sweepStartMin)
   entries.push({
     start: toAbsolute(penCloseMin),
     end: toAbsolute(sweepStartMin),
-    label: 'Clearing phase',
+    label: 'Buffer (before Sweep)',
     relStart: penCloseMin
   })
 
