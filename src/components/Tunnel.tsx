@@ -9,19 +9,11 @@ interface Props {
   phase: string
   displayTime: number
   tunnel: T
-  colorRectangles: Array<{
-    direction: Direction
-    color: 'green' | 'red'
-    x: number
-    width: number
-    y: number
-    height: number
-  }>
 }
 
-export const Tunnel: FC<Props> = ({ dir, phase, displayTime, tunnel, colorRectangles }) => {
+export const Tunnel: FC<Props> = ({ dir, phase, displayTime, tunnel }) => {
   const vehs = tunnel.allVehicles(displayTime)
-  const rects = colorRectangles.filter(r => r.direction === dir)
+  const rects = tunnel.getColorRectangles(displayTime)
 
   // Y offset for this tunnel from config
   const yOffset = tunnel.config.y
@@ -60,12 +52,12 @@ export const Tunnel: FC<Props> = ({ dir, phase, displayTime, tunnel, colorRectan
         {dir === 'east' ? 'R Lane' : 'L Lane (Cars Only)'}
       </text>
 
-      {/* Color rectangles */}
+      {/* Color rectangles - positioned on R lane */}
       {rects.map((rect, index) => (
         <rect
           key={`${dir}-color-${index}`}
           x={rect.x + LAYOUT.QUEUE_AREA_WIDTH}
-          y={rect.y + yOffset}
+          y={yOffset + (dir === 'east' ? 30 : 0)} // R lane position
           width={rect.width}
           height={rect.height}
           fill={rect.color === 'green' ? '#4caf50' : '#f44336'}

@@ -138,7 +138,6 @@ export function Tunnels() {
 
   // Get current vehicles and phases
   const phases = tunnels.getPhases(displayTime)
-  const colorRectangles = tunnels.getColorRectangles(displayTime)
 
   // Handle timeline click
   const handleTimelineClick = (minute: number) => {
@@ -209,7 +208,6 @@ export function Tunnels() {
             displayTime={displayTime}
             phase={phases.west}
             tunnel={wb}
-            colorRectangles={colorRectangles}
           />
 
           <Tunnel
@@ -217,7 +215,6 @@ export function Tunnels() {
             displayTime={displayTime}
             phase={phases.east}
             tunnel={eb}
-            colorRectangles={colorRectangles}
           />
 
           {/* Global vehicles (Sweep and Pace) */}

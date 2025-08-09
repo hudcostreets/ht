@@ -1,4 +1,3 @@
-import { ColorRectangles } from './ColorRectangles'
 import { Pace } from './Pace'
 import { Sweep } from './Sweep'
 import { Tunnel, type TunnelConfig } from './Tunnel'
@@ -30,7 +29,6 @@ export class Tunnels {
   public wb: Tunnel
   public sweep: Sweep
   public pace: Pace
-  private colorRects: ColorRectangles
 
   constructor(config: TunnelsConfig) {
     this.eb = new Tunnel(config.eb)
@@ -49,7 +47,6 @@ export class Tunnels {
       mph: pace.mph,
       stagingOffset: pace.stagingOffset
     })
-    this.colorRects = new ColorRectangles(this)
   }
 
   public get e(): Tunnel {
@@ -93,16 +90,4 @@ export class Tunnels {
     }
   }
 
-  // Get color rectangles for rendering
-  getColorRectangles(absMins: number): Array<{
-    direction: Direction
-    color: 'green' | 'red'
-    x: number
-    width: number
-    y: number
-    height: number
-  }> {
-    const relMins = absMins % this.eb.config.period
-    return this.colorRects.getRectangles(relMins)
-  }
 }

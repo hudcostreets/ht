@@ -1,11 +1,13 @@
 import { Bike } from "./Bike"
 import { Car } from "./Car"
 import { Lane } from "./Lane"
-import { Start, Interp, Num, TimePoint, TimeVal } from "./TimeVal"
+import { Start, Interp, Num, TimePoint, TimeVal, Field } from "./TimeVal"
 import { VehicleI } from "./Tunnels.ts"
 import { Direction } from "./types"
 import { XY, xy } from "./XY"
 const { floor, max, } = Math
+
+export type ColorZones = [number, number, number] | null
 
 export type Pen = XY & {
   w: number
@@ -54,6 +56,7 @@ export class Tunnel {
   public ncars: number
   public l: Lane
   public r: Lane
+  public colorZones: TimeVal<ColorZones>
   // public nQueueCars0: number  // Number of cars that queue on spawn before pace car departs
   // public nQueueCars1: number  // Number of cars that queue on spawn after pace car departs
   // public nQueueCars: number   // Number of cars that queue on spawn (total, before and after pace car)
@@ -205,6 +208,8 @@ export class Tunnel {
       this.bikes.push(...split)
     }
 
+    // Initialize color zones
+    this.colorZones = this.initColorZones()
   }
 
   public get allCars(): Car[] {
@@ -274,5 +279,206 @@ export class Tunnel {
     } else {
       return 'normal'
     }
+  }
+
+  public getColorRectangles(absMins: number): Array<{
+    color: 'green' | 'red'
+    x: number
+    width: number
+    y: number
+    height: number
+  }> {
+    const relMins = this.relMins(absMins)
+    const zones = this.colorZones.at(relMins)
+
+    if (!zones) return []
+
+    const [greenStart, greenEnd, redEnd] = zones
+    const rectangles = []
+
+    // Green rectangle (bikes allowed)
+    if (greenEnd > greenStart) {
+      rectangles.push({
+        color: 'green' as const,
+        x: greenStart,
+        width: greenEnd - greenStart,
+        y: 0, // Relative to R lane
+        height: this.config.laneHeightPx
+      })
+    }
+
+    // Red rectangle (DMZ between bikes and cars)
+    // Red can be either before green (pace behind sweep) or after green
+    if (redEnd < greenStart) {
+      // Red is before green (E/b: pace at entrance, sweep in tunnel)
+      rectangles.push({
+        color: 'red' as const,
+        x: redEnd,
+        width: greenStart - redEnd,
+        y: 0, // Relative to R lane
+        height: this.config.laneHeightPx
+      })
+    } else if (redEnd > greenEnd) {
+      // Red is after green (W/b: sweep in tunnel, pace at entrance)
+      rectangles.push({
+        color: 'red' as const,
+        x: greenEnd,
+        width: redEnd - greenEnd,
+        y: 0, // Relative to R lane
+        height: this.config.laneHeightPx
+      })
+    }
+
+    return rectangles
+  }
+
+  private initColorZones(): TimeVal<ColorZones> {
+    const {
+      period, laneWidthPx, lengthMi,
+      carMph,
+      sweepStartMin, paceStartMin,
+      penCloseMin
+    } = this.config
+    const { d } = this
+
+    // Calculate transit times
+    const sweepTransitMins = 10  // From Sweep.ts: takes 10 mins to cross tunnel
+    const paceTransitMins = 5    // From Pace.ts: takes 5 mins to cross tunnel
+    const carTransitMins = (lengthMi / carMph) * 60
+
+    // Calculate pixels per minute for each vehicle
+    const sweepPxPerMin = laneWidthPx / sweepTransitMins
+    const pacePxPerMin = laneWidthPx / paceTransitMins
+    const carPxPerMin = laneWidthPx / carTransitMins
+
+    // Direction-agnostic entrance position
+    const entrance = d > 0 ? 0 : laneWidthPx
+
+    // Helper to calculate position along tunnel
+    const posAt = (minutesFromEntrance: number, pxPerMin: number): number => {
+      const distance = minutesFromEntrance * pxPerMin
+      return d > 0 ? entrance + distance : entrance - distance
+    }
+
+    const points: TimePoint<ColorZones>[] = []
+
+    // Phase 1: Bike lane opens (0 to penCloseMin)
+    // Green zone (bike lane) grows at car speed from entrance
+    points.push({ min: 0, val: [entrance, entrance, entrance] })
+
+    // Green grows at car speed until pen closes
+    for (let min = 1; min <= penCloseMin; min++) {
+      const greenEnd = posAt(min, carPxPerMin)
+      if (d > 0) {
+        // Eastbound: green grows from left
+        points.push({ min, val: [0, greenEnd, greenEnd] })
+      } else {
+        // Westbound: green grows from right
+        points.push({ min, val: [greenEnd, laneWidthPx, laneWidthPx] })
+      }
+    }
+
+    // Continue green growth if needed (but stop before sweep phase)
+    if (penCloseMin < carTransitMins && penCloseMin < sweepStartMin) {
+      // Green continues to grow until sweep starts or it reaches exit
+      const greenEndMin = Math.min(carTransitMins, sweepStartMin - 1)
+      for (let min = penCloseMin + 1; min <= greenEndMin; min++) {
+        const greenEnd = posAt(min, carPxPerMin)
+        if (d > 0) {
+          points.push({ min, val: [0, greenEnd, greenEnd] })
+        } else {
+          points.push({ min, val: [greenEnd, laneWidthPx, laneWidthPx] })
+        }
+      }
+      // If green reached full tunnel before sweep
+      if (greenEndMin >= carTransitMins) {
+        if (d > 0) {
+          points.push({ min: carTransitMins, val: [0, laneWidthPx, laneWidthPx] })
+        } else {
+          points.push({ min: carTransitMins, val: [0, laneWidthPx, laneWidthPx] })
+        }
+      }
+    }
+
+    // Phase 2: Sweep phase - green shrinks as sweep clears bikes
+    // Red zone appears between entrance and sweep (DMZ)
+    for (let min = 0; min <= sweepTransitMins; min++) {
+      const relMin = sweepStartMin + min
+      const sweepPos = posAt(min, sweepPxPerMin)
+
+      if (d > 0) {
+        // Eastbound: green = [sweepPos, exit], red = [entrance, sweepPos]
+        // Red zone clamped to entrance (0) when pace is staging
+        points.push({ min: relMin, val: [sweepPos, laneWidthPx, 0] })
+      } else {
+        // Westbound: green = [entrance, sweepPos], red = [sweepPos, exit]
+        points.push({ min: relMin, val: [0, sweepPos, laneWidthPx] })
+      }
+    }
+
+    // Phase 3: Pace car phase - red zone now between pace and sweep
+    // Handle overlap when both vehicles are in tunnel
+    const paceEndMin = paceStartMin + paceTransitMins
+
+    for (let relMin = paceStartMin; relMin <= paceEndMin; relMin++) {
+      // Skip if we already have a point for this minute from sweep phase
+      if (relMin <= sweepStartMin + sweepTransitMins) {
+        const existingPoint = points.find(p => p.min === relMin)
+        if (existingPoint) {
+          // Update existing point with pace position
+          const paceMin = relMin - paceStartMin
+          const sweepMin = relMin - sweepStartMin
+          const pacePos = posAt(paceMin, pacePxPerMin)
+          const sweepPos = posAt(sweepMin, sweepPxPerMin)
+
+          if (d > 0) {
+            // Eastbound: green = [sweepPos, exit], red = [pacePos, sweepPos]
+            // If pace just entered at entrance (0), red zone is [0, sweepPos]
+            existingPoint.val = [sweepPos, laneWidthPx, pacePos < sweepPos ? pacePos : sweepPos]
+          } else {
+            // Westbound: green = [entrance, sweepPos], red = [sweepPos, pacePos]
+            // If pace just entered at entrance (800), red zone is [sweepPos, 800]
+            existingPoint.val = [0, sweepPos, pacePos > sweepPos ? pacePos : sweepPos]
+          }
+          continue
+        }
+      }
+
+      // Pace car only (sweep has exited)
+      const paceMin = relMin - paceStartMin
+      const pacePos = posAt(paceMin, pacePxPerMin)
+
+      if (d > 0) {
+        // Eastbound: no green (bikes cleared), red = [pacePos, exit]
+        points.push({ min: relMin, val: [laneWidthPx, laneWidthPx, pacePos] })
+      } else {
+        // Westbound: no green (bikes cleared), red = [entrance, pacePos]
+        points.push({ min: relMin, val: [0, 0, pacePos] })
+      }
+    }
+
+    // Clear zones after pace car exits
+    const clearMin = paceStartMin + paceTransitMins + 1
+    points.push({ min: clearMin, val: null })
+
+    // Rest of period: no colored zones
+    points.push({ min: period - 1, val: null })
+
+    // Custom field for color zones with proper interpolation
+    const ColorZonesField: Field<ColorZones> = {
+      add: (l, r) => {
+        if (!l || !r) return l || r
+        return [l[0] + r[0], l[1] + r[1], l[2] + r[2]]
+      },
+      sub: (l, r) => {
+        if (!l || !r) return l
+        return [l[0] - r[0], l[1] - r[1], l[2] - r[2]]
+      },
+      mul: (l, s) => {
+        if (!l) return null
+        return [l[0] * s, l[1] * s, l[2] * s]
+      },
+    }
+    return new TimeVal(points, ColorZonesField, period)
   }
 }
