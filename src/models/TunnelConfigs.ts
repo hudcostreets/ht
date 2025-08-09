@@ -2,20 +2,20 @@ import { LAYOUT, COMPUTED_LAYOUT } from './Constants'
 import type { TunnelsConfig } from './Tunnels'
 
 export const Common = {
-  period: 60,
-  lengthMi: 2,
-  carMph: 24,      // mph
-  bikeUpMph: 8,
-  bikeDownMph: 15,
-  bikeFlatMph: 12,
-  penCloseMin: 3,
-  sweepStartMin: 5,
-  paceStartMin: 10,
-  carsPerMin: 1,  // 60 cars per hour
-  carsReleasedPerMin: 5,
-  bikesPerMin: 0.25, // 15 bikes per hour
-  bikesReleasedPerMin: 5,
-  officialResetMins: 5,
+  period: 60,             // Cycle repeats every 60mins
+  lengthMi: 2,            // Total tunnel length
+  carMph: 24,             // MPH
+  bikeDownMph: 15,        // Bike downhill speed
+  bikeUpMph: 8,           // Bike uphill speed
+  bikeFlatMph: 12,        // Bike flat speed (entering and exiting tunnel)
+  penCloseMin: 3,         // "Bike pen" stays open for this many minutes, beginning from ":00" (tunnel's "origin" time)
+  sweepStartMin: 5,       // "Sweep" van embarks at this minute mark (tunnel-relative)
+  paceStartMin: 10,       // "Pace" car embarks at this minute mark (tunnel-relative)
+  carsPerMin: 1,          // 60 cars per hour
+  carsReleasedPerMin: 5,  // How many queued cars can enter tunnel per minute (behind pace car)
+  bikesPerMin: 0.25,      // Bike "spawn" rate (1 per 4mins, 15 bikes per hour)
+  bikesReleasedPerMin: 5, // How many queued bikes can enter tunnel per minute (when pen opens)
+  officialResetMins: 5,   // How long sweep and pace cars take to move from one tunnel's exit to their "staging" locations for the other tunnel
 
   // Layout (eastbound-specific coordinates)
   laneWidthPx: LAYOUT.TUNNEL_WIDTH,
