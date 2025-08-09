@@ -67,7 +67,7 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
   }
 
   h2 {
-    margin: 0 0 15px 0;
+    margin: 0;
     color: $text-secondary;
     font-size: 1.2rem;
     font-weight: normal;
@@ -79,7 +79,6 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
   background: $primary-bg;
   padding: 15px 20px;
   border-radius: $radius-lg;
-  margin-top: 20px;
   display: flex;
   justify-content: center;
 }
@@ -199,7 +198,6 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
     background: $secondary-bg;
     padding: 0 20px 20px;
     border-radius: $radius-lg;
-    border: 2px solid $border-color;
     overflow-x: auto;
 
     svg {
@@ -482,6 +480,100 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 // Tooltip styles
 .react-tooltip {
   z-index: 9999 !important;
+}
+
+// Info sections (Why? and How?)
+.info-sections {
+  display: flex;
+  gap: 40px;
+  margin-top: 40px;
+  padding: 0 20px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 30px;
+  }
+}
+
+.info-section {
+  flex: 1;
+  background: $tertiary-bg;
+  padding: 25px;
+  border-radius: $radius-lg;
+
+  h2 {
+    margin: 0 0 20px 0;
+    color: $text-color;
+    font-size: 1.5rem;
+  }
+
+  ol, ul {
+    margin: 0;
+    padding-left: 25px;
+    color: $text-secondary;
+    line-height: 1.8;
+
+    li {
+      margin: 8px 0;
+    }
+
+    ul {
+      margin-top: 8px;
+      padding-left: 20px;
+    }
+  }
+}
+
+// Footer
+.footer {
+  margin-top: 60px;
+  padding: 30px 20px;
+  background: $primary-bg;
+  border-top: 1px solid $border-color;
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+.github-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: $text-color;
+  text-decoration: none;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.7;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.hccs-logo {
+  font-weight: bold;
+  color: $text-color;
+  text-decoration: none;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.7;
+  }
 }
 
 // Media queries

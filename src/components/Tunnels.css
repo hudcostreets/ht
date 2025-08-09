@@ -306,7 +306,6 @@
   background: #fafafa;
   padding: 10px;
   border-radius: 8px;
-  border: 2px solid #ddd;
   overflow-x: auto;
 }
 
@@ -418,8 +417,6 @@
 
   .tunnel-visualization-svg {
     padding: 0;
-    border-left: none;
-    border-right: none;
     border-radius: 0;
   }
 }
