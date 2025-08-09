@@ -59,7 +59,7 @@ export const Tunnel: FC<Props> = ({ dir, phase, displayTime, tunnel }) => {
           <>
             <rect x={penX} y={penY} width={pen.w} height={pen.h}
               fill="#e3f2fd" stroke="#2196f3" strokeWidth="2" strokeDasharray="5,5" rx="6" />
-            <text x={penX + pen.w / 2} y={penY - 10} fontSize="12" textAnchor="middle">Bike Pen</text>
+            <text x={penX + pen.w / 2} y={dir === 'east' ? penY + pen.h + 15 : penY - 10} fontSize="12" textAnchor="middle">Bike Pen</text>
           </>
         )
       })()}

@@ -32,7 +32,7 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
     y: 200,  // Eastbound tunnel is at bottom
     pen: {
       x: LAYOUT.BIKE_PEN_INSET,  // Left-aligned with tunnel entrance
-      y: 110,  // Below the lanes
+      y: 70,  // Below the lanes, closer to tunnel
       w: COMPUTED_LAYOUT.BIKE_PEN_WIDTH,
       h: COMPUTED_LAYOUT.BIKE_PEN_HEIGHT,
     },

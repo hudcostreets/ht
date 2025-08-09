@@ -225,7 +225,7 @@ export function Tunnels() {
 
       <div className="header">
         <div className="header-content">
-          <h1>Holland Tunnel Bike Lane Visualization</h1>
+          <h1>The Holland Tunnel should have a bike lane for 10mins per hour</h1>
           <div className="controls">
             <div className="button-group">
               <button onClick={() => {
@@ -348,14 +348,56 @@ export function Tunnels() {
               })
             })()}
 
+            {/* Legend positioned to the right of E/b bike pen */}
+            {(() => {
+              // Position legend to the right of the E/b bike pen
+              const legendX = LAYOUT.QUEUE_AREA_WIDTH + eb.config.pen.x + eb.config.pen.w + 20
+              const legendY = eb.config.y + eb.config.pen.y + 10
+
+              return (
+                <g transform={`translate(${legendX}, ${legendY})`}>
+                  <text x="0" y="0" fontSize="14" fontWeight="bold">Legend</text>
+
+                  {/* Green rect - bike space */}
+                  <rect x="0" y="10" width="20" height="10" fill="#4caf50" opacity="0.3" />
+                  <text x="25" y="19" fontSize="12">Bike space</text>
+
+                  {/* Red rect - clearing space */}
+                  <rect x="0" y="25" width="20" height="10" fill="#f44336" opacity="0.3" />
+                  <text x="25" y="34" fontSize="12">Clearing space</text>
+
+                  {/* Grey rect - car space */}
+                  <rect x="0" y="40" width="20" height="10" fill="#666" />
+                  <text x="25" y="49" fontSize="12">Car space</text>
+
+                  {/* Sweep icon */}
+                  <text x="10" y="65" fontSize="16" textAnchor="middle">🚐</text>
+                  <text x="25" y="65" fontSize="12">"Sweep" van (picks up stragglers)</text>
+
+                  {/* Pace icon */}
+                  <text x="10" y="82" fontSize="16" textAnchor="middle">🚓</text>
+                  <text x="25" y="82" fontSize="12">"Pace" car (reopens R lane to cars)</text>
+                </g>
+              )
+            })()}
           </svg>
 
           {/* Clock positioned below E/b exit */}
           {(() => {
-            // E/b tunnel: y=200, height=60, pen: y=110 (relative), height=70
+            // E/b tunnel: y=200, height=60, pen: y=70 (relative), height=70
             const ebTunnelBottom = 200 + 60 // 260
-            const ebPenBottom = 200 + 110 + COMPUTED_LAYOUT.BIKE_PEN_HEIGHT // 200 + 110 + 70 = 380
-            const clockTop = ebTunnelBottom + 8 // Small gap below tunnel
+            const ebPenY = 200 + 70
+            const ebPenBottom = ebPenY + COMPUTED_LAYOUT.BIKE_PEN_HEIGHT
+            const bikePenLabelBottom = ebPenBottom + 15 // Bike pen label is 15px below pen
+
+            // Legend bottom: starts at pen.y + 10, has 82px of content (last item at y=82)
+            const legendY = ebPenY + 10
+            const legendBottom = legendY + 82 // Last text baseline is at y=82 in the legend
+
+            // Clock should align with the lowest element (max of bike pen label and legend)
+            const clockLabelBottom = Math.max(bikePenLabelBottom, legendBottom)
+            const clockTop = ebTunnelBottom + 15 // Start clock a bit below tunnel
+            const clockHeight = clockLabelBottom - clockTop
 
             // E/b exit is at x = QUEUE_AREA_WIDTH + TUNNEL_WIDTH
             const exitX = LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH
@@ -365,18 +407,17 @@ export function Tunnels() {
                 position: 'absolute',
                 right: `${COMPUTED_LAYOUT.SVG_WIDTH - exitX}px`, // Right-align with E/b exit
                 top: `${clockTop}px`,
-                bottom: `${400 - ebPenBottom}px`, // Constrain to pen bottom
+                height: `${clockHeight}px`,
                 width: '100px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'flex-end',
-                gap: '0'
+                justifyContent: 'flex-end'
               }}>
                 <div style={{ transform: 'scale(1.0)', flex: '1', display: 'flex', alignItems: 'center' }}>
                   <AnalogClock minute={displayTime} />
                 </div>
-                <div style={{ fontSize: '14px', marginBottom: '2px' }}>
+                <div style={{ fontSize: '14px' }}>
                   _ : {showDecimal
                     ? displayTime.toFixed(1).padStart(4, '0')
                     : String(Math.floor(displayTime) % 60).padStart(2, '0')}
@@ -424,16 +465,6 @@ export function Tunnels() {
                 </li>
               )
             })}
-          </ul>
-        </div>
-        <div className="info-section">
-          <h3>About</h3>
-          <ul>
-            <li>Two-directional cycling infrastructure</li>
-            <li>30-minute offset between directions</li>
-            <li>Protected bike time with clearing phases</li>
-            <li>15 bikes per hour (0.25/min)</li>
-            <li>60 cars per hour per lane (1/min)</li>
           </ul>
         </div>
       </div>
