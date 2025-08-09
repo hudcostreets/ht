@@ -1,8 +1,8 @@
+import { LAYOUT } from "./Constants"
 import { Lane, LaneId } from "./Lane"
 import { TimePoint, TimeVal } from "./TimeVal"
 import { field, Pos, PartialPos, SpawnQueue } from "./types"
 import type { Tunnel, TunnelConfig } from "./Tunnel"
-import { LAYOUT } from "./Constants"
 
 export type Points = TimePoint<Pos>[]
 export type PartialPoints = TimePoint<PartialPos>[]

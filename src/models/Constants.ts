@@ -1,7 +1,19 @@
+// Get responsive tunnel width based on viewport
+function getResponsiveTunnelWidth(): number {
+  if (typeof window === 'undefined') return 800 // SSR fallback
+  const vw = window.innerWidth
+  if (vw < 768) return 500
+  if (vw < 1024) return 600
+  if (vw < 1200) return 700
+  return 800
+}
+
 // Layout constants
 export const LAYOUT = {
-  TUNNEL_WIDTH: 800,
-  QUEUE_AREA_WIDTH: 150,
+  get TUNNEL_WIDTH() {
+    return getResponsiveTunnelWidth()
+  },
+  QUEUE_AREA_WIDTH: 100, // Reduced from 150
   LANE_HEIGHT: 30,
   TUNNEL_LENGTH_MILES: 2,
 
@@ -47,9 +59,9 @@ export const COMPUTED_LAYOUT = {
 
   // SVG dimensions
   get SVG_WIDTH() {
-    // Need space for: queue area + tunnel + pace staging + fade distance buffer
-    // Pens are now inside the tunnel bounds, so don't need extra width for them
-    // Add fade distance on both ends (vehicles fade in from left, fade out to right)
-    return LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + LAYOUT.PACE_STAGING_OFFSET + LAYOUT.FADE_DISTANCE_PX
+    // Tighter layout: just tunnel width + fade distances on both sides
+    // Queue area is already included in QUEUE_AREA_WIDTH (left side)
+    // Right side just needs fade distance
+    return LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + LAYOUT.FADE_DISTANCE_PX
   }
 }

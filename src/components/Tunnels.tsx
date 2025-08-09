@@ -1,7 +1,7 @@
+import { Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
-import { Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
 import { AnalogClock } from './AnalogClock'
 import { Tunnel } from './Tunnel.tsx'
 import { LAYOUT, COMPUTED_LAYOUT } from '../models/Constants'
@@ -66,6 +66,14 @@ function generateTimeline(tunnel: typeof eb | typeof wb) {
 }
 
 export function Tunnels() {
+  // Force re-render on resize to update responsive layout
+  const [, forceUpdate] = useState({})
+  useEffect(() => {
+    const handleResize = () => forceUpdate({})
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   // Check URL parameter for initial time
   const urlParams = new URLSearchParams(window.location.search)
   const urlMinute = urlParams.get('t')
@@ -225,64 +233,65 @@ export function Tunnels() {
 
       <div className="header">
         <div className="header-content">
-          <h1>The Holland Tunnel should have a bike lane for 10mins per hour</h1>
+          <h1>Holland Tunnel should have a bike lane</h1>
+          <h2>(for 10mins per hour)</h2>
           <div className="controls">
             <div className="button-group">
               <button onClick={() => {
-              setIsPaused(prev => !prev)
-              setShowDecimal(false)
-              // Update URL based on pause state
-              if (!isPaused) {
-                const url = new URL(window.location.href)
-                url.searchParams.set('t', currentMinute.toString())
-                window.history.replaceState({}, '', url.toString())
-              } else {
+                setIsPaused(prev => !prev)
+                setShowDecimal(false)
+                // Update URL based on pause state
+                if (!isPaused) {
+                  const url = new URL(window.location.href)
+                  url.searchParams.set('t', currentMinute.toString())
+                  window.history.replaceState({}, '', url.toString())
+                } else {
                 // Clear URL param when playing
-                const url = new URL(window.location.href)
-                url.searchParams.delete('t')
-                window.history.replaceState({}, '', url.toString())
-              }
-            }}>
-              {isPaused ? <Play size={18} /> : <Pause size={18} />}
-            </button>
-            <button
-              onClick={() => {
-                if (isPaused) {
-                  const baseTime = isTransitioning ? targetTime : displayTime
-                  const newTime = (baseTime - 1 + 60) % 60
-                  setTargetTime(newTime)
-                  setIsTransitioning(true)
-                  setShowDecimal(false)
-
-                  // Update URL
                   const url = new URL(window.location.href)
-                  url.searchParams.set('t', newTime.toFixed(1))
+                  url.searchParams.delete('t')
                   window.history.replaceState({}, '', url.toString())
                 }
-              }}
-              disabled={!isPaused}
-              title="Step backward 1 minute">
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              onClick={() => {
-                if (isPaused) {
-                  const baseTime = isTransitioning ? targetTime : displayTime
-                  const newTime = (baseTime + 1) % 60
-                  setTargetTime(newTime)
-                  setIsTransitioning(true)
-                  setShowDecimal(false)
+              }}>
+                {isPaused ? <Play size={18} /> : <Pause size={18} />}
+              </button>
+              <button
+                onClick={() => {
+                  if (isPaused) {
+                    const baseTime = isTransitioning ? targetTime : displayTime
+                    const newTime = (baseTime - 1 + 60) % 60
+                    setTargetTime(newTime)
+                    setIsTransitioning(true)
+                    setShowDecimal(false)
 
-                  // Update URL
-                  const url = new URL(window.location.href)
-                  url.searchParams.set('t', newTime.toFixed(1))
-                  window.history.replaceState({}, '', url.toString())
-                }
-              }}
-              disabled={!isPaused}
-              title="Step forward 1 minute">
-              <ChevronRight size={18} />
-            </button>
+                    // Update URL
+                    const url = new URL(window.location.href)
+                    url.searchParams.set('t', newTime.toFixed(1))
+                    window.history.replaceState({}, '', url.toString())
+                  }
+                }}
+                disabled={!isPaused}
+                title="Step backward 1 minute">
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                onClick={() => {
+                  if (isPaused) {
+                    const baseTime = isTransitioning ? targetTime : displayTime
+                    const newTime = (baseTime + 1) % 60
+                    setTargetTime(newTime)
+                    setIsTransitioning(true)
+                    setShowDecimal(false)
+
+                    // Update URL
+                    const url = new URL(window.location.href)
+                    url.searchParams.set('t', newTime.toFixed(1))
+                    window.history.replaceState({}, '', url.toString())
+                  }
+                }}
+                disabled={!isPaused}
+                title="Step forward 1 minute">
+                <ChevronRight size={18} />
+              </button>
             </div>
             <label
               data-tooltip-id="speed-tooltip"
@@ -303,8 +312,8 @@ export function Tunnels() {
       </div>
 
       <div className="tunnel-visualization-svg">
-        <div style={{ position: 'relative', width: COMPUTED_LAYOUT.SVG_WIDTH, margin: '0 auto' }}>
-          <svg width={COMPUTED_LAYOUT.SVG_WIDTH} height="400" viewBox={`0 0 ${COMPUTED_LAYOUT.SVG_WIDTH} 400`}>
+        <div style={{ position: 'relative', width: '100%', maxWidth: COMPUTED_LAYOUT.SVG_WIDTH, margin: '0 auto' }}>
+          <svg width="100%" height="400" viewBox={`0 0 ${COMPUTED_LAYOUT.SVG_WIDTH} 400`} preserveAspectRatio="xMidYMid meet">
             {/* Both tunnels */}
             <Tunnel
               dir="west"

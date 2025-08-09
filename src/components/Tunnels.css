@@ -304,10 +304,16 @@
 /* SVG-based tunnel styles */
 .tunnel-visualization-svg {
   background: #fafafa;
-  padding: 20px;
+  padding: 10px;
   border-radius: 8px;
   border: 2px solid #ddd;
   overflow-x: auto;
+}
+
+@media (min-width: 1200px) {
+  .tunnel-visualization-svg {
+    padding: 20px;
+  }
 }
 
 .tunnel-visualization-svg svg {
@@ -395,6 +401,12 @@
   filter: hue-rotate(240deg);
 }
 
+@media (max-width: 1024px) {
+  .tunnel-visualization-svg {
+    padding: 5px;
+  }
+}
+
 @media (max-width: 768px) {
   .controls {
     flex-direction: column;
@@ -403,5 +415,12 @@
 
   .controls input[type="range"] {
     width: 100%;
+  }
+
+  .tunnel-visualization-svg {
+    padding: 0;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
   }
 }
