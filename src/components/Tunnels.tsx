@@ -1,11 +1,10 @@
 import { A } from "@rdub/base"
+import { icons } from '@rdub/icons'
 import { Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
-import { icons } from '@rdub/icons'
 import { AnalogClock } from './AnalogClock'
-import { SpaceTimeWheel } from './SpaceTimeWheel'
 import { SpaceTimeRects } from './SpaceTimeRects'
 import { Tunnel } from './Tunnel.tsx'
 import { LAYOUT, COMPUTED_LAYOUT } from '../models/Constants'

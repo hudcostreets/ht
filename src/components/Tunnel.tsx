@@ -31,12 +31,12 @@ const TunnelComponent: FC<Props> = ({ dir, displayTime, tunnel }) => {
 
       {/* Double yellow line between lanes */}
       <line x1={LAYOUT.QUEUE_AREA_WIDTH} y1={yOffset + 30}
-            x2={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH} y2={yOffset + 30}
-            stroke="#FFD700" strokeWidth="2" opacity="0.8" />
+        x2={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH} y2={yOffset + 30}
+        stroke="#FFD700" strokeWidth="2" opacity="0.8" />
       <line x1={LAYOUT.QUEUE_AREA_WIDTH} y1={yOffset + 30}
-            x2={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH} y2={yOffset + 30}
-            stroke="#FFD700" strokeWidth="2" opacity="0.8"
-            transform={`translate(0, -3)`} />
+        x2={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH} y2={yOffset + 30}
+        stroke="#FFD700" strokeWidth="2" opacity="0.8"
+        transform={`translate(0, -3)`} />
 
       {/* Downhill/Uphill indicators */}
       <g opacity="0.6">
@@ -153,6 +153,9 @@ const TunnelComponent: FC<Props> = ({ dir, displayTime, tunnel }) => {
             transform={transform}
             data-tooltip-id={pos.state !== 'origin' ? 'vehicle-tooltip' : undefined}
             data-tooltip-content={pos.state !== 'origin' ? getTooltip(v) : undefined}
+            data-vehicle-id={id}
+            data-vehicle-type={type}
+            data-vehicle-state={pos.state}
           >
             {getEmoji(type)}
           </text>

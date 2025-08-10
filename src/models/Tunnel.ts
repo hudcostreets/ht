@@ -110,37 +110,13 @@ export class Tunnel {
       rcars.push(new Car({ tunnel: this, laneId: 'R', id: idx.toString(), spawnMin: period *  idx       / ncars, }))
     }
 
-    // Populate rcars' spawnQueue elems
-    // Instead of checking phase at spawn time, check if tunnel is blocked when car arrives
-    let queueLen = 0
-    let prvSpawnMin = 0
-    // console.log(`${rcars.length} rcars`)
-    for (const rcar of rcars) {
-      // Tunnel is blocked from minute 0 (bikes enter) until pace car starts at minute 10
-      const { spawnMin } = rcar
-      const queueOpenMin = paceStartMin
-      if (spawnMin > queueOpenMin) {
-        const elapsed = spawnMin - max(queueOpenMin, prvSpawnMin)
-        const carsElapsed = elapsed * carsReleasedPerMin
-        queueLen = max(queueLen - carsElapsed, 0)
-      }
-      // Handle period wrapping - if car arrives in blocked period of this or next cycle
-      if (spawnMin < queueOpenMin || queueLen > 0) {
-        // Car needs to queue
-        const minsBeforeDequeueing = max(queueOpenMin - spawnMin, 0)
-        queueLen++
-        const queueOffsetX = queueLen * queuedCarWidthPx
-        const minsDequeueing = queueLen / carsReleasedPerMin
-        rcar.spawnQueue = {
-          offset: { x: queueOffsetX, y: 0 },
-          minsBeforeDequeueing,
-          minsDequeueing,
-        }
-      }
-      prvSpawnMin = spawnMin
-    }
+    // R lane cars arriving during blocked period (0 to paceStartMin) will merge to L lane
+    // This is now handled in Car.ts based on spawn time
+    // We no longer need to set spawnQueue for R lane cars
 
     // Calculate bike queueing
+    let queueLen = 0
+    let prvSpawnMin = 0
     if (penCloseMin * bikesReleasedPerMin < bikesPerMin * period) {
       throw new Error(`${penCloseMin}mins x ${bikesReleasedPerMin} bikes/min = ${penCloseMin * bikesReleasedPerMin} bikes/period, but ${period}mins x ${bikesPerMin} bikes/min = ${period * bikesPerMin} bikes`)
     }
@@ -175,13 +151,21 @@ export class Tunnel {
       }
       prvSpawnMin = spawnMin
     }
-    const firstBikeMin = bikes1[0].spawnMin
-    if (penCloseMin < firstBikeMin) {
+    if (bikes1.length > 0) {
+      const firstBikeMin = bikes1[0].spawnMin
+      if (penCloseMin < firstBikeMin) {
+        bikeQueueLenPts.push({ min: penCloseMin, val: 0, interp: Start })
+      }
+    } else if (penCloseMin > 0) {
       bikeQueueLenPts.push({ min: penCloseMin, val: 0, interp: Start })
     }
     bikes1.forEach(({ spawnMin }, idx) => {
       bikeQueueLenPts.push({ min: spawnMin, val: idx + 1, interp: Start })
     })
+    // Ensure we have at least one point for TimeVal
+    if (bikeQueueLenPts.length === 0) {
+      bikeQueueLenPts.push({ min: 0, val: 0, interp: Start })
+    }
     const bikeQueueLen = new TimeVal(bikeQueueLenPts, Num, period)
     const bikesPerRow = LAYOUT.BIKES_PER_ROW
     const bikes = [ ...bikes0, ...bikes1 ]

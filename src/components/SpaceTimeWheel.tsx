@@ -24,7 +24,6 @@ const SpaceTimeWheelComponent: FC<Props> = ({ currentMinute, tunnel }) => {
   // Generate colored segments
   const segments = useMemo(() => {
     const segs = []
-    const { period } = tunnel.config
     const tunnelWidth = tunnel.config.laneWidthPx
 
     // Reduced resolution for better performance
