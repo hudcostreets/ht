@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@rdub/base": "0.8.1",
+    "@rdub/icons": "^0.1.5",
     "framer-motion": "^12.23.6",
     "lucide-react": "^0.539.0",
     "react": "^19.1.0",
