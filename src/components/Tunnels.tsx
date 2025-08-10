@@ -5,6 +5,7 @@ import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
 import { AnalogClock } from './AnalogClock'
 import { SpaceTimeWheel } from './SpaceTimeWheel'
+import { SpaceTimeRects } from './SpaceTimeRects'
 import { Tunnel } from './Tunnel.tsx'
 import { LAYOUT, COMPUTED_LAYOUT } from '../models/Constants'
 import { HOLLAND_TUNNEL_CONFIG } from '../models/TunnelConfigs'
@@ -535,7 +536,7 @@ export function Tunnels() {
         <div className="info-section">
           <h2>How?</h2>
           <ul>
-            <li>Bikes allowed into tunnel for a 3-minute "pulse", each hour (like catching a train)</li>
+            <li>Bikes allowed into tunnel for a 3-minute "pulse" each hour (like catching a train)</li>
             <li>Cars restricted from that lane for 10mins</li>
             <li>Bikes get 12-15mins to cross</li>
             <li>Requires just 2 official vehicles:
@@ -558,6 +559,16 @@ export function Tunnels() {
       {/*}}>*/}
       {/*  <SpaceTimeWheel currentMinute={displayTime} tunnel={eb} />*/}
       {/*</div>*/}
+
+      {/* SpaceTimeRects visualization - centered */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        margin: '0'
+      }}>
+        <SpaceTimeRects currentMinute={displayTime} eb={eb} wb={wb} />
+      </div>
 
       <footer className="footer">
         <div className="footer-content">
