@@ -239,7 +239,7 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
     <div>
       <h2 style={{ textAlign: 'center', margin: '10px 0 5px 0', fontSize: '1.5rem', fontWeight: 'bold' }}>Space-Time Diagram</h2>
       <p style={{ textAlign: 'center', margin: '0 0 10px 0', fontSize: '0.95rem', color: '#555', fontWeight: '500' }}>
-        Overall allocation: <strong>{spaceTimeStats.carPercent}%</strong> for cars, <strong>{spaceTimeStats.bikePercent}%</strong> for bikes, {spaceTimeStats.dmzPercent}% DMZ
+        Overall allocation: <strong>{spaceTimeStats.carPercent}%</strong> for cars, <strong>{spaceTimeStats.bikePercent}%</strong> for bikes, <strong>{spaceTimeStats.dmzPercent}%</strong> "DMZ"
       </p>
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
         {/* Background */}
@@ -662,16 +662,43 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
         ))}
 
         {/* Y-axis labels */}
+        {/* 14th St label for W/b lanes (top two lanes) */}
         <text
-          x={leftMargin - 25}
-          y={topMargin + 2 * (laneHeight + laneGap)}
-          fontSize="9"
+          x={leftMargin - 15}
+          y={topMargin + 0.5 * (laneHeight + laneGap) + laneHeight/2}
+          fontSize="11"
           textAnchor="middle"
           fill="#666"
-          transform={`rotate(-90 ${leftMargin - 25} ${topMargin + 2 * (laneHeight + laneGap)})`}
+          transform={`rotate(-90 ${leftMargin - 15} ${topMargin + 0.5 * (laneHeight + laneGap) + laneHeight/2})`}
           style={{ userSelect: 'none' }}
         >
-        ← Entrance | Exit →
+        14th St
+        </text>
+
+        {/* 12th St label for E/b lanes (bottom two lanes) */}
+        <text
+          x={leftMargin - 15}
+          y={topMargin + 2.5 * (laneHeight + laneGap) + laneHeight/2}
+          fontSize="11"
+          textAnchor="middle"
+          fill="#666"
+          transform={`rotate(-90 ${leftMargin - 15} ${topMargin + 2.5 * (laneHeight + laneGap) + laneHeight/2})`}
+          style={{ userSelect: 'none' }}
+        >
+        12th St
+        </text>
+
+        {/* NYC label on the right side (centered) */}
+        <text
+          x={leftMargin + plotWidth + 15}
+          y={topMargin + 2 * (laneHeight + laneGap)}
+          fontSize="11"
+          textAnchor="middle"
+          fill="#666"
+          transform={`rotate(90 ${leftMargin + plotWidth + 15} ${topMargin + 2 * (laneHeight + laneGap)})`}
+          style={{ userSelect: 'none' }}
+        >
+        NYC
         </text>
 
       </svg>
