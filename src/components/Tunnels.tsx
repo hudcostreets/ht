@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
 import { AnalogClock } from './AnalogClock'
+import { SpaceTimeWheel } from './SpaceTimeWheel'
 import { Tunnel } from './Tunnel.tsx'
 import { LAYOUT, COMPUTED_LAYOUT } from '../models/Constants'
 import { HOLLAND_TUNNEL_CONFIG } from '../models/TunnelConfigs'
@@ -374,6 +375,7 @@ export function Tunnels() {
                 alignItems: 'center',
                 justifyContent: 'flex-end'
               }}>
+                {/* Clock only */}
                 <div style={{ transform: 'scale(1.0)', flex: '1', display: 'flex', alignItems: 'center' }}>
                   <AnalogClock minute={displayTime} />
                 </div>
@@ -544,6 +546,17 @@ export function Tunnels() {
             </li>
           </ul>
         </div>
+      </div>
+
+      {/* SpaceTimeWheel visualization - larger and centered */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        margin: '40px 0',
+        transform: 'scale(2.0)'
+      }}>
+        <SpaceTimeWheel currentMinute={displayTime} tunnel={eb} />
       </div>
 
       <footer className="footer">
