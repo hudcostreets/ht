@@ -1,4 +1,4 @@
-import React, { type FC } from 'react'
+import React, { type FC, memo } from 'react'
 import { LAYOUT } from '../models/Constants'
 import { Tunnel as T } from "../models/Tunnel"
 import { VehicleI } from "../models/Tunnels"
@@ -11,7 +11,7 @@ interface Props {
   tunnel: T
 }
 
-export const Tunnel: FC<Props> = ({ dir, displayTime, tunnel }) => {
+const TunnelComponent: FC<Props> = ({ dir, displayTime, tunnel }) => {
   const vehs = tunnel.allVehicles(displayTime)
   const rects = tunnel.getColorRectangles(displayTime)
 
@@ -189,3 +189,5 @@ function getTooltip(vehicle: VehicleI): string {
     return `Pace car - ${dir}`
   }
 }
+
+export const Tunnel = memo(TunnelComponent)

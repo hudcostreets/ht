@@ -1,6 +1,6 @@
 import { A } from "@rdub/base"
 import { Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
 import { AnalogClock } from './AnalogClock'
@@ -280,7 +280,7 @@ export function Tunnels() {
                 </text>
 
                 {/* Global vehicles (Sweep and Pace) */}
-                {(() => {
+                {useMemo(() => {
                   const allVehicles = tunnels.getAllVehicles(displayTime)
                   const globalVehicles = allVehicles.filter(v => v.type === 'sweep' || v.type === 'pace')
 
@@ -305,7 +305,7 @@ export function Tunnels() {
                       </text>
                     )
                   })
-                })()}
+                }, [displayTime])}
 
                 {/* Legend positioned to the right of E/b bike pen */}
                 {(() => {
