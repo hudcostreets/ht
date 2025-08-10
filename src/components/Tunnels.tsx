@@ -549,15 +549,15 @@ export function Tunnels() {
       </div>
 
       {/* SpaceTimeWheel visualization - larger and centered */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        margin: '40px 0',
-        transform: 'scale(2.0)'
-      }}>
-        <SpaceTimeWheel currentMinute={displayTime} tunnel={eb} />
-      </div>
+      {/*<div style={{*/}
+      {/*  display: 'flex',*/}
+      {/*  justifyContent: 'center',*/}
+      {/*  alignItems: 'center',*/}
+      {/*  margin: '40px 0',*/}
+      {/*  transform: 'scale(2.0)'*/}
+      {/*}}>*/}
+      {/*  <SpaceTimeWheel currentMinute={displayTime} tunnel={eb} />*/}
+      {/*</div>*/}
 
       <footer className="footer">
         <div className="footer-content">
