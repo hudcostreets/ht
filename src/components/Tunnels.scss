@@ -415,17 +415,19 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
     color: $text-secondary;
 
     &.current-phase {
-      font-weight: bold;
       color: $text-color;
-      background: $highlight-bg;
+      background: rgba(76, 175, 80, 0.1);
+      border-left: 3px solid #4caf50;
+      padding-left: 5px;
     }
 
     &.timeline-item {
       cursor: pointer;
-      transition: background-color 0.2s ease;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
       padding: 4px 8px;
       margin-left: -8px;
       border-radius: $radius-sm;
+      border-left: 3px solid transparent;
 
       &:hover {
         background: $highlight-bg;
