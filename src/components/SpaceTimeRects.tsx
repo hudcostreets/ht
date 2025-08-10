@@ -1,4 +1,5 @@
 import React, { type FC, useMemo, memo } from 'react'
+import { Tooltip } from 'react-tooltip'
 
 interface Props {
   currentMinute: number
@@ -18,6 +19,34 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
 
   const plotWidth = width - leftMargin - rightMargin
   const _plotHeight = height - topMargin - bottomMargin
+
+  // Calculate tooltip values from config
+  const tooltipValues = useMemo(() => {
+    const config = eb.config // Use eb config (same as wb)
+
+    // Bikes can enter during penCloseMin window (e.g., 3 minutes)
+    const bikePulseMinutes = config.penCloseMin
+
+    // Calculate bike transit times based on direction
+    const bikeDownhillTime = (config.lengthMi / config.bikeDownMph) * 60
+    const bikeUphillTime = (config.lengthMi / config.bikeUpMph) * 60
+
+    // Earliest bike (enters at minute 0) vs latest bike (enters just before pen closes)
+    const minBikeTime = Math.min(bikeDownhillTime, bikeUphillTime)
+    const maxBikeTime = Math.max(bikeDownhillTime, bikeUphillTime) + bikePulseMinutes
+
+    // R lane is blocked from minute 0 to paceStartMin
+    const rLaneBlockedMinutes = config.paceStartMin
+    const rLaneAvailableMinutes = config.period - rLaneBlockedMinutes
+    const rLaneCarPercent = (rLaneAvailableMinutes / config.period) * 100
+
+    return {
+      bikeMinTime: Math.round(minBikeTime),
+      bikeMaxTime: Math.round(maxBikeTime),
+      bikePulseMinutes,
+      rLaneCarPercent: Math.round(rLaneCarPercent)
+    }
+  }, [eb, wb])
 
   // Calculate space-time allocation statistics
   const spaceTimeStats = useMemo(() => {
@@ -232,6 +261,13 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
                 opacity="0.2"
                 stroke="#333"
                 strokeWidth="1"
+                data-tooltip-id="str-tooltip"
+                data-tooltip-content={
+                  lane.type === 'car-only'
+                    ? 'Cars have exclusive use of the left lane for 100% of each hour'
+                    : `Cars have exclusive use of the right lane for ${tooltipValues.rLaneCarPercent}% of the hour`
+                }
+                style={{ cursor: 'help' }}
               />
 
               {/* Lane label - inside the lane */}
@@ -264,7 +300,9 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
                         dominantBaseline="middle"
                         opacity="0.5"
                         transform={!isWestbound ? `translate(${x * 2},0) scale(-1,1)` : undefined}
-                        style={{ userSelect: 'none' }}
+                        style={{ userSelect: 'none', cursor: 'help' }}
+                        data-tooltip-id="str-tooltip"
+                        data-tooltip-content="Cars have exclusive use of the left lane for 100% of each hour"
                       >
                       🚗
                       </text>
@@ -281,6 +319,9 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
                     d={createFilledRegion(lane.points.greenStart, lane.points.greenEnd, lane.y, isWestbound)}
                     fill="#4caf50"
                     opacity="0.3"
+                    data-tooltip-id="str-tooltip"
+                    data-tooltip-content={`Bikes use the right lane, and have ${tooltipValues.bikeMinTime}-${tooltipValues.bikeMaxTime} mins to cross (depending on when in the ${tooltipValues.bikePulseMinutes}-minute "pulse" they embark)`}
+                    style={{ cursor: 'help' }}
                   />
 
                   {/* Red zone (DMZ) - handle both before and after green */}
@@ -308,6 +349,9 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
                               )}
                               fill="#f44336"
                               opacity="0.3"
+                              data-tooltip-id="str-tooltip"
+                              data-tooltip-content='"DMZ" between "Sweep" and "Pace" cars'
+                              style={{ cursor: 'help' }}
                             />
                           )
                         }
@@ -327,6 +371,9 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
                               )}
                               fill="#f44336"
                               opacity="0.3"
+                              data-tooltip-id="str-tooltip"
+                              data-tooltip-content='"DMZ" between "Sweep" and "Pace" cars'
+                              style={{ cursor: 'help' }}
                             />
                           )
                         }
@@ -442,7 +489,9 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
                           dominantBaseline="middle"
                           // opacity="0.8"
                           transform={!isWestbound ? `translate(${x * 2},0) scale(-1,1)` : undefined}
-                          style={{ userSelect: 'none' }}
+                          style={{ userSelect: 'none', cursor: 'help' }}
+                          data-tooltip-id="str-tooltip"
+                          data-tooltip-content={`Bikes use the right lane, and have ${tooltipValues.bikeMinTime}-${tooltipValues.bikeMaxTime} mins to cross (depending on when in the ${tooltipValues.bikePulseMinutes}-minute "pulse" they embark)`}
                         >
                         🚴
                         </text>
@@ -526,7 +575,9 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
                             dominantBaseline="middle"
                             opacity="0.5"
                             transform={!isWestbound ? `translate(${x * 2},0) scale(-1,1)` : undefined}
-                            style={{ userSelect: 'none' }}
+                            style={{ userSelect: 'none', cursor: 'help' }}
+                            data-tooltip-id="str-tooltip"
+                            data-tooltip-content={`Cars have exclusive use of the right lane for ${tooltipValues.rLaneCarPercent}% of the hour`}
                           >
                           🚗
                           </text>
@@ -624,6 +675,7 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
         </text>
 
       </svg>
+      <Tooltip id="str-tooltip" style={{ zIndex: 9999 }} float />
     </div>
   )
 }
