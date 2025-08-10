@@ -151,8 +151,8 @@ const TunnelComponent: FC<Props> = ({ dir, displayTime, tunnel }) => {
             opacity={pos.opacity}
             style={{ userSelect: 'none', cursor: 'pointer' }}
             transform={transform}
-            data-tooltip-id={pos.state !== 'origin' ? 'vehicle-tooltip' : undefined}
-            data-tooltip-content={pos.state !== 'origin' ? getTooltip(v) : undefined}
+            data-tooltip-id={pos.opacity > 0 ? 'vehicle-tooltip' : undefined}
+            data-tooltip-content={pos.opacity > 0 ? getTooltip(v) : undefined}
             data-vehicle-id={id}
             data-vehicle-type={type}
             data-vehicle-state={pos.state}
