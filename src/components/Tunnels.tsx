@@ -332,15 +332,22 @@ export function Tunnels() {
           </div>
         </div>
         <div className="tunnel-visualization-svg" style={{
-          // Slide up when there's sufficient width (W/b pen fits next to left-aligned header)
           marginTop: (() => {
-            // With left-aligned header, we have more room on the right for the W/b pen
-            // Only need to check width now since the pen can fit next to the header text
-            if (windowSize.width <= 600) return '0'
+            // Check if we should slide up
+            const wbPenX = wb.config.pen.x + LAYOUT.QUEUE_AREA_WIDTH
+            const headerEndX = 400 // Approximate x where header text ends
+            const penOverlapsHeader = wbPenX < headerEndX
 
-            // On wider screens, slide up to utilize header space
-            // Reduced from -40px to -30px to leave more breathing room
-            return '-30px'
+            if (!penOverlapsHeader && windowSize.width > 600) {
+              // Calculate slide-up amount
+              // Goal: align W/b pen top with h2 top
+              // h1 is ~40px, h2 starts at y=40
+              // W/b pen top is at y=35 (100 + (-65))
+              // To align pen top (35) with h2 top (40), we need to move up by 40-35 = 5px
+              // But we also want to account for the header padding, so let's use -50px
+              return '-50px'
+            }
+            return '0'
           })(),
           overflow: 'visible'
         }}>
@@ -365,14 +372,17 @@ export function Tunnels() {
             // Clock is now embedded and sized to align with legend/pen
             const clockBottom = Math.max(legendBottom, ebPenBottom)
 
-            // Find the actual top of all content (W/b pen is typically highest)
+            // Calculate viewBox parameters
+            const TOP_PADDING = 10
+            const BOTTOM_PADDING = 10
+
+            // Find the actual top of all content
+            // Always need to include the W/b pen in the viewBox
             const contentTop = Math.min(wbPenTop, wbTunnelTop)
 
-            // Set height with minimal padding
-            const topPadding = 10 // Small padding above content
-            const bottomPadding = 10 // Small padding below content
-            const svgViewBoxY = contentTop - topPadding // Keep viewBox consistent
-            const svgViewBoxHeight = (clockBottom + bottomPadding) - svgViewBoxY
+            // Simple viewBox calculation - always include all content with padding
+            const svgViewBoxY = contentTop - TOP_PADDING
+            const svgViewBoxHeight = (clockBottom + BOTTOM_PADDING) - svgViewBoxY
 
             return (
               <svg
