@@ -8,12 +8,28 @@ function getResponsiveTunnelWidth(): number {
   return 800
 }
 
+// Get responsive fade distance based on viewport
+function getResponsiveFadeDistance(): number {
+  if (typeof window === 'undefined') return 100 // SSR fallback
+  const vw = window.innerWidth
+  if (vw <= 500) return 40  // Narrow screens: minimal fade
+  if (vw < 768) return 60   // Small screens
+  return 100                 // Desktop: full fade
+}
+
 // Layout constants
 export const LAYOUT = {
   get TUNNEL_WIDTH() {
     return getResponsiveTunnelWidth()
   },
-  QUEUE_AREA_WIDTH: 100, // Reduced from 150
+  get QUEUE_AREA_WIDTH() {
+    // Responsive queue area - narrower on mobile to shift lanes left
+    if (typeof window === 'undefined') return 100
+    const vw = window.innerWidth
+    if (vw <= 500) return 50   // Minimal on narrow screens
+    if (vw < 768) return 70    // Small screens
+    return 100                  // Desktop
+  },
   LANE_HEIGHT: 30,
   TUNNEL_LENGTH_MILES: 2,
 
@@ -24,16 +40,28 @@ export const LAYOUT = {
   BIKE_SPACING_Y: 15,
   BIKE_PEN_MARGIN: 10,
 
-  // Vehicle staging offsets
-  SWEEP_STAGING_OFFSET: 35,
-  PACE_STAGING_OFFSET: 60,
+  // Vehicle staging offsets - responsive
+  get SWEEP_STAGING_OFFSET() {
+    // Sweep stages closer on narrow screens to stay visible
+    if (typeof window === 'undefined') return 35
+    const vw = window.innerWidth
+    if (vw <= 500) return 20   // Closer on narrow screens but with some clearance
+    if (vw < 768) return 25    // Medium distance on small screens
+    return 35                   // Farther on desktop for better separation
+  },
+  get PACE_STAGING_OFFSET() {
+    // Pace stages at same X as Sweep, but vertically offset
+    return this.SWEEP_STAGING_OFFSET
+  },
   STAGING_VERTICAL_OFFSET: 30,
 
   // Bike pen positioning
   BIKE_PEN_INSET: 0, // How far inside the tunnel entrance to place the pen
 
-  // Fade animation
-  FADE_DISTANCE_PX: 100, // Pixels to travel while fading in/out
+  // Fade animation - responsive
+  get FADE_DISTANCE_PX() {
+    return getResponsiveFadeDistance()
+  },
 }
 
 // Computed layout values
@@ -67,11 +95,11 @@ export const COMPUTED_LAYOUT = {
     return gridHeight + 2 * LAYOUT.BIKE_PEN_MARGIN
   },
 
-  // SVG dimensions
+  // SVG dimensions - responsive to use available space
   get SVG_WIDTH() {
     // Tighter layout: just tunnel width + fade distances on both sides
     // Queue area is already included in QUEUE_AREA_WIDTH (left side)
-    // Right side just needs fade distance
+    // Right side uses responsive fade distance
     return LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + LAYOUT.FADE_DISTANCE_PX
   }
 }

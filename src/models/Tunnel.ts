@@ -179,8 +179,15 @@ export class Tunnel {
         const idx = queueLen - 1
         // Use pen's configured rows/cols if available, otherwise fall back to default
         const penCols = config.pen.cols || bikesPerRow
-        const row = floor(idx / penCols)
+        const penRows = config.pen.rows || Math.ceil(nbikes / penCols)
+        let row = floor(idx / penCols)
         const col = idx % penCols
+
+        // For W/b, fill from bottom up (nearest to tunnel entrance)
+        if (direction === 'west') {
+          row = penRows - 1 - row
+        }
+
         const offset = { x: col * LAYOUT.BIKE_SPACING_X, y: row * LAYOUT.BIKE_SPACING_Y, }
         const minsBeforeDequeueing = spawnMin >= penCloseMin ? (period - spawnMin) : 0
         bike.spawnQueue = {

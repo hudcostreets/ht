@@ -348,9 +348,9 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
                     d={createFilledRegion(lane.points.greenStart, lane.points.greenEnd, lane.y, isWestbound)}
                     fill="#4caf50"
                     opacity="0.3"
-                    data-tooltip-id="str-tooltip"
-                    data-tooltip-content={`Bikes use the right lane, and have ${tooltipValues.bikeMinTime}-${tooltipValues.bikeMaxTime} mins to cross (depending on when in the ${tooltipValues.bikePulseMinutes}-minute "pulse" they embark)`}
-                    style={{ cursor: 'default' }}
+                    data-tooltip-id={isMobile ? undefined : "str-tooltip"}
+                    data-tooltip-content={isMobile ? undefined : `Bikes use the right lane, and have ${tooltipValues.bikeMinTime}-${tooltipValues.bikeMaxTime} mins to cross (depending on when in the ${tooltipValues.bikePulseMinutes}-minute "pulse" they embark)`}
+                    style={{ cursor: 'default', pointerEvents: isMobile ? 'none' : 'auto' }}
                   />
 
                   {/* Red zone (DMZ) - handle both before and after green */}
@@ -378,9 +378,9 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
                               )}
                               fill="#f44336"
                               opacity="0.3"
-                              data-tooltip-id="str-tooltip"
-                              data-tooltip-content='"DMZ" between "Sweep" and "Pace" cars'
-                              style={{ cursor: 'default' }}
+                              data-tooltip-id={isMobile ? undefined : "str-tooltip"}
+                              data-tooltip-content={isMobile ? undefined : '"DMZ" between "Sweep" and "Pace" cars'}
+                              style={{ cursor: 'default', pointerEvents: isMobile ? 'none' : 'auto' }}
                             />
                           )
                         }
@@ -400,9 +400,9 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
                               )}
                               fill="#f44336"
                               opacity="0.3"
-                              data-tooltip-id="str-tooltip"
-                              data-tooltip-content='"DMZ" between "Sweep" and "Pace" cars'
-                              style={{ cursor: 'default' }}
+                              data-tooltip-id={isMobile ? undefined : "str-tooltip"}
+                              data-tooltip-content={isMobile ? undefined : '"DMZ" between "Sweep" and "Pace" cars'}
+                              style={{ cursor: 'default', pointerEvents: isMobile ? 'none' : 'auto' }}
                             />
                           )
                         }

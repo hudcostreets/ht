@@ -378,6 +378,7 @@ export function Tunnels() {
 
             return (
               <svg
+                key={`svg-${windowSize.width}`} // Force re-render on viewport change
                 width="100%"
                 viewBox={`0 ${svgViewBoxY} ${COMPUTED_LAYOUT.SVG_WIDTH} ${svgViewBoxHeight}`}
                 preserveAspectRatio="xMidYMid meet"
@@ -449,6 +450,10 @@ export function Tunnels() {
                         opacity={pos.opacity}
                         style={{ userSelect: 'none', cursor: 'pointer' }}
                         transform={dir === 'east' ? `translate(${x * 2},0) scale(-1,1)` : undefined}
+                        data-tooltip-id="vehicle-tooltip"
+                        data-tooltip-content={type === 'sweep' ?
+                          'Sweep van: Clears the lane for bikes at 12 mph' :
+                          'Pace car: Leads cars back into the lane at 20 mph'}
                       >
                         {type === 'sweep' ? '🚐' : '🚓'}
                       </text>

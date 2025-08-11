@@ -25,7 +25,7 @@ export abstract class Vehicle {
   public spawnMin: number
   public spawnQueue?: SpawnQueue
   protected __points?: Points
-  private _normalized?: boolean
+  protected _normalized?: boolean
 
   constructor({ tunnel, laneId, id, spawnMin, spawnQueue, points, }: Props) {
     this.tunnel = tunnel

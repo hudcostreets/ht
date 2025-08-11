@@ -15,6 +15,7 @@ export class Pace extends Vehicle {
   public wb: Tunnel
   public mph: number
   public stagingOffset: number
+  private _lastViewportWidth?: number
 
   constructor({ eb, wb, mph, stagingOffset }: Props) {
     super({
@@ -40,20 +41,32 @@ export class Pace extends Vehicle {
   }
 
   get _points(): PartialPoints {
+    // Check if viewport changed and invalidate cache if needed
+    const currentWidth = typeof window !== 'undefined' ? window.innerWidth : 0
+    if (this._lastViewportWidth !== undefined && this._lastViewportWidth !== currentWidth) {
+      // Viewport changed, invalidate cached points
+      this._pos = undefined
+      this._normalized = false
+      this.__points = undefined
+    }
+    this._lastViewportWidth = currentWidth
+
     const { eb, wb, transitingMins } = this
     const { officialResetMins, paceStartMin, } = eb.config
     let points: PartialPoints = []
 
     // Staging positions use the lane entrance coordinates (which now include y-offset)
-    // Add vertical offset to keep vehicles out of the way of traffic
-    const verticalOffset = LAYOUT.STAGING_VERTICAL_OFFSET
+    // Pace stages at same X as Sweep but with MORE vertical offset
+    const verticalOffset = LAYOUT.STAGING_VERTICAL_OFFSET * 2  // Double offset for Pace
+    // Use dynamic staging offset that responds to viewport
+    const dynamicOffset = LAYOUT.PACE_STAGING_OFFSET
     const westStaging = {
-      x: wb.r.entrance.x + this.stagingOffset,
-      y: wb.r.entrance.y - verticalOffset  // Above W/b lane
+      x: wb.r.entrance.x + dynamicOffset,
+      y: wb.r.entrance.y - verticalOffset  // Farther above W/b lane than Sweep
     }
     const eastStaging = {
-      x: eb.r.entrance.x - this.stagingOffset,
-      y: eb.r.entrance.y + verticalOffset  // Below E/b lane
+      x: eb.r.entrance.x - dynamicOffset,
+      y: eb.r.entrance.y + verticalOffset  // Farther below E/b lane than Sweep
     }
 
     const eTransitingMin = eb.offset + paceStartMin
