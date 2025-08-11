@@ -10,6 +10,36 @@ export function AnalogClock({ minute, size = 80 }: AnalogClockProps) {
   // Use fractional minutes for smooth animation
   const minuteAngle = (minute * 6) - 90 // -90 to start from top
 
+  // Create arc path for a slice on the clock
+  const createArcPath = (startMin: number, endMin: number, innerRadius: number, outerRadius: number) => {
+    const startAngle = (startMin * 6) - 90 // Convert minutes to degrees, -90 to start from top
+    const endAngle = (endMin * 6) - 90
+
+    const startAngleRad = (startAngle * Math.PI) / 180
+    const endAngleRad = (endAngle * Math.PI) / 180
+
+    const x1Inner = 40 + innerRadius * Math.cos(startAngleRad)
+    const y1Inner = 40 + innerRadius * Math.sin(startAngleRad)
+    const x2Inner = 40 + innerRadius * Math.cos(endAngleRad)
+    const y2Inner = 40 + innerRadius * Math.sin(endAngleRad)
+
+    const x1Outer = 40 + outerRadius * Math.cos(startAngleRad)
+    const y1Outer = 40 + outerRadius * Math.sin(startAngleRad)
+    const x2Outer = 40 + outerRadius * Math.cos(endAngleRad)
+    const y2Outer = 40 + outerRadius * Math.sin(endAngleRad)
+
+    const largeArcFlag = endMin - startMin > 30 ? 1 : 0
+
+    return `
+      M ${x1Inner} ${y1Inner}
+      L ${x1Outer} ${y1Outer}
+      A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2Outer} ${y2Outer}
+      L ${x2Inner} ${y2Inner}
+      A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x1Inner} ${y1Inner}
+      Z
+    `
+  }
+
   return (
     <svg
       width={size}
@@ -25,6 +55,34 @@ export function AnalogClock({ minute, size = 80 }: AnalogClockProps) {
         fill="white"
         stroke="#333"
         strokeWidth="2"
+      />
+
+      {/* Green slice for E/b bikes (45-48) */}
+      <path
+        d={createArcPath(45, 48, 20, 36)}
+        fill="#4caf50"
+        opacity="0.3"
+      />
+
+      {/* Red slice for E/b DMZ (48-50) */}
+      <path
+        d={createArcPath(48, 50, 20, 36)}
+        fill="#f44336"
+        opacity="0.3"
+      />
+
+      {/* Green slice for W/b bikes (15-18) */}
+      <path
+        d={createArcPath(15, 18, 20, 36)}
+        fill="#4caf50"
+        opacity="0.3"
+      />
+
+      {/* Red slice for W/b DMZ (18-20) */}
+      <path
+        d={createArcPath(18, 20, 20, 36)}
+        fill="#f44336"
+        opacity="0.3"
       />
 
       {/* Hour markers */}
