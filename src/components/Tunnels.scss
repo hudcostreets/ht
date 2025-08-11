@@ -409,14 +409,14 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 // Timeline and How section (side by side)
 .timeline-and-how {
   display: flex;
-  gap: 20px;
+  gap: 0;  // No gap between sections
   padding: 0 20px;
   max-width: 1200px;
   margin: 0 auto;
 
   @media (max-width: 1024px) {
     padding: 0 15px;
-    gap: 15px;
+    gap: 0;
   }
 
   @media (max-width: 768px) {
@@ -436,6 +436,12 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
     padding: 10px 12px;
   }
 
+  h2 {
+    margin: 0 0 15px 0;
+    color: $text-color;
+    font-size: 1.5rem;
+  }
+
   h3 {
     margin: 0 0 15px 0;
     color: $text-color;
@@ -444,10 +450,11 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
   ul {
     margin: 0;
     padding-left: 20px;
+    line-height: 1.5;  // Match How/Why sections
   }
 
   li {
-    margin: 5px 0;
+    margin: 4px 0;  // Match How/Why sections
     color: $text-secondary;
 
     &.current-phase {
@@ -460,7 +467,7 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
     &.timeline-item {
       cursor: pointer;
       transition: background-color 0.2s ease, border-color 0.2s ease;
-      padding: 4px 8px;
+      padding: 2px 8px;  // Reduced from 4px to 2px
       margin-left: -8px;
       border-radius: $radius-sm;
       border-left: 3px solid transparent;
@@ -492,7 +499,7 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
   }
 
   h2 {
-    margin: 0 0 20px 0;
+    margin: 0 0 15px 0;
     color: $text-color;
     font-size: 1.5rem;
   }
@@ -501,14 +508,14 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
     margin: 0;
     padding-left: 25px;
     color: $text-secondary;
-    line-height: 1.8;
+    line-height: 1.5;  // Reduced from 1.8
 
     li {
-      margin: 8px 0;
+      margin: 4px 0;  // Reduced from 8px
     }
 
     ul {
-      margin-top: 8px;
+      margin-top: 4px;  // Reduced from 8px
       padding-left: 20px;
     }
   }
@@ -552,10 +559,10 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
     margin: 0;
     padding-left: 25px;
     color: $text-secondary;
-    line-height: 1.8;
+    line-height: 1.5;  // Reduced from 1.8
 
     li {
-      margin: 8px 0;
+      margin: 4px 0;  // Reduced from 8px
     }
   }
 }

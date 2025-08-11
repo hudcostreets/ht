@@ -1,6 +1,6 @@
 import { A } from "@rdub/base"
 import { icons } from '@rdub/icons'
-import { Play, Pause, ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
+import { Play, Pause, ChevronLeft, ChevronRight, ArrowLeftRight, Settings } from 'lucide-react'
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
@@ -132,6 +132,32 @@ export function Tunnels() {
 
   // State for timeline direction toggle
   const [timelineDirection, setTimelineDirection] = useState<'east' | 'west'>('east')
+
+  // State for controls tooltip
+  const [showControls, setShowControls] = useState(false)
+  const [controlsSticky, setControlsSticky] = useState(false) // Track if clicked (sticky) vs hovered
+
+  // Handle clicks outside the controls to close sticky mode
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      // Check if click is outside both the gear and the controls popover
+      const target = e.target as Element
+      if (controlsSticky &&
+          !target.closest('.controls-popover') &&
+          !target.closest('.settings-gear')) {
+        setShowControls(false)
+        setControlsSticky(false)
+      }
+    }
+
+    if (controlsSticky) {
+      // Use capture phase and add a small delay to avoid conflicts with button clicks
+      setTimeout(() => {
+        document.addEventListener('click', handleClickOutside, true)
+      }, 100)
+      return () => document.removeEventListener('click', handleClickOutside, true)
+    }
+  }, [controlsSticky])
 
   // Update current minute when display time changes
   useEffect(() => {
@@ -352,6 +378,7 @@ export function Tunnels() {
                   dominantBaseline="middle"  // Vertically center the text
                   fill="#333"
                   opacity="0.6"
+                  style={{ userSelect: 'none' }}
                 >
                   NJ | NY
                 </text>
@@ -365,6 +392,7 @@ export function Tunnels() {
                   textAnchor="end"
                   dominantBaseline="middle"  // Vertically center the text
                   fill="#333"
+                  style={{ userSelect: 'none' }}
                 >
                   :{showDecimal
                     ? displayTime.toFixed(1).padStart(4, '0')
@@ -406,29 +434,80 @@ export function Tunnels() {
                   const legendY = eb.config.y + eb.config.pen.y + 10
 
                   return (
-                    <g transform={`translate(${legendX}, ${legendY})`}>
-                      <text x="0" y="0" fontSize="14" fontWeight="bold">Legend</text>
+                    <>
+                      <g transform={`translate(${legendX}, ${legendY})`}>
+                        <text x="0" y="0" fontSize="14" fontWeight="bold" style={{ userSelect: 'none' }}>Legend</text>
 
-                      {/* Green rect - bike space */}
-                      <rect x="0" y="10" width="20" height="10" fill="#4caf50" opacity="0.3" />
-                      <text x="25" y="19" fontSize="12">Bike space</text>
+                        {/* Green rect - bike space */}
+                        <rect x="0" y="10" width="20" height="10" fill="#4caf50" opacity="0.3" />
+                        <text x="25" y="19" fontSize="12" style={{ userSelect: 'none' }}>Bike space</text>
 
-                      {/* Red rect - clearing space */}
-                      <rect x="0" y="25" width="20" height="10" fill="#f44336" opacity="0.3" />
-                      <text x="25" y="34" fontSize="12">Clearing space</text>
+                        {/* Red rect - buffer */}
+                        <rect x="0" y="25" width="20" height="10" fill="#f44336" opacity="0.3" />
+                        <text x="25" y="34" fontSize="12" style={{ userSelect: 'none' }}>Buffer</text>
 
-                      {/* Grey rect - car space */}
-                      <rect x="0" y="40" width="20" height="10" fill="#666" />
-                      <text x="25" y="49" fontSize="12">Car space</text>
+                        {/* Grey rect - car space */}
+                        <rect x="0" y="40" width="20" height="10" fill="#666" />
+                        <text x="25" y="49" fontSize="12" style={{ userSelect: 'none' }}>Car space</text>
 
-                      {/* Sweep icon */}
-                      <text x="10" y="65" fontSize="16" textAnchor="middle">🚐</text>
-                      <text x="25" y="65" fontSize="12">"Sweep" clears stragglers</text>
+                        {/* Sweep icon */}
+                        <text x="10" y="65" fontSize="16" textAnchor="middle" style={{ userSelect: 'none' }}>🚐</text>
+                        <text x="25" y="65" fontSize="12" style={{ userSelect: 'none' }}>"Sweep" clears stragglers</text>
 
-                      {/* Pace icon */}
-                      <text x="10" y="82" fontSize="16" textAnchor="middle">🚓</text>
-                      <text x="25" y="82" fontSize="12">"Pace car" reopens 🚗 lane</text>
-                    </g>
+                        {/* Pace icon */}
+                        <text x="10" y="82" fontSize="16" textAnchor="middle" style={{ userSelect: 'none' }}>🚓</text>
+                        <text x="25" y="82" fontSize="12" style={{ userSelect: 'none' }}>"Pace car" reopens 🚗 lane</text>
+                      </g>
+
+                      {/* Settings gear icon positioned in the pocket above legend */}
+                      {(() => {
+                        // Position gear between E/b tunnel bottom and Sweep legend entry
+                        // E/b tunnel bottom is at eb.config.y + 60 (2 lanes)
+                        // Sweep text baseline is at legendY + 65, but we need to stop above the text
+                        const ebTunnelBottom = eb.config.y + LAYOUT.LANE_HEIGHT * 2
+                        const sweepTextTop = legendY + 55  // Top of Sweep line (65 - ~10 for text height)
+
+                        const GEAR_PADDING = 20 // Even more padding for smaller gear
+                        const gearTop = ebTunnelBottom + GEAR_PADDING
+                        const gearBottom = sweepTextTop - GEAR_PADDING
+                        const gearSize = gearBottom - gearTop
+                        const gearCenterY = (gearTop + gearBottom) / 2
+                        const gearX = legendX + 140  // Closer to legend items
+
+                        return (
+                          <>
+                            <g
+                              className="settings-gear"
+                              transform={`translate(${gearX}, ${gearCenterY})`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                // Toggle controls
+                                setShowControls(!showControls)
+                                setControlsSticky(!showControls)
+                              }}
+                              style={{ cursor: 'pointer' }}
+                              data-gear-x={gearX}
+                              data-gear-y={gearCenterY}
+                            >
+                              <circle
+                                cx="0"
+                                cy="0"
+                                r={gearSize/2 + 2}
+                                fill={showControls ? "#e3f2fd" : "#f5f5f5"}
+                                stroke={showControls ? "#2196f3" : "#ddd"}
+                                strokeWidth={showControls ? "2" : "1"}
+                              />
+                              <Settings
+                                x={-gearSize/2}
+                                y={-gearSize/2}
+                                size={gearSize}
+                                color={showControls ? "#1976d2" : "#666"}
+                              />
+                            </g>
+                          </>
+                        )
+                      })()}
+                    </>
                   )
                 })()}
 
@@ -470,9 +549,68 @@ export function Tunnels() {
         </div>
       </div>
 
-      <div className="controls-bar">
-        <div className="controls">
-          <div className="button-group">
+      {/* Controls popover/tooltip */}
+      {showControls && (() => {
+        // Calculate gear position in viewport coordinates
+        const gearElement = document.querySelector('.settings-gear')
+        const svgElement = document.querySelector('.tunnel-visualization-svg svg')
+        let popupStyle: React.CSSProperties = {
+          position: 'fixed',
+          background: 'white',
+          border: '2px solid #ddd',
+          borderRadius: '8px',
+          padding: '20px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          zIndex: 10000,
+          minWidth: '300px'
+        }
+
+        if (gearElement && svgElement) {
+          const svgRect = svgElement.getBoundingClientRect()
+          const gearTransform = gearElement.getAttribute('transform')
+          const match = gearTransform?.match(/translate\(([^,]+),([^)]+)\)/)
+
+          if (match) {
+            const gearX = parseFloat(match[1])
+            const gearY = parseFloat(match[2])
+
+            // Convert SVG coordinates to viewport coordinates
+            const svgViewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 800, 400]
+            const scaleX = svgRect.width / svgViewBox[2]
+            const scaleY = svgRect.height / svgViewBox[3]
+
+            const gearScreenX = svgRect.left + (gearX - svgViewBox[0]) * scaleX
+            const gearScreenY = svgRect.top + (gearY - svgViewBox[1]) * scaleY
+
+            // Always position below gear, centered horizontally
+            popupStyle.left = `${gearScreenX}px`
+            popupStyle.top = `${gearScreenY + 30}px`
+            popupStyle.transform = 'translateX(-50%)'
+          }
+        }
+
+        return (
+          <div className="controls-popover"
+            onClick={(e) => e.stopPropagation()}
+            style={popupStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <h3 style={{ margin: 0, fontSize: '16px' }}>Playback Controls</h3>
+            <button
+              onClick={() => {
+                setShowControls(false)
+                setControlsSticky(false)
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '20px',
+                cursor: 'pointer',
+                padding: '0',
+                color: '#666'
+              }}
+            >×</button>
+          </div>
+          <div className="button-group" style={{ marginBottom: '15px', display: 'flex', gap: '4px', justifyContent: 'center' }}>
             <button onClick={() => {
               setIsPaused(prev => !prev)
               setShowDecimal(false)
@@ -487,7 +625,7 @@ export function Tunnels() {
                 url.searchParams.delete('t')
                 window.history.replaceState({}, '', url.toString())
               }
-            }}>
+            }} style={{ padding: '8px 12px', fontSize: '16px', border: 'none', borderRadius: '6px', background: '#007bff', color: 'white', cursor: 'pointer' }}>
               {isPaused ? <Play size={18} /> : <Pause size={18} />}
             </button>
             <button
@@ -506,7 +644,8 @@ export function Tunnels() {
                 }
               }}
               disabled={!isPaused}
-              title="Step backward 1 minute">
+              title="Step backward 1 minute"
+              style={{ padding: '8px 12px', fontSize: '16px', border: 'none', borderRadius: '6px', background: '#007bff', color: 'white', cursor: 'pointer', opacity: isPaused ? 1 : 0.5 }}>
               <ChevronLeft size={18} />
             </button>
             <button
@@ -525,21 +664,18 @@ export function Tunnels() {
                 }
               }}
               disabled={!isPaused}
-              title="Step forward 1 minute">
+              title="Step forward 1 minute"
+              style={{ padding: '8px 12px', fontSize: '16px', border: 'none', borderRadius: '6px', background: '#007bff', color: 'white', cursor: 'pointer', opacity: isPaused ? 1 : 0.5 }}>
               <ChevronRight size={18} />
             </button>
           </div>
-          <label
-            data-tooltip-id="speed-tooltip"
-            data-tooltip-content="Simulation speed: virtual minutes per real-world second"
-            style={{
-              display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
-              alignItems: 'center',
-              gap: isMobile ? '2px' : '10px',
-              flex: isMobile ? '1' : 'none'  // Take available space on mobile
-            }}>
-            <span style={{ fontSize: isMobile ? '12px' : '16px' }}>Speed: {speed}x</span>
+          <label style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '5px'
+          }}>
+            <span style={{ fontSize: '14px' }}>Speed: {speed}x</span>
             <input
               type="range"
               min="0.5"
@@ -547,15 +683,20 @@ export function Tunnels() {
               step="0.5"
               value={speed}
               onChange={(e) => setSpeed(parseFloat(e.target.value))}
-              style={{
-                width: isMobile ? '100%' : '100px',  // Full width on mobile
-                minWidth: isMobile ? '60px' : 'auto'  // But not too small
-              }}
+              style={{ width: '100%' }}
             />
           </label>
-          {!isMobile && <span className="hint">Space: ▶/⏸ | ←/→: ±1 min | ⌥←/→: ±0.1 min</span>}
+          {!isMobile && (
+            <div style={{ marginTop: '15px', fontSize: '12px', color: '#666', lineHeight: '1.5' }}>
+              <div><strong>Keyboard shortcuts:</strong></div>
+              <div>Space: Play/Pause</div>
+              <div>←/→: Step ±1 minute</div>
+              <div>⌥←/→: Step ±0.1 minute</div>
+            </div>
+          )}
         </div>
-      </div>
+        )
+      })()}
 
       <div className="timeline-and-how">
         <div className="timeline-section">
@@ -565,7 +706,7 @@ export function Tunnels() {
             gap: '8px',
             marginBottom: '10px'
           }}>
-            <h3 style={{ margin: 0 }}>Timeline ({timelineDirection === 'east' ? 'Eastbound' : 'Westbound'})</h3>
+            <h2 style={{ margin: 0 }}>Timeline ({timelineDirection === 'east' ? 'Eastbound' : 'Westbound'})</h2>
             <button
               onClick={() => setTimelineDirection(prev => prev === 'east' ? 'west' : 'east')}
               style={{
@@ -603,12 +744,12 @@ export function Tunnels() {
         </div>
 
         <div className="how-section">
-          <h2>How?</h2>
+          <h2 style={{ margin: '0 0 10px 0' }}>How</h2>
           <ul>
-            <li>Bikes allowed into tunnel for a 3-minute "pulse" each hour (like catching a train)</li>
-            <li>Cars restricted from that lane for 10mins</li>
+            <li>Bikes get a 3-minute "pulse" each hour (like catching a train)</li>
+            <li>Cars restricted from 1 lane for 10mins (<a href={`#spacetime`}>&lt;10% of total space/time</a>)</li>
             <li>Bikes get 12-15mins to cross</li>
-            <li>Requires just 2 official vehicles:
+            <li>2 official vehicles:
               <ul>
                 <li>"Sweep" van (picks up stragglers)</li>
                 <li>"Pace car" (reopens lane to cars)</li>
@@ -620,7 +761,7 @@ export function Tunnels() {
 
       <div className="why-section-container">
         <div className="why-section">
-          <h2>Why?</h2>
+          <h2>Why</h2>
           <ol>
             {(() => {
               const qas: Array<{ q: string; a: 'Yes' | 'No'; link?: string }> = [
@@ -660,7 +801,7 @@ export function Tunnels() {
       {/*</div>*/}
 
       {/* SpaceTimeRects visualization - centered */}
-      <div style={{
+      <div id={"spacetime"} style={{
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',

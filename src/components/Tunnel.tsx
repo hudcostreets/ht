@@ -21,7 +21,7 @@ const TunnelComponent: FC<Props> = ({ dir, displayTime, tunnel }) => {
   return (
     <g>
       {/* Direction label - aligned with tunnel left edge */}
-      <text x={LAYOUT.QUEUE_AREA_WIDTH} y={yOffset - 10} fontSize="16" fontWeight="bold">
+      <text x={LAYOUT.QUEUE_AREA_WIDTH} y={yOffset - 10} fontSize="16" fontWeight="bold" style={{ userSelect: 'none' }}>
         {dir === 'east' ? 'East-bound (NJ → NY)' : 'West-bound (NJ ← NY)'}
       </text>
 
@@ -47,13 +47,13 @@ const TunnelComponent: FC<Props> = ({ dir, displayTime, tunnel }) => {
 
         {/* Left half */}
         <text x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH * 0.25} y={yOffset + (dir === 'east' ? 45 : 15)}
-          fontSize="14" textAnchor="middle" dominantBaseline="middle" fill="white">
+          fontSize="14" textAnchor="middle" dominantBaseline="middle" fill="white" style={{ userSelect: 'none' }}>
           {dir === 'east' ? 'downhill ↘' : '↖ uphill'}
         </text>
 
         {/* Right half */}
         <text x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH * 0.75} y={yOffset + (dir === 'east' ? 45 : 15)}
-          fontSize="14" textAnchor="middle" dominantBaseline="middle" fill="white">
+          fontSize="14" textAnchor="middle" dominantBaseline="middle" fill="white" style={{ userSelect: 'none' }}>
           {dir === 'east' ? 'uphill ↗' : '↙ downhill'}
         </text>
       </g>
@@ -67,7 +67,7 @@ const TunnelComponent: FC<Props> = ({ dir, displayTime, tunnel }) => {
           <>
             <rect x={penX} y={penY} width={pen.w} height={pen.h}
               fill="#e3f2fd" stroke="#2196f3" strokeWidth="2" strokeDasharray="5,5" rx="6" />
-            <text x={penX + pen.w / 2} y={dir === 'east' ? penY + pen.h + 15 : penY - 10} fontSize="12" textAnchor="middle">Bike Pen</text>
+            <text x={penX + pen.w / 2} y={dir === 'east' ? penY + pen.h + 15 : penY - 10} fontSize="12" textAnchor="middle" style={{ userSelect: 'none' }}>Bike Pen</text>
           </>
         )
       })()}
@@ -75,12 +75,12 @@ const TunnelComponent: FC<Props> = ({ dir, displayTime, tunnel }) => {
       {/* Lane markers */}
       <text x={dir === 'east' ? LAYOUT.QUEUE_AREA_WIDTH + 10 : LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - 10}
         y={yOffset + 20} fontSize="12" fill="white" opacity="0.6"
-        textAnchor={dir === 'east' ? 'start' : 'end'}>
+        textAnchor={dir === 'east' ? 'start' : 'end'} style={{ userSelect: 'none' }}>
         {dir === 'east' ? 'L Lane' : 'R Lane'}
       </text>
       <text x={dir === 'east' ? LAYOUT.QUEUE_AREA_WIDTH + 10 : LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - 10}
         y={yOffset + 50} fontSize="12" fill="white" opacity="0.6"
-        textAnchor={dir === 'east' ? 'start' : 'end'}>
+        textAnchor={dir === 'east' ? 'start' : 'end'} style={{ userSelect: 'none' }}>
         {dir === 'east' ? 'R Lane' : 'L Lane'}
       </text>
 
@@ -89,28 +89,28 @@ const TunnelComponent: FC<Props> = ({ dir, displayTime, tunnel }) => {
         {dir === 'east' ? (
           <>
             {/* E/b entrance (left): 12th St (Jersey City) */}
-            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 25} fontSize="14" textAnchor="end" fill="#333">
+            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 25} fontSize="14" textAnchor="end" fill="#333" style={{ userSelect: 'none' }}>
               12th St
             </text>
-            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 40} fontSize="13" textAnchor="end" fill="#555">
+            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 40} fontSize="13" textAnchor="end" fill="#555" style={{ userSelect: 'none' }}>
               (Jersey City)
             </text>
             {/* E/b exit (right): NYC */}
-            <text x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + 10} y={yOffset + 30} fontSize="14" textAnchor="start" fill="#333">
+            <text x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + 10} y={yOffset + 30} fontSize="14" textAnchor="start" fill="#333" style={{ userSelect: 'none' }}>
               NYC
             </text>
           </>
         ) : (
           <>
             {/* W/b entrance (right): NYC */}
-            <text x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + 10} y={yOffset + 30} fontSize="14" textAnchor="start" fill="#333">
+            <text x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + 10} y={yOffset + 30} fontSize="14" textAnchor="start" fill="#333" style={{ userSelect: 'none' }}>
               NYC
             </text>
             {/* W/b exit (left): 14th St (Jersey City) */}
-            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 25} fontSize="14" textAnchor="end" fill="#333">
+            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 25} fontSize="14" textAnchor="end" fill="#333" style={{ userSelect: 'none' }}>
               14th St
             </text>
-            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 40} fontSize="13" textAnchor="end" fill="#555">
+            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 40} fontSize="13" textAnchor="end" fill="#555" style={{ userSelect: 'none' }}>
               (Jersey City)
             </text>
           </>
