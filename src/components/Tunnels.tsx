@@ -551,11 +551,15 @@ export function Tunnels() {
         <div className="info-section">
           <h2>Why?</h2>
           <ol>
-            <li>There's no way to bike or walk between NYC and Hudson County (not OK!)</li>
-            <li>No one has a plan to fix this in the next 10 years (not OK!)</li>
-            <li><A href={"https://www.instagram.com/p/DKXr7giSaeK/"}>Bike lanes have higher throughput (per lane-minute) than cars</A></li>
-            <li>Alleviates weekend PATH over-crowding</li>
-            <li>The Holland Tunnel <A href={"https://github.com/hudcostreets/hudson-transit"}>is the worst-performing Hudson River crossing</A> (98% 1-person cars)</li>
+            <li>Should it be possible to walk or bike between Hudson County and NYC? <strong>Yes 👍</strong></li>
+            <li>Is it possible today? <strong>No 👎</strong></li>
+            <li>Does anyone have a plan to make it possible within 10 years? <strong>No 👎</strong></li> {/* TODO: discuss ped bridge/tunnel ideas */}
+            <li>Can bikes transport more people per lane-minute than cars? <strong><A href={"https://www.instagram.com/p/DKXr7giSaeK/"}>Yes</A> 👍</strong></li>
+            <li>Do we deserve a small fraction of the time, to do so? <strong>Yes 👍</strong></li>
+            <li>Will this help alleviate PATH overcrowding? <strong>Yes 👍</strong></li>
+            <li>Do we want people taking (e)bikes on crowded weekend PATH trains? <strong>No 👎</strong></li>
+            <li>Is the Holland Tunnel the worst-performing Hudson River crossing? <strong><A href={"https://github.com/hudcostreets/hudson-transit"}>Yes</A> 👍</strong></li>
+            <li>Should we start piloting this on weekends? <strong>Yes 👍</strong></li>
           </ol>
         </div>
 
