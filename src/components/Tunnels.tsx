@@ -267,8 +267,17 @@ export function Tunnels() {
         </div>
       </div>
 
-      <div className="tunnel-visualization-svg">
-        <div style={{ position: 'relative', width: '100%', maxWidth: COMPUTED_LAYOUT.SVG_WIDTH, margin: '0 auto' }}>
+      <div className="tunnel-visualization-svg" style={{
+        // On wider screens, slide entire container up to overlap with header space
+        marginTop: windowSize.width > 600 ? '-40px' : '0',
+        overflow: 'visible'
+      }}>
+        <div style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: COMPUTED_LAYOUT.SVG_WIDTH,
+          margin: '0 auto'
+        }}>
           {(() => {
             // Calculate SVG height based on actual content
             const wbTunnelTop = wb.config.y // W/b tunnel top (should be 100)
@@ -289,7 +298,7 @@ export function Tunnels() {
             // Set height with minimal padding
             const topPadding = 10 // Small padding above content
             const bottomPadding = 10 // Small padding below content
-            const svgViewBoxY = contentTop - topPadding // Start viewBox above highest content
+            const svgViewBoxY = contentTop - topPadding // Keep viewBox consistent
             const svgViewBoxHeight = (clockBottom + bottomPadding) - svgViewBoxY
 
             return (
