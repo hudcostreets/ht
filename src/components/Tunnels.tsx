@@ -271,13 +271,33 @@ export function Tunnels() {
         <div style={{ position: 'relative', width: '100%', maxWidth: COMPUTED_LAYOUT.SVG_WIDTH, margin: '0 auto' }}>
           {(() => {
             // Calculate SVG height based on actual content
-            const ebTunnelBottom = eb.config.y + 60 // Tunnel has 2 lanes of 30px each
+            const wbTunnelTop = wb.config.y // W/b tunnel top (should be 100)
+            const wbPenTop = wb.config.y + wb.config.pen.y // W/b pen top: 100 + (-80) = 20
+            const ebTunnelBottom = eb.config.y + 60 // E/b tunnel bottom (200 + 60 = 260)
+
+            // Calculate bottom elements
             const legendY = eb.config.y + eb.config.pen.y + 10
-            const legendBottom = legendY + 82 + 10 // Last item at y=82, plus some padding
-            const svgHeight = Math.max(ebTunnelBottom + 100, legendBottom)
+            const legendBottom = legendY + 82 + 5 // Last item at y=82, plus text padding
+            const ebPenBottom = eb.config.y + eb.config.pen.y + COMPUTED_LAYOUT.BIKE_PEN_HEIGHT + 15 // Pen + label
+
+            // Clock is now embedded and sized to align with legend/pen
+            const clockBottom = Math.max(legendBottom, ebPenBottom)
+
+            // Find the actual top of all content (W/b pen is highest at y=20)
+            const contentTop = Math.min(wbPenTop, wbTunnelTop)
+
+            // Set height with minimal padding
+            const topPadding = 10 // Small padding above content
+            const bottomPadding = 10 // Small padding below content
+            const svgViewBoxY = contentTop - topPadding // Start viewBox above highest content
+            const svgViewBoxHeight = (clockBottom + bottomPadding) - svgViewBoxY
 
             return (
-              <svg width="100%" height={svgHeight} viewBox={`0 0 ${COMPUTED_LAYOUT.SVG_WIDTH} ${svgHeight}`} preserveAspectRatio="xMidYMid meet">
+              <svg
+                width="100%"
+                viewBox={`0 ${svgViewBoxY} ${COMPUTED_LAYOUT.SVG_WIDTH} ${svgViewBoxHeight}`}
+                preserveAspectRatio="xMidYMid meet"
+                style={{ height: 'auto', display: 'block' }}>
                 {/* Both tunnels */}
                 <Tunnel
                   dir="west"
