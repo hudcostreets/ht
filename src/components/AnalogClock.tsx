@@ -57,28 +57,28 @@ export function AnalogClock({ minute, size = 80, x = 0, y = 0, embedded = false 
 
       {/* Green slice for E/b bikes (45-48) */}
       <path
-        d={createArcPath(45, 48, 20, 36)}
+        d={createArcPath(45, 48, 0, 36)}
         fill="#4caf50"
         opacity="0.3"
       />
 
       {/* Red slice for E/b DMZ (48-50) */}
       <path
-        d={createArcPath(48, 50, 20, 36)}
+        d={createArcPath(48, 50, 0, 36)}
         fill="#f44336"
         opacity="0.3"
       />
 
       {/* Green slice for W/b bikes (15-18) */}
       <path
-        d={createArcPath(15, 18, 20, 36)}
+        d={createArcPath(15, 18, 0, 36)}
         fill="#4caf50"
         opacity="0.3"
       />
 
       {/* Red slice for W/b DMZ (18-20) */}
       <path
-        d={createArcPath(18, 20, 20, 36)}
+        d={createArcPath(18, 20, 0, 36)}
         fill="#f44336"
         opacity="0.3"
       />
