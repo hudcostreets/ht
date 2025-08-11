@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
 import { AnalogClock } from './AnalogClock'
+import { MD } from './MD'
 import { SpaceTimeRects } from './SpaceTimeRects'
 import { Tunnel } from './Tunnel.tsx'
 import { LAYOUT, COMPUTED_LAYOUT } from '../models/Constants'
@@ -760,32 +761,23 @@ export function Tunnels() {
       </div>
 
       <div className="why-section-container">
-        <div className="why-section">
-          <h2>Why</h2>
-          <ol>
-            {(() => {
-              const qas: Array<{ q: string; a: 'Yes' | 'No'; link?: string }> = [
-                { q: "Should it be possible to walk or bike between Hudson County and NYC?", a: "Yes" },
-                { q: "Is it possible today?", a: "No" },
-                { q: "Does anyone have a plan to make it possible within 10 years?", a: "No" }, // TODO: discuss ped bridge/tunnel ideas
-                { q: "Is that acceptable?", a: "No" },
-                { q: "Can bikes transport more people per lane-minute than cars?", a: "Yes", link: "https://www.instagram.com/p/DKXr7giSaeK/" },
-                { q: "Do we deserve a small fraction of the time, to do so?", a: "Yes" },
-                { q: "Will this help alleviate PATH overcrowding?", a: "Yes" },
-                { q: "Do we want people taking (e)bikes on crowded weekend PATH trains?", a: "No" },
-                { q: "Is the Holland Tunnel the worst-performing Hudson River crossing?", a: "Yes", link: "https://github.com/hudcostreets/hudson-transit" },
-                { q: "Should we start piloting this on weekends?", a: "Yes" }
-              ]
+        <div className="why-section">{MD(`
+          ## Why
 
-              return qas.map((qa, i) => (
-                <li key={i}>
-                  {qa.q} <strong style={{ whiteSpace: 'nowrap' }}>
-                    {qa.link ? <A href={qa.link}>{qa.a}</A> : qa.a} {qa.a === 'Yes' ? '👍' : '👎'}
-                  </strong>
-                </li>
-              ))
-            })()}
-          </ol>
+          - It should be possible to walk or bike between Hudson County and NYC
+          - It's not possible today
+          - No one has a plan to make it possible within 10 years
+          - That's not acceptable
+          - Bikes can transport more people per lane-minute than cars [^1]
+          - We deserve a small fraction of the time, to do so
+          - This will help alleviate PATH overcrowding
+          - No one wants people taking (e)bikes on crowded PATH trains
+          - The Holland Tunnel is the worst-performing Hudson River crossing [^2]
+          - We should start piloting this on weekends
+
+          [^1]: https://www.instagram.com/p/DKXr7giSaeK/
+          [^2]: https://github.com/hudcostreets/hudson-transit
+        `)}
         </div>
       </div>
 
