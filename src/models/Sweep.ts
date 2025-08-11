@@ -15,7 +15,6 @@ export class Sweep extends Vehicle {
   public wb: Tunnel
   public mph: number
   public stagingOffset: number
-  private _lastViewportWidth?: number
 
   constructor({ eb, wb, mph, stagingOffset }: GlobalSweepProps) {
     super({

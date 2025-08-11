@@ -1,3 +1,4 @@
+import { LAYOUT } from "./Constants"
 import { Points, PartialPoints, Vehicle } from "./Vehicle"
 import { XY } from "./XY"
 
@@ -37,7 +38,7 @@ export class Car extends Vehicle {
 
       // Calculate fade-in at slower approach speed (12 mph instead of 24 mph)
       const approachMph = 12  // Half of normal speed for cautious approach
-      const approachPxPerMin = tunnel.config.laneWidthPx / ((tunnel.config.lengthMi / approachMph) * 60)  // ~80 px/min
+      const approachPxPerMin = LAYOUT.TUNNEL_WIDTH / ((tunnel.config.lengthMi / approachMph) * 60)  // ~80 px/min
       const fadeInDistPx = fadeDist + queueOffsetPx  // 130 pixels total to travel
       const fadeInTimeCalc = fadeInDistPx / approachPxPerMin  // ~1.625 minutes at 12mph
 
@@ -134,7 +135,7 @@ export class Car extends Vehicle {
 
       // Animation: fade in, queue briefly, then proceed through tunnel
       const origin = { x: queuePos.x - fadeDist * d, y: queuePos.y }
-      const fadeInDuration = fadeDist / (tunnel.config.laneWidthPx / ((tunnel.config.lengthMi / tunnel.config.carMph) * 60))
+      const fadeInDuration = fadeDist / (LAYOUT.TUNNEL_WIDTH / ((tunnel.config.lengthMi / tunnel.config.carMph) * 60))
 
       points.push({ min: -fadeInDuration, val: { ...origin, state: 'origin', opacity: 0 } })
       points.push({ min: 0, val: { ...queuePos, state: 'queued', opacity: 1 } })
@@ -183,7 +184,7 @@ export class Car extends Vehicle {
       const fadeDest = { x: lane.exit.x + fadeDist * d, y: lane.exit.y }
 
       // Calculate proper fade-in time based on actual car speed
-      const carPxPerMin = tunnel.config.laneWidthPx / ((tunnel.config.lengthMi / tunnel.config.carMph) * 60)
+      const carPxPerMin = LAYOUT.TUNNEL_WIDTH / ((tunnel.config.lengthMi / tunnel.config.carMph) * 60)
       const fadeInDuration = fadeDist / carPxPerMin  // Should be ~0.625 minutes
       const fadeStartMin = (period - fadeInDuration) % period  // Start fading in this much before spawn
 

@@ -343,9 +343,8 @@ export function Tunnels() {
               // Goal: align W/b pen top with h2 top
               // h1 is ~40px, h2 starts at y=40
               // W/b pen top is at y=35 (100 + (-65))
-              // To align pen top (35) with h2 top (40), we need to move up by 40-35 = 5px
-              // But we also want to account for the header padding, so let's use -50px
-              return '-50px'
+              // Since we removed 20px of header padding, reduce slide-up by that amount
+              return '-30px'  // Was -50px, now -30px
             }
             return '0'
           })(),
@@ -474,7 +473,9 @@ export function Tunnels() {
                 {/* Legend positioned to the right of E/b bike pen */}
                 {(() => {
                   // Position legend to the right of the E/b bike pen
-                  const legendX = LAYOUT.QUEUE_AREA_WIDTH + eb.config.pen.x + eb.config.pen.w + 20
+                  // On narrow screens, move it closer to save space
+                  const legendSpacing = windowSize.width <= 500 ? 10 : 20
+                  const legendX = LAYOUT.QUEUE_AREA_WIDTH + eb.config.pen.x + eb.config.pen.w + legendSpacing
                   const legendY = eb.config.y + eb.config.pen.y + 10
 
                   return (
@@ -503,24 +504,27 @@ export function Tunnels() {
                         <text x="25" y="82" fontSize="12" style={{ userSelect: 'none' }}>"Pace car" reopens 🚗 lane</text>
                       </g>
 
-                      {/* Settings gear icon positioned in the pocket above legend */}
+                      {/* Settings gear icon */}
                       {(() => {
-                        // Position gear between E/b tunnel bottom and Sweep legend entry
-                        // E/b tunnel bottom is at eb.config.y + 60 (2 lanes)
-                        // Sweep text baseline is at legendY + 65, but we need to stop above the text
-                        const ebTunnelBottom = eb.config.y + LAYOUT.LANE_HEIGHT * 2
-                        const sweepTextTop = legendY + 55  // Top of Sweep line (65 - ~10 for text height)
+                        let gearX, gearCenterY, gearSize
 
-                        const GEAR_PADDING = 20 // Even more padding for smaller gear
-                        const gearTop = ebTunnelBottom + GEAR_PADDING
-                        const gearBottom = sweepTextTop - GEAR_PADDING
-                        let gearSize = gearBottom - gearTop
-                        // Make gear smaller on narrow screens if needed
-                        if (windowSize.width <= 500 && gearSize < 10) {
-                          gearSize = Math.max(8, gearSize)  // Minimum 8px on narrow screens
+                        if (windowSize.width <= 500) {
+                          // On narrow screens, place gear inline with Legend title
+                          gearX = legendX + 68  // More space from "Legend" text
+                          gearCenterY = legendY - 6  // Move up more to align with text center
+                          gearSize = 20  // Even bigger for better visibility
+                        } else {
+                          // On wider screens, position in the pocket above legend
+                          const ebTunnelBottom = eb.config.y + LAYOUT.LANE_HEIGHT * 2
+                          const sweepTextTop = legendY + 55  // Top of Sweep line
+
+                          const GEAR_PADDING = 20
+                          const gearTop = ebTunnelBottom + GEAR_PADDING
+                          const gearBottom = sweepTextTop - GEAR_PADDING
+                          gearSize = Math.max(10, gearBottom - gearTop)
+                          gearCenterY = (gearTop + gearBottom) / 2
+                          gearX = legendX + 140  // Closer to legend items
                         }
-                        const gearCenterY = (gearTop + gearBottom) / 2
-                        const gearX = legendX + 140  // Closer to legend items
 
                         return (
                           <>

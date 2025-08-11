@@ -93,7 +93,7 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 // Header section
 .header {
   background: $secondary-bg;
-  padding: 0 0 20px 0;  // No horizontal padding, already in container
+  padding: 0;  // Remove bottom padding to save space
   text-align: left; // Left-align within container
 
   h1 {

@@ -79,8 +79,8 @@ export class Bike extends Vehicle {
   }
 
   get pxPerMile(): number {
-    const { laneWidthPx, lengthMi } = this.config
-    return laneWidthPx / lengthMi
+    const { lengthMi } = this.config
+    return LAYOUT.TUNNEL_WIDTH / lengthMi
   }
 
   get downMph(): number {
@@ -94,8 +94,7 @@ export class Bike extends Vehicle {
   }
 
   get halfWPx(): number {
-    const { laneWidthPx } = this.config
-    return laneWidthPx / 2
+    return LAYOUT.TUNNEL_WIDTH / 2
   }
 
   get downMins(): number {

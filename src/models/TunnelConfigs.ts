@@ -1,7 +1,8 @@
 import { LAYOUT, COMPUTED_LAYOUT } from './Constants'
 import type { TunnelsConfig } from './Tunnels'
 
-export const Common = {
+// Static configuration values
+const StaticCommon = {
   period: 60,             // Cycle repeats every 60mins
   lengthMi: 2,            // Total tunnel length
   carMph: 24,             // Car speed through tunnels
@@ -17,12 +18,16 @@ export const Common = {
   bikesPerMin: 0.25,      // Bike "spawn" rate (1 per 4mins, 15 bikes per hour)
   bikesReleasedPerMin: 5, // How many queued bikes can enter tunnel per minute (when pen opens)
   officialResetMins: 5,   // How long sweep and pace cars take to move from one tunnel's exit to their "staging" locations for the other tunnel
-
-  // Layout (eastbound-specific coordinates)
-  laneWidthPx: LAYOUT.TUNNEL_WIDTH,
-  laneHeightPx: LAYOUT.LANE_HEIGHT,
   queuedCarWidthPx: 30,   // Queued car spacing
 }
+
+// Function to get common config with current layout values
+const getCommon = () => ({
+  ...StaticCommon,
+  // Dynamic layout values
+  laneWidthPx: LAYOUT.TUNNEL_WIDTH,
+  laneHeightPx: LAYOUT.LANE_HEIGHT,
+})
 
 // Function to generate config with current layout values
 export const getHollandTunnelConfig = (): TunnelsConfig => ({
@@ -38,7 +43,7 @@ export const getHollandTunnelConfig = (): TunnelsConfig => ({
       rows: 4,  // 4 rows for E/b pen
       cols: 4,  // 4 columns for E/b pen
     },
-    ...Common,
+    ...getCommon(),
   },
 
   wb: {
@@ -53,7 +58,7 @@ export const getHollandTunnelConfig = (): TunnelsConfig => ({
       rows: 2,  // 2 rows for W/b pen (more horizontal)
       cols: 8,  // 8 columns for W/b pen
     },
-    ...Common,
+    ...getCommon(),
   },
 
   sweep: {
@@ -62,7 +67,7 @@ export const getHollandTunnelConfig = (): TunnelsConfig => ({
   },
 
   pace: {
-    mph: Common.carMph,
+    mph: StaticCommon.carMph,
     stagingOffset: LAYOUT.PACE_STAGING_OFFSET
   }
 })

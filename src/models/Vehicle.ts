@@ -26,6 +26,7 @@ export abstract class Vehicle {
   public spawnQueue?: SpawnQueue
   protected __points?: Points
   protected _normalized?: boolean
+  protected _lastViewportWidth?: number
 
   constructor({ tunnel, laneId, id, spawnMin, spawnQueue, points, }: Props) {
     this.tunnel = tunnel
@@ -49,6 +50,16 @@ export abstract class Vehicle {
   }
 
   points(): Points {
+    // Check if viewport has changed (affects fade distance)
+    const currentWidth = typeof window !== 'undefined' ? window.innerWidth : 0
+    if (this._lastViewportWidth !== undefined && this._lastViewportWidth !== currentWidth) {
+      // Viewport changed, invalidate cache
+      this._pos = undefined
+      this._normalized = false
+      this.__points = undefined
+    }
+    this._lastViewportWidth = currentWidth
+
     // Return cached points if already normalized
     if (this._normalized && this.__points) {
       return this.__points
@@ -85,6 +96,15 @@ export abstract class Vehicle {
 
     // Sort by minute to ensure ascending order
     this.__points.sort((a, b) => a.min - b.min)
+
+    // Deduplicate points with the same time (keep the last one)
+    const dedupedPoints: Points = []
+    for (let i = 0; i < this.__points.length; i++) {
+      if (i === this.__points.length - 1 || this.__points[i].min !== this.__points[i + 1].min) {
+        dedupedPoints.push(this.__points[i])
+      }
+    }
+    this.__points = dedupedPoints
     this._normalized = true
 
     // Validate strictly ascending order
@@ -127,8 +147,12 @@ export abstract class Vehicle {
   }
 
   get pos(): TimeVal<Pos> {
+    // Check if viewport has changed by calling points() first
+    // This will trigger cache invalidation if needed
+    const points = this.points()
+
     if (this._pos === undefined) {
-      this._pos = new TimeVal(this.points(), field, this.period)
+      this._pos = new TimeVal(points, field, this.period)
     }
     return this._pos
   }
@@ -140,6 +164,7 @@ export abstract class Vehicle {
     // TimeVal expects time relative to the car's lifecycle, not tunnel time
     const vehTime = (relMins - this.spawnMin + this.period) % this.period
 
+    // Use the pos getter which will check for viewport changes
     return this.pos.at(vehTime)
   }
 }
