@@ -74,6 +74,9 @@ export function Tunnels() {
     height: window.innerHeight
   })
 
+  // Detect if device is mobile (touch-capable only, not just narrow screens)
+  const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+
   useEffect(() => {
     let resizeTimer: ReturnType<typeof setTimeout>
     const handleResize = () => {
@@ -343,7 +346,7 @@ export function Tunnels() {
                 <text
                   x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH / 2}
                   y={180}  // Midpoint: W/b bottom (160) + gap to E/b top (200) = 180
-                  fontSize="14"
+                  fontSize="18"  // Increased from 14
                   fontWeight="bold"
                   textAnchor="middle"
                   dominantBaseline="middle"  // Vertically center the text
@@ -357,13 +360,13 @@ export function Tunnels() {
                 <text
                   x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - 10}  // Right-aligned in tunnel area
                   y={180}  // Same vertical position as NJ | NY
-                  fontSize="18"  // Bigger font size
+                  fontSize="22"  // Increased from 18
                   fontWeight="bold"
                   textAnchor="end"
                   dominantBaseline="middle"  // Vertically center the text
                   fill="#333"
                 >
-                  _ : {showDecimal
+                  :{showDecimal
                     ? displayTime.toFixed(1).padStart(4, '0')
                     : String(Math.floor(displayTime) % 60).padStart(2, '0')}
                 </text>
@@ -528,8 +531,15 @@ export function Tunnels() {
           </div>
           <label
             data-tooltip-id="speed-tooltip"
-            data-tooltip-content="Simulation speed: virtual minutes per real-world second">
-            Speed: {speed}x
+            data-tooltip-content="Simulation speed: virtual minutes per real-world second"
+            style={{
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              alignItems: 'center',
+              gap: isMobile ? '2px' : '10px',
+              flex: isMobile ? '1' : 'none'  // Take available space on mobile
+            }}>
+            <span style={{ fontSize: isMobile ? '12px' : '16px' }}>Speed: {speed}x</span>
             <input
               type="range"
               min="0.5"
@@ -537,9 +547,13 @@ export function Tunnels() {
               step="0.5"
               value={speed}
               onChange={(e) => setSpeed(parseFloat(e.target.value))}
+              style={{
+                width: isMobile ? '100%' : '100px',  // Full width on mobile
+                minWidth: isMobile ? '60px' : 'auto'  // But not too small
+              }}
             />
           </label>
-          <span className="hint">Space: ▶/⏸ | ←/→: ±1 min | ⌥←/→: ±0.1 min</span>
+          {!isMobile && <span className="hint">Space: ▶/⏸ | ←/→: ±1 min | ⌥←/→: ±0.1 min</span>}
         </div>
       </div>
 

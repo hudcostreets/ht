@@ -198,10 +198,6 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
   font-size: 12px;
   color: $text-secondary;
   margin-left: 15px;
-
-  @media (max-width: 768px) {
-    display: none;
-  }
 }
 
 // Tunnel visualization
@@ -649,11 +645,36 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 // Media queries
 @media (max-width: 768px) {
   .controls {
-    flex-direction: column;
-    align-items: stretch;
+    // Keep controls in a row on mobile
+    flex-direction: row;
+    align-items: center;
+    gap: 10px; // Reduce gap on mobile
+
+    // Smaller buttons on mobile
+    button {
+      padding: 6px 8px;
+      font-size: 14px;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    // Speed control styling
+    label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 12px;
+      flex: 1; // Take available space
+      min-width: 0; // Allow shrinking
+    }
 
     input[type="range"] {
-      width: 100%;
+      width: 100%; // Use full width of label
+      min-width: 60px; // But not too small
     }
   }
 

@@ -89,28 +89,28 @@ const TunnelComponent: FC<Props> = ({ dir, displayTime, tunnel }) => {
         {dir === 'east' ? (
           <>
             {/* E/b entrance (left): 12th St (Jersey City) */}
-            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 25} fontSize="11" textAnchor="end" fill="#333">
+            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 25} fontSize="14" textAnchor="end" fill="#333">
               12th St
             </text>
-            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 40} fontSize="11" textAnchor="end" fill="#333">
+            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 40} fontSize="13" textAnchor="end" fill="#555">
               (Jersey City)
             </text>
             {/* E/b exit (right): NYC */}
-            <text x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + 10} y={yOffset + 30} fontSize="11" textAnchor="start" fill="#333">
+            <text x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + 10} y={yOffset + 30} fontSize="14" textAnchor="start" fill="#333">
               NYC
             </text>
           </>
         ) : (
           <>
             {/* W/b entrance (right): NYC */}
-            <text x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + 10} y={yOffset + 30} fontSize="11" textAnchor="start" fill="#333">
+            <text x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH + 10} y={yOffset + 30} fontSize="14" textAnchor="start" fill="#333">
               NYC
             </text>
             {/* W/b exit (left): 14th St (Jersey City) */}
-            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 25} fontSize="11" textAnchor="end" fill="#333">
+            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 25} fontSize="14" textAnchor="end" fill="#333">
               14th St
             </text>
-            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 40} fontSize="11" textAnchor="end" fill="#333">
+            <text x={LAYOUT.QUEUE_AREA_WIDTH - 10} y={yOffset + 40} fontSize="13" textAnchor="end" fill="#555">
               (Jersey City)
             </text>
           </>
