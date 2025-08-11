@@ -103,13 +103,21 @@ export class Car extends Vehicle {
       const fadedMin = exitingMin + fadeMins
       const fadeDest = { x: lLaneExit.x + fadeDist * d, y: lLaneExit.y }
 
-      return [
+      const finalPoints = [
         ...points,
         { min: exitingMin, val: { ...lLaneExit, state: 'exiting', opacity: 1 } },
         { min: fadedMin, val: { ...fadeDest, state: 'done', opacity: 0 } },
-        { min: fadedMin + 1, val: { ...offScreenPos, state: 'origin', opacity: 0 } },
-        { min: period - 1, val: { ...offScreenPos, state: 'origin', opacity: 0 } },
-      ] as PartialPoints
+      ]
+
+      // Only add intermediate and end points if they don't create duplicates
+      if (fadedMin + 1 < period - 1) {
+        finalPoints.push({ min: fadedMin + 1, val: { ...offScreenPos, state: 'origin', opacity: 0 } })
+        finalPoints.push({ min: period - 1, val: { ...offScreenPos, state: 'origin', opacity: 0 } })
+      } else if (fadedMin + 1 < period) {
+        finalPoints.push({ min: fadedMin + 1, val: { ...offScreenPos, state: 'origin', opacity: 0 } })
+      }
+
+      return finalPoints as PartialPoints
 
     } else if (laneId === 'R' && this.spawnMin === tunnel.config.paceStartMin) {
       // Special case: R car :10 arrives exactly when pace car starts
@@ -139,8 +147,25 @@ export class Car extends Vehicle {
 
       points.push({ min: exitingMin, val: { ...lane.exit, state: 'exiting', opacity: 1 } })
       points.push({ min: fadedMin, val: { ...fadeDest, state: 'done', opacity: 0 } })
-      points.push({ min: fadedMin + 1, val: { ...origin, state: 'origin', opacity: 0 } })
-      points.push({ min: period - 1, val: { ...origin, state: 'origin', opacity: 0 } })
+
+      // Only add intermediate and end points if they don't create duplicates
+      // Also ensure we don't add a point that would normalize to an existing point
+      const nextMin = fadedMin + 1
+      const endMin = period - 1
+
+      // Check if nextMin would collide with existing points after normalization
+      const existingNormalized = points.map(p => ((p.min % period) + period) % period).sort((a, b) => a - b)
+      const nextNormalized = ((nextMin % period) + period) % period
+      const endNormalized = ((endMin % period) + period) % period
+
+      if (nextMin < endMin && !existingNormalized.includes(nextNormalized) && !existingNormalized.includes(endNormalized)) {
+        points.push({ min: nextMin, val: { ...origin, state: 'origin', opacity: 0 } })
+        if (nextNormalized !== endNormalized) {
+          points.push({ min: endMin, val: { ...origin, state: 'origin', opacity: 0 } })
+        }
+      } else if (nextMin < period && !existingNormalized.includes(nextNormalized)) {
+        points.push({ min: nextMin, val: { ...origin, state: 'origin', opacity: 0 } })
+      }
 
       // Return early since we've handled the full cycle
       return points as PartialPoints
@@ -162,14 +187,23 @@ export class Car extends Vehicle {
       const fadeInDuration = fadeDist / carPxPerMin  // Should be ~0.625 minutes
       const fadeStartMin = (period - fadeInDuration) % period  // Start fading in this much before spawn
 
-      return [
+      const finalPoints = [
         ...points,
         { min: transitingMin, val: { ...lane.entrance, state: 'transiting', opacity: 1 } },
         { min: exitingMin, val: { ...lane.exit, state: 'exiting', opacity: 1 } },
         { min: fadedMin, val: { ...fadeDest, state: 'done', opacity: 0 } },
-        { min: fadedMin + 1, val: { ...origin, state: 'origin', opacity: 0 } },
-        { min: fadeStartMin, val: { ...origin, state: 'origin', opacity: 0 } },  // Explicit fade start point
-      ] as PartialPoints
+      ]
+
+      // Only add origin points if they don't create duplicates
+      if (fadedMin + 1 < fadeStartMin) {
+        finalPoints.push({ min: fadedMin + 1, val: { ...origin, state: 'origin', opacity: 0 } })
+        finalPoints.push({ min: fadeStartMin, val: { ...origin, state: 'origin', opacity: 0 } })
+      } else {
+        // Just add one point at the later time
+        finalPoints.push({ min: Math.max(fadedMin + 1, fadeStartMin), val: { ...origin, state: 'origin', opacity: 0 } })
+      }
+
+      return finalPoints as PartialPoints
     }
 
     return points as PartialPoints

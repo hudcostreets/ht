@@ -15,12 +15,8 @@ import './Tunnels.scss'
 const Icons = icons({})
 const { GitHub, HudCoStreets } = Icons
 
-// Create the tunnels instance
-const tunnels = new HT(HOLLAND_TUNNEL_CONFIG)
-const { eb, wb } = tunnels
-
 // Generate timeline entries from config
-function generateTimeline(tunnel: typeof eb | typeof wb) {
+function generateTimeline(tunnel: any) {
   const { offsetMin, penCloseMin, sweepStartMin, paceStartMin, period, officialResetMins } = tunnel.config
   const entries = []
 
@@ -72,13 +68,40 @@ function generateTimeline(tunnel: typeof eb | typeof wb) {
 }
 
 export function Tunnels() {
-  // Force re-render on resize to update responsive layout
-  const [, forceUpdate] = useState({})
+  // Track window size for responsive layout
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  })
+
   useEffect(() => {
-    const handleResize = () => forceUpdate({})
+    let resizeTimer: ReturnType<typeof setTimeout>
+    const handleResize = () => {
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(() => {
+        setWindowSize({
+          width: window.innerWidth,
+          height: window.innerHeight
+        })
+      }, 100) // Debounce for 100ms
+    }
+
     window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    window.addEventListener('orientationchange', handleResize)
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('orientationchange', handleResize)
+      clearTimeout(resizeTimer)
+    }
   }, [])
+
+  // Recreate tunnels when window size changes
+  const tunnels = useMemo(() => {
+    return new HT(HOLLAND_TUNNEL_CONFIG)
+  }, [windowSize.width]) // Only recreate when width changes
+
+  const { eb, wb } = tunnels
 
   // Check URL parameter for initial time
   const urlParams = new URLSearchParams(window.location.search)
