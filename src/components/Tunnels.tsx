@@ -296,14 +296,30 @@ export function Tunnels() {
                 {/* NJ | NY label at tunnel midpoint */}
                 <text
                   x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH / 2}
-                  y={180}
+                  y={180}  // Midpoint: W/b bottom (160) + gap to E/b top (200) = 180
                   fontSize="14"
                   fontWeight="bold"
                   textAnchor="middle"
+                  dominantBaseline="middle"  // Vertically center the text
                   fill="#333"
                   opacity="0.6"
                 >
-              NJ | NY
+                  NJ | NY
+                </text>
+
+                {/* Clock digital display in space between tunnels */}
+                <text
+                  x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - 10}  // Right-aligned in tunnel area
+                  y={180}  // Same vertical position as NJ | NY
+                  fontSize="18"  // Bigger font size
+                  fontWeight="bold"
+                  textAnchor="end"
+                  dominantBaseline="middle"  // Vertically center the text
+                  fill="#333"
+                >
+                  _ : {showDecimal
+                    ? displayTime.toFixed(1).padStart(4, '0')
+                    : String(Math.floor(displayTime) % 60).padStart(2, '0')}
                 </text>
 
                 {/* Global vehicles (Sweep and Pace) */}
@@ -369,10 +385,18 @@ export function Tunnels() {
 
                 {/* Embedded clock positioned right-aligned with tunnel exit */}
                 {(() => {
-                  // Position clock below E/b tunnel, right-aligned with tunnel exit
-                  const clockSize = 80
-                  const clockX = LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - clockSize // Right edge of clock aligns with tunnel right edge
-                  const clockY = eb.config.y + 80 // Below the E/b tunnel
+                  // Calculate legend and bike pen bottom for alignment
+                  const ebPenY = eb.config.y + eb.config.pen.y
+                  const ebPenBottom = ebPenY + COMPUTED_LAYOUT.BIKE_PEN_HEIGHT
+                  const legendY = ebPenY + 10
+                  const legendBottom = legendY + 82 + 5 // Last legend item at y=82, plus some padding for text height
+                  const targetBottom = Math.max(ebPenBottom, legendBottom)
+
+                  // Position clock tightly below E/b tunnel, sized to reach the bottom alignment
+                  const clockTop = eb.config.y + 65 // Start closer to the tunnel (was 80)
+                  const clockSize = targetBottom - clockTop // Make clock big enough to reach bottom
+                  const clockX = LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - clockSize // Right edge aligns with tunnel
+                  const clockY = clockTop
 
                   return (
                     <>
@@ -383,18 +407,6 @@ export function Tunnels() {
                         y={clockY}
                         embedded={true}
                       />
-                      {/* Clock digital display */}
-                      <text
-                        x={clockX + 40}
-                        y={clockY + clockSize + 15}
-                        fontSize="14"
-                        textAnchor="middle"
-                        fill="#333"
-                      >
-                        _ : {showDecimal
-                          ? displayTime.toFixed(1).padStart(4, '0')
-                          : String(Math.floor(displayTime) % 60).padStart(2, '0')}
-                      </text>
                     </>
                   )
                 })()}
