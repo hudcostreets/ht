@@ -1,6 +1,6 @@
 import { A } from "@rdub/base"
 import { icons } from '@rdub/icons'
-import { Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Play, Pause, ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Tooltip } from 'react-tooltip'
 import useSessionStorageState from 'use-session-storage-state'
@@ -126,6 +126,9 @@ export function Tunnels() {
   const [targetTime, setTargetTime] = useState(initialMinute)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showDecimal, setShowDecimal] = useState(false)
+
+  // State for timeline direction toggle
+  const [timelineDirection, setTimelineDirection] = useState<'east' | 'west'>('east')
 
   // Update current minute when display time changes
   useEffect(() => {
@@ -523,77 +526,52 @@ export function Tunnels() {
         </div>
       </div>
 
-      <div className="timelines">
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          width: '100%',
-          maxWidth: COMPUTED_LAYOUT.SVG_WIDTH,
-          margin: '0 auto',
-          gap: '20px'
-        }}>
-          <div className="timeline-section timeline-section-left" style={{
-            marginLeft: `${LAYOUT.QUEUE_AREA_WIDTH}px`
+      <div className="timeline-and-how">
+        <div className="timeline-section">
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '10px'
           }}>
-            <h3>Eastbound Timeline</h3>
-            <ul>
-              {generateTimeline(eb).map((entry, i) => {
-                const isCurrentPhase = entry.end > entry.start
-                  ? currentMinute >= entry.start && currentMinute < entry.end
-                  : currentMinute >= entry.start || currentMinute < entry.end // Wraps around hour
-
-                return (
-                  <li
-                    key={i}
-                    className={`timeline-item ${isCurrentPhase ? 'current-phase' : ''}`}
-                    onClick={() => handleTimelineClick(entry.start)}>
-                    :{String(entry.start).padStart(2, '0')}-:{String(entry.end).padStart(2, '0')} - {entry.label}
-                  </li>
-                )
-              })}
-            </ul>
+            <h3 style={{ margin: 0 }}>Timeline ({timelineDirection === 'east' ? 'Eastbound' : 'Westbound'})</h3>
+            <button
+              onClick={() => setTimelineDirection(prev => prev === 'east' ? 'west' : 'east')}
+              style={{
+                background: 'none',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                padding: '2px 6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '14px'
+              }}
+              title="Switch direction"
+            >
+              <ArrowLeftRight size={14} />
+            </button>
           </div>
-          <div className="timeline-section timeline-section-right" style={{
-            marginRight: `${LAYOUT.FADE_DISTANCE_PX}px`
-          }}>
-            <h3>Westbound Timeline</h3>
-            <ul>
-              {generateTimeline(wb).map((entry, i) => {
-                const isCurrentPhase = entry.end > entry.start
-                  ? currentMinute >= entry.start && currentMinute < entry.end
-                  : currentMinute >= entry.start || currentMinute < entry.end // Wraps around hour
+          <ul>
+            {generateTimeline(timelineDirection === 'east' ? eb : wb).map((entry, i) => {
+              const isCurrentPhase = entry.end > entry.start
+                ? currentMinute >= entry.start && currentMinute < entry.end
+                : currentMinute >= entry.start || currentMinute < entry.end // Wraps around hour
 
-                return (
-                  <li
-                    key={i}
-                    className={`timeline-item ${isCurrentPhase ? 'current-phase' : ''}`}
-                    onClick={() => handleTimelineClick(entry.start)}>
-                    :{String(entry.start).padStart(2, '0')}-:{String(entry.end).padStart(2, '0')} - {entry.label}
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div className="info-sections">
-        <div className="info-section">
-          <h2>Why?</h2>
-          <ol>
-            <li>Should it be possible to walk or bike between Hudson County and NYC? <strong>Yes 👍</strong></li>
-            <li>Is it possible today? <strong>No 👎</strong></li>
-            <li>Does anyone have a plan to make it possible within 10 years? <strong>No 👎</strong></li> {/* TODO: discuss ped bridge/tunnel ideas */}
-            <li>Can bikes transport more people per lane-minute than cars? <strong><A href={"https://www.instagram.com/p/DKXr7giSaeK/"}>Yes</A> 👍</strong></li>
-            <li>Do we deserve a small fraction of the time, to do so? <strong>Yes 👍</strong></li>
-            <li>Will this help alleviate PATH overcrowding? <strong>Yes 👍</strong></li>
-            <li>Do we want people taking (e)bikes on crowded weekend PATH trains? <strong>No 👎</strong></li>
-            <li>Is the Holland Tunnel the worst-performing Hudson River crossing? <strong><A href={"https://github.com/hudcostreets/hudson-transit"}>Yes</A> 👍</strong></li>
-            <li>Should we start piloting this on weekends? <strong>Yes 👍</strong></li>
-          </ol>
+              return (
+                <li
+                  key={i}
+                  className={`timeline-item ${isCurrentPhase ? 'current-phase' : ''}`}
+                  onClick={() => handleTimelineClick(entry.start)}>
+                  :{String(entry.start).padStart(2, '0')}-:{String(entry.end).padStart(2, '0')} - {entry.label}
+                </li>
+              )
+            })}
+          </ul>
         </div>
 
-        <div className="info-section">
+        <div className="how-section">
           <h2>How?</h2>
           <ul>
             <li>Bikes allowed into tunnel for a 3-minute "pulse" each hour (like catching a train)</li>
@@ -606,6 +584,36 @@ export function Tunnels() {
               </ul>
             </li>
           </ul>
+        </div>
+      </div>
+
+      <div className="why-section-container">
+        <div className="why-section">
+          <h2>Why?</h2>
+          <ol>
+            {(() => {
+              const qas: Array<{ q: string; a: 'Yes' | 'No'; link?: string }> = [
+                { q: "Should it be possible to walk or bike between Hudson County and NYC?", a: "Yes" },
+                { q: "Is it possible today?", a: "No" },
+                { q: "Does anyone have a plan to make it possible within 10 years?", a: "No" }, // TODO: discuss ped bridge/tunnel ideas
+                { q: "Is that acceptable?", a: "No" },
+                { q: "Can bikes transport more people per lane-minute than cars?", a: "Yes", link: "https://www.instagram.com/p/DKXr7giSaeK/" },
+                { q: "Do we deserve a small fraction of the time, to do so?", a: "Yes" },
+                { q: "Will this help alleviate PATH overcrowding?", a: "Yes" },
+                { q: "Do we want people taking (e)bikes on crowded weekend PATH trains?", a: "No" },
+                { q: "Is the Holland Tunnel the worst-performing Hudson River crossing?", a: "Yes", link: "https://github.com/hudcostreets/hudson-transit" },
+                { q: "Should we start piloting this on weekends?", a: "Yes" }
+              ]
+
+              return qas.map((qa, i) => (
+                <li key={i}>
+                  {qa.q} <strong style={{ whiteSpace: 'nowrap' }}>
+                    {qa.link ? <A href={qa.link}>{qa.a}</A> : qa.a} {qa.a === 'Yes' ? '👍' : '👎'}
+                  </strong>
+                </li>
+              ))
+            })()}
+          </ol>
         </div>
       </div>
 

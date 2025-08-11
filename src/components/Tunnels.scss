@@ -3,9 +3,9 @@ $primary-bg: #f5f5f5;
 $secondary-bg: #fafafa;
 $tertiary-bg: #f8f9fa;
 $border-color: #ddd;
-$text-color: #333;
-$text-secondary: #666;
-$text-muted: #444;
+$text-color: #000;  // Changed from #333 to black for better contrast
+$text-secondary: #333;  // Darkened from #666
+$text-muted: #222;  // Darkened from #444
 
 $blue-primary: #007bff;
 $blue-hover: #0056b3;
@@ -198,6 +198,10 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
   font-size: 12px;
   color: $text-secondary;
   margin-left: 15px;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 }
 
 // Tunnel visualization
@@ -406,11 +410,35 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
   animation: bike-bounce 2s ease-in-out infinite;
 }
 
-// Timelines
-.timelines {
+// Timeline and How section (side by side)
+.timeline-and-how {
+  display: flex;
+  gap: 20px;
+  padding: 0 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  @media (max-width: 1024px) {
+    padding: 0 15px;
+    gap: 15px;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0;
+    padding: 0 10px;
+  }
+}
+
+.timeline-section {
+  flex: 0 0 auto;  // Size to content, don't grow
   background: $tertiary-bg;
-  padding: 20px;
+  padding: 10px 15px;  // Reduced horizontal padding
   border-radius: $radius-lg;
+
+  @media (max-width: 1024px) {
+    padding: 10px 12px;
+  }
 
   h3 {
     margin: 0 0 15px 0;
@@ -453,15 +481,86 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
   }
 }
 
-.timeline-section {
-  // Remove flex: 1 to allow custom positioning
+.how-section {
+  flex: 1;  // Takes remaining space
+  background: $tertiary-bg;
+  padding: 15px 25px 25px 25px;
+  border-radius: $radius-lg;
 
-  &-left {
-    // E/b timeline - left aligned with tunnel
+  @media (max-width: 1024px) {
+    padding: 12px 15px 15px 15px;
   }
 
-  &-right {
-    // W/b timeline - right aligned with tunnel
+  @media (max-width: 768px) {
+    padding: 10px 15px 15px 15px;
+  }
+
+  h2 {
+    margin: 0 0 20px 0;
+    color: $text-color;
+    font-size: 1.5rem;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 25px;
+    color: $text-secondary;
+    line-height: 1.8;
+
+    li {
+      margin: 8px 0;
+    }
+
+    ul {
+      margin-top: 8px;
+      padding-left: 20px;
+    }
+  }
+}
+
+// Why section (full width below)
+.why-section-container {
+  padding: 0 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  @media (max-width: 1024px) {
+    padding: 0 15px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0 10px;
+  }
+}
+
+.why-section {
+  background: $tertiary-bg;
+  padding: 15px 25px 25px 25px;
+  border-radius: $radius-lg;
+
+  @media (max-width: 1024px) {
+    padding: 12px 15px 15px 15px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 10px 15px 15px 15px;
+  }
+
+  h2 {
+    margin: 0 0 20px 0;
+    color: $text-color;
+    font-size: 1.5rem;
+  }
+
+  ol {
+    margin: 0;
+    padding-left: 25px;
+    color: $text-secondary;
+    line-height: 1.8;
+
+    li {
+      margin: 8px 0;
+    }
   }
 }
 
@@ -496,50 +595,7 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
   z-index: 9999 !important;
 }
 
-// Info sections (Why? and How?)
-.info-sections {
-  display: flex;
-  gap: 40px;
-  margin-top: 40px;
-  padding: 0 20px;
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 30px;
-  }
-}
-
-.info-section {
-  flex: 1;
-  background: $tertiary-bg;
-  padding: 25px;
-  border-radius: $radius-lg;
-
-  h2 {
-    margin: 0 0 20px 0;
-    color: $text-color;
-    font-size: 1.5rem;
-  }
-
-  ol, ul {
-    margin: 0;
-    padding-left: 25px;
-    color: $text-secondary;
-    line-height: 1.8;
-
-    li {
-      margin: 8px 0;
-    }
-
-    ul {
-      margin-top: 8px;
-      padding-left: 20px;
-    }
-  }
-}
+// (Old info-sections removed - replaced by timeline-and-how and why-section)
 
 // Footer
 .footer {
@@ -612,4 +668,5 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
     width: 100%;
     overflow-x: hidden;
   }
+
 }
