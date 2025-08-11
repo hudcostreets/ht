@@ -6,7 +6,7 @@ import { Start, Interp, Num, TimePoint, TimeVal, Field } from "./TimeVal"
 import { VehicleI } from "./Tunnels.ts"
 import { Direction } from "./types"
 import { XY, xy } from "./XY"
-const { floor, max, } = Math
+const { floor, } = Math
 
 export type ColorZones = [number, number, number] | null
 
@@ -69,8 +69,7 @@ export class Tunnel {
       carsPerMin, carsReleasedPerMin,
       laneWidthPx, laneHeightPx,
       direction,
-      paceStartMin, penCloseMin,
-      queuedCarWidthPx,
+      penCloseMin,
       period,
     } = config
     this.dir = direction

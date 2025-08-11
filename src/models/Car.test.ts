@@ -58,10 +58,6 @@ describe('Car merging behavior', () => {
     // - R car :1 spawned at 46, started transiting at ~47.9, been transiting for ~1.1 mins
     // - L car :1.5 spawned at 46.5, been transiting for 2.5 mins
 
-    // Get L car :1.5 for comparison
-    const lCar1_5 = lCars[1]
-    const lCar1_5_pos = lCar1_5.getPos(testMinute)
-
     // With perfect centering, R car :0 will be between L cars
     // At minute 49, both cars are transiting and R car should be behind L car :0.5
     expect(rCar0_pos.x).toBeGreaterThan(0)
@@ -75,7 +71,6 @@ describe('Car merging behavior', () => {
     const rCar0_merged = rCar0.getPos(mergeCompleteTime)
     const lCar0_5_merged = lCar0_5.getPos(mergeCompleteTime)
 
-
     // They should have similar Y positions after merge
     expect(Math.abs(rCar0_merged.y - lCar0_5_merged.y)).toBeLessThan(1)
 
@@ -84,7 +79,6 @@ describe('Car merging behavior', () => {
     const checkTime = 46
     const rCar0_at46 = rCar0.getPos(checkTime)
     const lCar0_5_at46 = lCar0_5.getPos(checkTime)  // L car :0.5 spawned at 45.5
-    const lCar59_5 = lCars[59]  // L car :59.5 (previous cycle)
 
     // R car :0 should be in L lane and moving
     expect(rCar0_at46.state).toBe('transiting')
