@@ -3,4 +3,6 @@
   padding: 0;
   min-height: 100vh;
   background: #f0f0f0;
+  width: 100%;
+  overflow-x: hidden;
 }
