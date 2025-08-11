@@ -1,3 +1,4 @@
+import { type JSX } from 'react'
 import ReactMarkdown from 'react-markdown'
 
 // Simple markdown wrapper that takes a template literal string
@@ -55,8 +56,12 @@ export function MD(content: string): JSX.Element {
             {children}
           </li>
         ),
-        // Remove h2 since we already have it
-        h2: () => null,
+        // Style h2 to match existing design
+        h2: ({ children }) => (
+          <h2 style={{ margin: '0 0 15px 0', color: '#000', fontSize: '1.5rem' }}>
+            {children}
+          </h2>
+        ),
         // Handle footnotes
         sup: ({ children }) => {
           const id = children?.toString()

@@ -1,4 +1,4 @@
-import React, { type FC, useMemo, memo } from 'react'
+import React, { type FC, useMemo, memo, useState, useEffect } from 'react'
 import { Tooltip } from 'react-tooltip'
 
 interface Props {
@@ -8,14 +8,36 @@ interface Props {
 }
 
 const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
-  const width = 720
-  const height = 260
+  // Get container width for responsive sizing
+  const [containerWidth, setContainerWidth] = useState(720)
+
+  useEffect(() => {
+    const updateWidth = () => {
+      const container = document.getElementById('spacetime')
+      if (container) {
+        const rect = container.getBoundingClientRect()
+        // Account for padding (20px on each side on mobile, more on desktop)
+        const padding = window.innerWidth <= 768 ? 20 : 50
+        setContainerWidth(Math.min(720, rect.width - padding))
+      }
+    }
+
+    updateWidth()
+    window.addEventListener('resize', updateWidth)
+    return () => window.removeEventListener('resize', updateWidth)
+  }, [])
+
+  // Responsive dimensions
+  const width = containerWidth
   const laneHeight = 40
   const laneGap = 15  // Increased gap between directions
   const leftMargin = 40
   const rightMargin = 40
   const topMargin = 35  // More room for W/b time labels
   const bottomMargin = 45  // More room for E/b time labels to avoid cutoff
+
+  // Calculate height based on fixed lane dimensions
+  const height = topMargin + (4 * laneHeight) + (3 * laneGap) + bottomMargin
 
   const plotWidth = width - leftMargin - rightMargin
   const _plotHeight = height - topMargin - bottomMargin
@@ -237,8 +259,8 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
 
   return (
     <div>
-      <h2 style={{ textAlign: 'center', margin: '10px 0 5px 0', fontSize: '1.5rem', fontWeight: 'bold' }}>Space-Time Diagram</h2>
-      <p style={{ textAlign: 'center', margin: '0 0 10px 0', fontSize: '0.95rem', color: '#555', fontWeight: '500' }}>
+      <h2 style={{ textAlign: 'left', margin: '10px 0 5px 0', fontSize: '1.5rem', fontWeight: 'bold' }}>Space-Time Diagram</h2>
+      <p style={{ textAlign: 'left', margin: '0 0 10px 0', fontSize: '0.95rem', color: '#555', fontWeight: '500' }}>
         Overall allocation: <strong>{spaceTimeStats.carPercent}%</strong> for cars, <strong>{spaceTimeStats.bikePercent}%</strong> for bikes, <strong>{spaceTimeStats.dmzPercent}%</strong> "DMZ"
       </p>
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
@@ -614,7 +636,7 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
         />
 
         {/* W/b time axis labels (above) */}
-        {[0, 15, 30, 45, 60].map(min => (
+        {(width < 400 ? [0, 30, 60] : [0, 15, 30, 45, 60]).map(min => (
           <g key={`wb-${min}`}>
             <line
               x1={timeToX(min, true)}
@@ -638,7 +660,7 @@ const SpaceTimeRectsComponent: FC<Props> = ({ currentMinute, eb, wb }) => {
         ))}
 
         {/* E/b time axis labels (below) */}
-        {[0, 15, 30, 45, 60].map(min => (
+        {(width < 400 ? [0, 30, 60] : [0, 15, 30, 45, 60]).map(min => (
           <g key={`eb-${min}`}>
             <line
               x1={timeToX(min, false)}

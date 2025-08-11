@@ -600,6 +600,80 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 
 // (Old info-sections removed - replaced by timeline-and-how and why-section)
 
+// Appendix sections
+.appendix-container {
+  max-width: 1200px;
+  padding: 0 20px;
+
+  @media (max-width: 768px) {
+    padding: 0 10px;
+  }
+
+  &.first {
+    margin: 0 auto;
+  }
+
+  &.middle {
+    margin: 0 auto;
+  }
+
+  &.last {
+    margin: 0 auto 20px;
+  }
+}
+
+.appendix-section {
+  background: $tertiary-bg;
+  border-radius: $radius-lg;
+  padding: 15px 25px 25px 25px;
+
+  @media (max-width: 1024px) {
+    padding: 12px 15px 15px 15px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 10px 15px 15px 15px;
+  }
+
+  h2 {
+    margin: 0 0 15px 0;
+    color: $text-color;
+    font-size: 1.5rem;
+  }
+
+  p {
+    margin: 0 0 10px 0;
+    line-height: 1.5;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  // Video layout
+  &.with-video {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    align-items: flex-start;
+
+    @media (max-width: 768px) {
+      gap: 15px;
+    }
+
+    .text-content {
+      flex: 1 1 400px;
+      min-width: 300px;
+    }
+
+    .video-content {
+      flex: 0 0 auto;
+      display: flex;
+      justify-content: center;
+    }
+  }
+}
+
 // Footer
 .footer {
   margin-top: 60px;

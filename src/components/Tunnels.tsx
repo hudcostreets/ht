@@ -134,9 +134,37 @@ export function Tunnels() {
   // State for timeline direction toggle
   const [timelineDirection, setTimelineDirection] = useState<'east' | 'west'>('east')
 
+  // Ref for Ward Tour video
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const hasPlayedRef = useRef(false)
+
   // State for controls tooltip
   const [showControls, setShowControls] = useState(false)
   const [controlsSticky, setControlsSticky] = useState(false) // Track if clicked (sticky) vs hovered
+
+  // Auto-play video when it comes into view
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !hasPlayedRef.current) {
+            video.play().catch(err => {
+              // Auto-play might be blocked by browser
+              console.log('Auto-play prevented:', err)
+            })
+            hasPlayedRef.current = true
+          }
+        })
+      },
+      { threshold: 0.5 } // Trigger when 50% of video is visible
+    )
+
+    observer.observe(video)
+    return () => observer.disconnect()
+  }, [])
 
   // Handle clicks outside the controls to close sticky mode
   useEffect(() => {
@@ -764,42 +792,77 @@ export function Tunnels() {
         <div className="why-section">{MD(`
           ## Why
 
-          - It should be possible to walk or bike between Hudson County and NYC
-          - It's not possible today
-          - No one has a plan to make it possible within 10 years
-          - That's not acceptable
-          - Bikes can transport more people per lane-minute than cars [^1]
-          - We deserve a small fraction of the time, to do so
-          - This will help alleviate PATH overcrowding
-          - No one wants people taking (e)bikes on crowded PATH trains
-          - The Holland Tunnel is the worst-performing Hudson River crossing [^2]
-          - We should start piloting this on weekends
+          - It should be possible to walk or bike between Hudson County and NYC (it's not, today)
+          - No one has a plan to make it possible within 10 years (not acceptable)
+          - [Bikes can transport more people per lane-minute than cars][wt], deserve a little time to do so
+          - This will help alleviate [PATH overcrowding], reduce (e)bikes on crowded PATH trains
+          - [The Holland Tunnel is the worst-performing Hudson River crossing][hudson-transit]
+          - [The Port Authority should start piloting this on weekends][AN]
 
-          [^1]: https://www.instagram.com/p/DKXr7giSaeK/
-          [^2]: https://github.com/hudcostreets/hudson-transit
+          [wt]: #wt
+          [hudson-transit]: https://github.com/hudcostreets/hudson-transit
+          [PATH overcrowding]: https://photos.app.goo.gl/7cL6phf51MSDcBT59
+          [AN]: https://hudcostreets.org/panynj
         `)}
         </div>
       </div>
 
-      {/* SpaceTimeWheel visualization - larger and centered */}
-      {/*<div style={{*/}
-      {/*  display: 'flex',*/}
-      {/*  justifyContent: 'center',*/}
-      {/*  alignItems: 'center',*/}
-      {/*  margin: '40px 0',*/}
-      {/*  transform: 'scale(2.0)'*/}
-      {/*}}>*/}
-      {/*  <SpaceTimeWheel currentMinute={displayTime} tunnel={eb} />*/}
-      {/*</div>*/}
+      {/* Appendix: Ward Tour video */}
+      <div id="wt" className="appendix-container first">
+        <div className="appendix-section with-video">
+          <div className="text-content">
+            <h2>Appendix: more bikes than cars per lane-minute</h2>
+            <p>
+              <A href={"https://www.instagram.com/p/DKXr7giSaeK/"}>Here's</A> 2,000 cyclists using 1-2 car lanes in 5 minutes (during <A href={"https://www.bikejc.org/ward-tour"}>the Jersey City Ward Tour</A>).
+            </p>
+            <p>
+              That's more throughput than cars achieve all year (including on highways like JFK and 139), on the one hour per year when bikes can use them safely.
+            </p>
+          </div>
+          <div className="video-content">
+            <video
+              ref={videoRef}
+              controls
+              muted
+              playsInline
+              onEnded={() => {
+                // Add a visual cue that video can be replayed
+                if (videoRef.current) {
+                  videoRef.current.style.opacity = '0.8'
+                }
+              }}
+              onClick={(e) => {
+                const video = e.currentTarget
+                // Only handle click if video has ended
+                // This avoids interfering with native controls
+                if (video.ended) {
+                  video.currentTime = 0
+                  video.style.opacity = '1'
+                  video.play()
+                }
+              }}
+              style={{
+                maxWidth: '100%',
+                maxHeight: '500px',
+                width: 'auto',
+                height: 'auto',
+                borderRadius: '6px',
+                background: '#000',
+                cursor: 'pointer'
+              }}
+            >
+              <source src="/wt.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+      </div>
 
-      {/* SpaceTimeRects visualization - centered */}
-      <div id={"spacetime"} style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        margin: '0'
-      }}>
-        <SpaceTimeRects currentMinute={displayTime} eb={eb} wb={wb} />
+      {/* Appendix: Space-Time Diagram */}
+      <div id="spacetime" className="appendix-container last">
+        <div className="appendix-section">
+          <SpaceTimeRects currentMinute={displayTime} eb={eb} wb={wb} />
+        </div>
       </div>
 
       <footer className="footer">

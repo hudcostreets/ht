@@ -13,6 +13,8 @@ export type ColorZones = [number, number, number] | null
 export type Pen = XY & {
   w: number
   h: number
+  rows: number
+  cols: number
 }
 
 export interface TunnelConfig {
