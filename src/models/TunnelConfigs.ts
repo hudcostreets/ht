@@ -24,8 +24,8 @@ export const Common = {
   queuedCarWidthPx: 30,   // Queued car spacing
 }
 
-// Default configuration for Holland Tunnel
-export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
+// Function to generate config with current layout values
+export const getHollandTunnelConfig = (): TunnelsConfig => ({
   eb: {
     direction: 'east',
     offsetMin: 45,  // Bike pen opens at :45
@@ -65,4 +65,7 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
     mph: Common.carMph,
     stagingOffset: LAYOUT.PACE_STAGING_OFFSET
   }
-}
+})
+
+// Default configuration for Holland Tunnel (for backwards compatibility)
+export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = getHollandTunnelConfig()

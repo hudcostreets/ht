@@ -66,7 +66,7 @@ const TunnelComponent: FC<Props> = ({ dir, displayTime, tunnel }) => {
         return (
           <>
             <rect x={penX} y={penY} width={pen.w} height={pen.h}
-              fill="#e3f2fd" stroke="#2196f3" strokeWidth="2" strokeDasharray="5,5" rx="6" />
+              fill="#2196f3" fillOpacity="0.25" stroke="#1976d2" strokeWidth="2" strokeDasharray="5,5" rx="6" />
             <text x={penX + pen.w / 2} y={dir === 'east' ? penY + pen.h + 15 : penY - 10} fontSize="12" textAnchor="middle" style={{ userSelect: 'none' }}>Bike Pen</text>
           </>
         )

@@ -9,7 +9,7 @@ import { MD } from './MD'
 import { SpaceTimeRects } from './SpaceTimeRects'
 import { Tunnel } from './Tunnel.tsx'
 import { LAYOUT, COMPUTED_LAYOUT } from '../models/Constants'
-import { HOLLAND_TUNNEL_CONFIG } from '../models/TunnelConfigs'
+import { getHollandTunnelConfig } from '../models/TunnelConfigs'
 import { Tunnels as HT } from '../models/Tunnels'
 import './Tunnels.scss'
 
@@ -102,7 +102,7 @@ export function Tunnels() {
 
   // Recreate tunnels when window size changes
   const tunnels = useMemo(() => {
-    return new HT(HOLLAND_TUNNEL_CONFIG)
+    return new HT(getHollandTunnelConfig())
   }, [windowSize.width]) // Only recreate when width changes
 
   const { eb, wb } = tunnels
@@ -321,34 +321,32 @@ export function Tunnels() {
       <Tooltip id="vehicle-tooltip" style={{ zIndex: 9999 }} />
       <Tooltip id="speed-tooltip" style={{ zIndex: 9999 }} />
 
-      <div className="header">
-        <div className="header-content" style={{
-          display: 'inline-block',
-          textAlign: 'left'
-        }}>
-          <h1>The Holland Tunnel should have a bike lane</h1>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2a2a2a' }}>(for 10mins per hour)</h2>
+      <div className="holland-tunnel-container">
+        <div className="header">
+          <div className="header-content" style={{
+            display: 'inline-block',
+            textAlign: 'left'
+          }}>
+            <h1>The Holland Tunnel should have a bike lane</h1>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2a2a2a' }}>(for 10mins per hour)</h2>
+          </div>
         </div>
-      </div>
+        <div className="tunnel-visualization-svg" style={{
+          // Slide up when there's sufficient width (W/b pen fits next to left-aligned header)
+          marginTop: (() => {
+            // With left-aligned header, we have more room on the right for the W/b pen
+            // Only need to check width now since the pen can fit next to the header text
+            if (windowSize.width <= 600) return '0'
 
-      <div className="tunnel-visualization-svg" style={{
-        // Slide up when there's sufficient width (W/b pen fits next to left-aligned header)
-        marginTop: (() => {
-          // With left-aligned header, we have more room on the right for the W/b pen
-          // Only need to check width now since the pen can fit next to the header text
-          if (windowSize.width <= 600) return '0'
-
-          // On wider screens, slide up to utilize header space
-          // Reduced from -40px to -30px to leave more breathing room
-          return '-30px'
-        })(),
-        overflow: 'visible'
-      }}>
+            // On wider screens, slide up to utilize header space
+            // Reduced from -40px to -30px to leave more breathing room
+            return '-30px'
+          })(),
+          overflow: 'visible'
+        }}>
         <div style={{
           position: 'relative',
-          width: '100%',
-          maxWidth: COMPUTED_LAYOUT.SVG_WIDTH,
-          margin: '0 auto'
+          width: '100%'  // Full width of visualization container
         }}>
           {(() => {
             // Calculate SVG height based on actual content
@@ -398,20 +396,22 @@ export function Tunnels() {
                   tunnel={eb}
                 />
 
-                {/* NJ | NY label at tunnel midpoint */}
-                <text
-                  x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH / 2}
-                  y={180}  // Midpoint: W/b bottom (160) + gap to E/b top (200) = 180
-                  fontSize="18"  // Increased from 14
-                  fontWeight="bold"
-                  textAnchor="middle"
-                  dominantBaseline="middle"  // Vertically center the text
-                  fill="#333"
-                  opacity="0.6"
-                  style={{ userSelect: 'none' }}
-                >
-                  NJ | NY
-                </text>
+                {/* NJ | NY label at tunnel midpoint - hide on narrow screens */}
+                {windowSize.width > 500 && (
+                  <text
+                    x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH / 2}
+                    y={180}  // Midpoint: W/b bottom (160) + gap to E/b top (200) = 180
+                    fontSize="18"  // Increased from 14
+                    fontWeight="bold"
+                    textAnchor="middle"
+                    dominantBaseline="middle"  // Vertically center the text
+                    fill="#333"
+                    opacity="0.6"
+                    style={{ userSelect: 'none' }}
+                  >
+                    NJ | NY
+                  </text>
+                )}
 
                 {/* Clock digital display in space between tunnels */}
                 <text
@@ -504,7 +504,11 @@ export function Tunnels() {
                         const GEAR_PADDING = 20 // Even more padding for smaller gear
                         const gearTop = ebTunnelBottom + GEAR_PADDING
                         const gearBottom = sweepTextTop - GEAR_PADDING
-                        const gearSize = gearBottom - gearTop
+                        let gearSize = gearBottom - gearTop
+                        // Make gear smaller on narrow screens if needed
+                        if (windowSize.width <= 500 && gearSize < 10) {
+                          gearSize = Math.max(8, gearSize)  // Minimum 8px on narrow screens
+                        }
                         const gearCenterY = (gearTop + gearBottom) / 2
                         const gearX = legendX + 140  // Closer to legend items
 
@@ -557,9 +561,13 @@ export function Tunnels() {
                   const targetBottom = Math.max(ebPenBottom, legendBottom)
 
                   // Position clock tightly below E/b tunnel, sized to reach the bottom alignment
-                  const CLOCK_TOP_OFFSET = 65 // Distance below E/b tunnel bottom
+                  const CLOCK_TOP_OFFSET = windowSize.width <= 500 ? 70 : 65 // More offset on narrow screens
                   const clockTop = eb.config.y + CLOCK_TOP_OFFSET
-                  const clockSize = targetBottom - clockTop // Make clock big enough to reach bottom
+                  let clockSize = targetBottom - clockTop // Make clock big enough to reach bottom
+                  // Slightly smaller clock on narrow screens to leave room for gear
+                  if (windowSize.width <= 500) {
+                    clockSize = Math.min(clockSize, 70) // Max 70px on narrow screens
+                  }
                   const clockX = LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - clockSize // Right edge aligns with tunnel
                   const clockY = clockTop
 
@@ -812,8 +820,8 @@ export function Tunnels() {
         </div>
       </div>
 
-      {/* Appendix: Ward Tour video */}
-      <div id="wt" className="appendix-container first">
+        {/* Appendix: Ward Tour video */}
+        <div id="wt" className="appendix-container first">
         <div className="appendix-section with-video">
           <div className="text-content">
             <h2>Appendix: more bikes than cars per lane-minute</h2>
@@ -863,12 +871,13 @@ export function Tunnels() {
         </div>
       </div>
 
-      {/* Appendix: Space-Time Diagram */}
-      <div id="spacetime" className="appendix-container last">
-        <div className="appendix-section">
-          <SpaceTimeRects currentMinute={displayTime} eb={eb} wb={wb} />
+        {/* Appendix: Space-Time Diagram */}
+        <div id="spacetime" className="appendix-container last">
+          <div className="appendix-section">
+            <SpaceTimeRects currentMinute={displayTime} eb={eb} wb={wb} />
+          </div>
         </div>
-      </div>
+      </div> {/* End holland-tunnel-container */}
 
       <footer className="footer">
         <div className="socials">

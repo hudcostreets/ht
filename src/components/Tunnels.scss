@@ -48,17 +48,41 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 
 .holland-tunnel-container {
   width: 100%;
-  max-width: 1200px;
+  max-width: 850px;  // Reduced from 900px
   margin: 0 auto;
-  padding: 20px;
+  padding: 20px 60px;  // More horizontal padding to ensure staging space is visible
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  @media (max-width: 768px) {
+    padding: 15px 40px;  // Ensure staging space on tablets
+  }
+
+  @media (max-width: 500px) {
+    padding: 10px 30px;  // Ensure staging space on phones
+  }
 }
 
 // Tunnel visualization container
 .tunnel-visualization-svg {
-  width: 100%;
-  overflow-x: auto;
+  // Extend beyond container to allow for queue area and staging space
+  width: calc(100% + 200px);  // Container + left (100px) + right (100px)
+  overflow: visible;  // Allow SVG to draw outside container
   padding: 0;
+  // Use negative margins to extend beyond container
+  margin-left: -100px;   // Queue area space
+  margin-right: -100px;  // Fade + staging space
+
+  @media (max-width: 768px) {
+    width: calc(100% + 130px);  // 70 + 60
+    margin-left: -70px;
+    margin-right: -60px;
+  }
+
+  @media (max-width: 500px) {
+    width: calc(100% + 100px);  // 50 + 50
+    margin-left: -50px;
+    margin-right: -50px;
+  }
 
   // Ensure proper responsive behavior
   > div {
@@ -69,8 +93,8 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 // Header section
 .header {
   background: $secondary-bg;
-  padding: 20px 20px 0;
-  text-align: center; // Center the inline-block content
+  padding: 0 0 20px 0;  // No horizontal padding, already in container
+  text-align: left; // Left-align within container
 
   h1 {
     margin: 0 0 5px 0;
@@ -410,31 +434,19 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 .timeline-and-how {
   display: flex;
   gap: 0;  // No gap between sections
-  padding: 0 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-
-  @media (max-width: 1024px) {
-    padding: 0 15px;
-    gap: 0;
-  }
+  // Content stays within body container
 
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 0;
-    padding: 0 10px;
   }
 }
 
 .timeline-section {
   flex: 0 0 auto;  // Size to content, don't grow
   background: $tertiary-bg;
-  padding: 10px 15px;  // Reduced horizontal padding
+  padding: 10px 10px;  // Minimal padding to stay within container
   border-radius: $radius-lg;
-
-  @media (max-width: 1024px) {
-    padding: 10px 12px;
-  }
 
   h2 {
     margin: 0 0 15px 0;
@@ -487,16 +499,8 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 .how-section {
   flex: 1;  // Takes remaining space
   background: $tertiary-bg;
-  padding: 15px 25px 25px 25px;
+  padding: 10px 15px 15px 15px;  // Reduced padding
   border-radius: $radius-lg;
-
-  @media (max-width: 1024px) {
-    padding: 12px 15px 15px 15px;
-  }
-
-  @media (max-width: 768px) {
-    padding: 10px 15px 15px 15px;
-  }
 
   h2 {
     margin: 0 0 15px 0;
@@ -523,31 +527,13 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 
 // Why section (full width below)
 .why-section-container {
-  padding: 0 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-
-  @media (max-width: 1024px) {
-    padding: 0 15px;
-  }
-
-  @media (max-width: 768px) {
-    padding: 0 10px;
-  }
+  // Content stays within body container, no special sizing needed
 }
 
 .why-section {
   background: $tertiary-bg;
-  padding: 15px 25px 25px 25px;
+  padding: 10px 15px 15px 15px;  // Reduced padding
   border-radius: $radius-lg;
-
-  @media (max-width: 1024px) {
-    padding: 12px 15px 15px 15px;
-  }
-
-  @media (max-width: 768px) {
-    padding: 10px 15px 15px 15px;
-  }
 
   h2 {
     margin: 0 0 20px 0;
@@ -602,38 +588,25 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 
 // Appendix sections
 .appendix-container {
-  max-width: 1200px;
-  padding: 0 20px;
-
-  @media (max-width: 768px) {
-    padding: 0 10px;
-  }
+  // Content stays within body container, no special sizing needed
 
   &.first {
-    margin: 0 auto;
+    // No special margin needed
   }
 
   &.middle {
-    margin: 0 auto;
+    // No special margin needed
   }
 
   &.last {
-    margin: 0 auto 20px;
+    margin-bottom: 20px;
   }
 }
 
 .appendix-section {
   background: $tertiary-bg;
   border-radius: $radius-lg;
-  padding: 15px 25px 25px 25px;
-
-  @media (max-width: 1024px) {
-    padding: 12px 15px 15px 15px;
-  }
-
-  @media (max-width: 768px) {
-    padding: 10px 15px 15px 15px;
-  }
+  padding: 10px 15px 15px 15px;  // Reduced padding
 
   h2 {
     margin: 0 0 15px 0;

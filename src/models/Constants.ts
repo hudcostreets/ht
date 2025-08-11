@@ -1,18 +1,24 @@
-// Get responsive tunnel width based on viewport
+// Get responsive tunnel width based on container width
 function getResponsiveTunnelWidth(): number {
-  if (typeof window === 'undefined') return 800 // SSR fallback
+  if (typeof window === 'undefined') return 730 // SSR fallback (850 - 120 padding)
   const vw = window.innerWidth
-  if (vw < 768) return 500
-  if (vw < 1024) return 600
-  if (vw < 1200) return 700
-  return 800
+  // Container max-width is 850px with padding
+  // Tunnels should span the full container width minus padding
+  const containerWidth = Math.min(vw - 40, 850) // Account for body padding
+  if (vw <= 500) {
+    return containerWidth - 60 // Subtract phone padding (2x30)
+  }
+  if (vw < 768) {
+    return containerWidth - 80 // Subtract tablet padding (2x40)
+  }
+  return Math.min(containerWidth - 120, 730) // Subtract desktop padding (2x60), max 730
 }
 
 // Get responsive fade distance based on viewport
 function getResponsiveFadeDistance(): number {
   if (typeof window === 'undefined') return 100 // SSR fallback
   const vw = window.innerWidth
-  if (vw <= 500) return 40  // Narrow screens: minimal fade
+  if (vw <= 500) return 50  // Narrow screens: more fade to keep vehicles visible
   if (vw < 768) return 60   // Small screens
   return 100                 // Desktop: full fade
 }
