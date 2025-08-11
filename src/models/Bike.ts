@@ -34,11 +34,14 @@ export class Bike extends Vehicle {
       // With evenly distributed spawn times, count how many spawn after pen closes
       const bikesBeforePenClose = Math.floor(config.penCloseMin * tunnel.nbikes / config.period)
       const queuedBikes = tunnel.nbikes - bikesBeforePenClose
-      const rows = Math.ceil(queuedBikes / LAYOUT.BIKES_PER_ROW)
+
+      // Use pen's configured rows/cols if available
+      const penCols = pen.cols || LAYOUT.BIKES_PER_ROW
+      const penRows = pen.rows || Math.ceil(queuedBikes / LAYOUT.BIKES_PER_ROW)
 
       // Calculate grid dimensions: (n-1)*spacing + width for last item
-      const gridWidth = (LAYOUT.BIKES_PER_ROW - 1) * LAYOUT.BIKE_SPACING_X + LAYOUT.BIKE_WIDTH
-      const gridHeight = (rows - 1) * LAYOUT.BIKE_SPACING_Y + LAYOUT.BIKE_WIDTH
+      const gridWidth = (penCols - 1) * LAYOUT.BIKE_SPACING_X + LAYOUT.BIKE_WIDTH
+      const gridHeight = (penRows - 1) * LAYOUT.BIKE_SPACING_Y + LAYOUT.BIKE_WIDTH
 
       // Center the grid within the pen
       const gridLeft = pen.x + (pen.w - gridWidth) / 2

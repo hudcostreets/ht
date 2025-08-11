@@ -70,7 +70,7 @@ $shadow-md: 0 2px 6px rgba(0,0,0,0.15);
 .header {
   background: $secondary-bg;
   padding: 20px 20px 0;
-  text-align: center;
+  text-align: center; // Center the inline-block content
 
   h1 {
     margin: 0 0 5px 0;

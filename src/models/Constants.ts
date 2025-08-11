@@ -44,7 +44,7 @@ export const COMPUTED_LAYOUT = {
   // All other 14 bikes must queue
   MAX_QUEUED_BIKES: 14,
 
-  // Bike pen dimensions based on max queued bikes
+  // Bike pen dimensions based on max queued bikes (legacy, for backwards compatibility)
   get BIKE_PEN_WIDTH() {
     // Grid width: (bikes-1) * spacing + bike width
     const gridWidth = (LAYOUT.BIKES_PER_ROW - 1) * LAYOUT.BIKE_SPACING_X + LAYOUT.BIKE_WIDTH
@@ -53,6 +53,16 @@ export const COMPUTED_LAYOUT = {
   get BIKE_PEN_HEIGHT() {
     const rows = Math.ceil(this.MAX_QUEUED_BIKES / LAYOUT.BIKES_PER_ROW)
     // Grid height: (rows-1) * spacing + bike height (assume square bikes)
+    const gridHeight = (rows - 1) * LAYOUT.BIKE_SPACING_Y + LAYOUT.BIKE_WIDTH
+    return gridHeight + 2 * LAYOUT.BIKE_PEN_MARGIN
+  },
+
+  // Helper functions for custom pen dimensions
+  getBikePenWidth(cols: number) {
+    const gridWidth = (cols - 1) * LAYOUT.BIKE_SPACING_X + LAYOUT.BIKE_WIDTH
+    return gridWidth + 2 * LAYOUT.BIKE_PEN_MARGIN
+  },
+  getBikePenHeight(rows: number) {
     const gridHeight = (rows - 1) * LAYOUT.BIKE_SPACING_Y + LAYOUT.BIKE_WIDTH
     return gridHeight + 2 * LAYOUT.BIKE_PEN_MARGIN
   },

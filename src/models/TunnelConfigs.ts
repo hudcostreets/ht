@@ -33,8 +33,10 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
     pen: {
       x: LAYOUT.BIKE_PEN_INSET,  // Left-aligned with tunnel entrance
       y: 70,  // Below the lanes, closer to tunnel
-      w: COMPUTED_LAYOUT.BIKE_PEN_WIDTH,
-      h: COMPUTED_LAYOUT.BIKE_PEN_HEIGHT,
+      w: COMPUTED_LAYOUT.getBikePenWidth(4),  // Width for 4 columns
+      h: COMPUTED_LAYOUT.getBikePenHeight(4),  // Height for 4 rows
+      rows: 4,  // 4 rows for E/b pen
+      cols: 4,  // 4 columns for E/b pen
     },
     ...Common,
   },
@@ -44,10 +46,12 @@ export const HOLLAND_TUNNEL_CONFIG: TunnelsConfig = {
     offsetMin: 15,  // Bike pen opens at :15
     y: 100,  // Westbound tunnel is at top
     pen: {
-      x: LAYOUT.TUNNEL_WIDTH - COMPUTED_LAYOUT.BIKE_PEN_WIDTH - LAYOUT.BIKE_PEN_INSET,  // Right-aligned with tunnel exit
-      y: -80,  // Above the lanes
-      w: COMPUTED_LAYOUT.BIKE_PEN_WIDTH,
-      h: COMPUTED_LAYOUT.BIKE_PEN_HEIGHT,
+      x: LAYOUT.TUNNEL_WIDTH - COMPUTED_LAYOUT.getBikePenWidth(8) - LAYOUT.BIKE_PEN_INSET,  // Right-aligned with tunnel exit
+      y: -65,  // Above the lanes (adjusted for 2-row height)
+      w: COMPUTED_LAYOUT.getBikePenWidth(8),  // Width for 8 columns
+      h: COMPUTED_LAYOUT.getBikePenHeight(2),  // Height for 2 rows
+      rows: 2,  // 2 rows for W/b pen (more horizontal)
+      cols: 8,  // 8 columns for W/b pen
     },
     ...Common,
   },

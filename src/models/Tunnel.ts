@@ -175,8 +175,10 @@ export class Tunnel {
       if (queueLen > 0) {
         // Bike needs to queue
         const idx = queueLen - 1
-        const row = floor(idx / bikesPerRow)
-        const col = idx % bikesPerRow
+        // Use pen's configured rows/cols if available, otherwise fall back to default
+        const penCols = config.pen.cols || bikesPerRow
+        const row = floor(idx / penCols)
+        const col = idx % penCols
         const offset = { x: col * LAYOUT.BIKE_SPACING_X, y: row * LAYOUT.BIKE_SPACING_Y, }
         const minsBeforeDequeueing = spawnMin >= penCloseMin ? (period - spawnMin) : 0
         bike.spawnQueue = {

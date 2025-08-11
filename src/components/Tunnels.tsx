@@ -264,15 +264,26 @@ export function Tunnels() {
       <Tooltip id="speed-tooltip" style={{ zIndex: 9999 }} />
 
       <div className="header">
-        <div className="header-content">
+        <div className="header-content" style={{
+          display: 'inline-block',
+          textAlign: 'left'
+        }}>
           <h1>The Holland Tunnel should have a bike lane</h1>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2a2a2a' }}>(for 10mins per hour)</h2>
         </div>
       </div>
 
       <div className="tunnel-visualization-svg" style={{
-        // On wider screens, slide entire container up to overlap with header space
-        marginTop: windowSize.width > 600 ? '-40px' : '0',
+        // Slide up when there's sufficient width (W/b pen fits next to left-aligned header)
+        marginTop: (() => {
+          // With left-aligned header, we have more room on the right for the W/b pen
+          // Only need to check width now since the pen can fit next to the header text
+          if (windowSize.width <= 600) return '0'
+
+          // On wider screens, slide up to utilize header space
+          // Reduced from -40px to -30px to leave more breathing room
+          return '-30px'
+        })(),
         overflow: 'visible'
       }}>
         <div style={{
@@ -283,19 +294,22 @@ export function Tunnels() {
         }}>
           {(() => {
             // Calculate SVG height based on actual content
-            const wbTunnelTop = wb.config.y // W/b tunnel top (should be 100)
-            const wbPenTop = wb.config.y + wb.config.pen.y // W/b pen top: 100 + (-80) = 20
-            const ebTunnelBottom = eb.config.y + 60 // E/b tunnel bottom (200 + 60 = 260)
+            const wbTunnelTop = wb.config.y // W/b tunnel top
+            const wbPenTop = wb.config.y + wb.config.pen.y // W/b pen top (tunnel y + pen y offset)
+            const ebTunnelBottom = eb.config.y + LAYOUT.LANE_HEIGHT * 2 // E/b tunnel bottom (2 lanes)
 
             // Calculate bottom elements
             const legendY = eb.config.y + eb.config.pen.y + 10
-            const legendBottom = legendY + 82 + 5 // Last item at y=82, plus text padding
-            const ebPenBottom = eb.config.y + eb.config.pen.y + COMPUTED_LAYOUT.BIKE_PEN_HEIGHT + 15 // Pen + label
+            const LEGEND_HEIGHT = 82 // Height to last legend item
+            const TEXT_PADDING = 5 // Extra padding for text height
+            const LABEL_HEIGHT = 15 // Height for pen label
+            const legendBottom = legendY + LEGEND_HEIGHT + TEXT_PADDING
+            const ebPenBottom = eb.config.y + eb.config.pen.y + eb.config.pen.h + LABEL_HEIGHT
 
             // Clock is now embedded and sized to align with legend/pen
             const clockBottom = Math.max(legendBottom, ebPenBottom)
 
-            // Find the actual top of all content (W/b pen is highest at y=20)
+            // Find the actual top of all content (W/b pen is typically highest)
             const contentTop = Math.min(wbPenTop, wbTunnelTop)
 
             // Set height with minimal padding
@@ -419,13 +433,16 @@ export function Tunnels() {
                 {(() => {
                   // Calculate legend and bike pen bottom for alignment
                   const ebPenY = eb.config.y + eb.config.pen.y
-                  const ebPenBottom = ebPenY + COMPUTED_LAYOUT.BIKE_PEN_HEIGHT
+                  const ebPenBottom = ebPenY + eb.config.pen.h
                   const legendY = ebPenY + 10
-                  const legendBottom = legendY + 82 + 5 // Last legend item at y=82, plus some padding for text height
+                  const LEGEND_HEIGHT = 82 // Height to last legend item
+                  const TEXT_PADDING = 5 // Extra padding for text height
+                  const legendBottom = legendY + LEGEND_HEIGHT + TEXT_PADDING
                   const targetBottom = Math.max(ebPenBottom, legendBottom)
 
                   // Position clock tightly below E/b tunnel, sized to reach the bottom alignment
-                  const clockTop = eb.config.y + 65 // Start closer to the tunnel (was 80)
+                  const CLOCK_TOP_OFFSET = 65 // Distance below E/b tunnel bottom
+                  const clockTop = eb.config.y + CLOCK_TOP_OFFSET
                   const clockSize = targetBottom - clockTop // Make clock big enough to reach bottom
                   const clockX = LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - clockSize // Right edge aligns with tunnel
                   const clockY = clockTop
