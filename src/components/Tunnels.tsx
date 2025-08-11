@@ -76,7 +76,7 @@ export function Tunnels() {
   })
 
   // Detect if device is mobile (touch-capable only, not just narrow screens)
-  const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+  // const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 
   useEffect(() => {
     let resizeTimer: ReturnType<typeof setTimeout>
@@ -172,8 +172,8 @@ export function Tunnels() {
       // Check if click is outside both the gear and the controls popover
       const target = e.target as Element
       if (controlsSticky &&
-          !target.closest('.controls-popover') &&
-          !target.closest('.settings-gear')) {
+        !target.closest('.controls-popover') &&
+        !target.closest('.settings-gear')) {
         setShowControls(false)
         setControlsSticky(false)
       }
@@ -300,6 +300,24 @@ export function Tunnels() {
   // Get current vehicles and phases
   const phases = tunnels.getPhases(displayTime)
 
+  // Helper functions for controls
+  const isPlaying = !isPaused
+  const togglePlay = () => {
+    setIsPaused(prev => !prev)
+    setShowDecimal(false)
+    // Update URL based on pause state
+    if (!isPaused) {
+      const url = new URL(window.location.href)
+      url.searchParams.set('t', displayTime.toString())
+      window.history.replaceState({}, '', url.toString())
+    } else {
+      // Clear URL param when playing
+      const url = new URL(window.location.href)
+      url.searchParams.delete('t')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }
+
   // Handle timeline click
   const handleTimelineClick = (minute: number) => {
     const newTime = minute
@@ -322,16 +340,26 @@ export function Tunnels() {
       <Tooltip id="speed-tooltip" style={{ zIndex: 9999 }} />
 
       <div className="holland-tunnel-container">
-        <div className="header">
-          <div className="header-content" style={{
-            display: 'inline-block',
-            textAlign: 'left'
-          }}>
-            <h1>The Holland Tunnel should have a bike lane</h1>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2a2a2a' }}>(for 10mins per hour)</h2>
-          </div>
-        </div>
+        <h1 style={{
+          margin: '0 0 5px 0',
+          textAlign: 'left',
+          color: '#000',      // $text-color from SCSS
+          fontSize: '1.8rem'  // Original size from .header h1
+        }}>The Holland Tunnel should have a bike lane</h1>
+        <h2 style={{
+          margin: '0',
+          fontSize: '1.2rem',         // Original size from .header h2
+          fontWeight: 'normal',       // Original weight from .header h2
+          color: '#333',              // $text-secondary from SCSS
+          textAlign: 'left',
+          display: 'inline-block',    // Make width fit content
+          position: 'relative',       // Create stacking context
+          zIndex: 10,                 // Appear above SVG
+          backgroundColor: '#f5f5f5', // Match page background to ensure readability
+          paddingRight: '10px'        // Small padding for visual breathing room
+        }}>(for 10mins per hour)</h2>
         <div className="tunnel-visualization-svg" style={{
+          position: 'relative',  // Add relative positioning for absolute children
           marginTop: (() => {
             // Check if we should slide up
             const wbPenX = wb.config.pen.x + LAYOUT.QUEUE_AREA_WIDTH
@@ -350,473 +378,431 @@ export function Tunnels() {
           })(),
           overflow: 'visible'
         }}>
-        <div style={{
-          position: 'relative',
-          width: '100%'  // Full width of visualization container
-        }}>
-          {(() => {
-            // Calculate SVG height based on actual content
-            const wbTunnelTop = wb.config.y // W/b tunnel top
-            const wbPenTop = wb.config.y + wb.config.pen.y // W/b pen top (tunnel y + pen y offset)
-            const ebTunnelBottom = eb.config.y + LAYOUT.LANE_HEIGHT * 2 // E/b tunnel bottom (2 lanes)
-
-            // Calculate bottom elements
-            const legendY = eb.config.y + eb.config.pen.y + 10
-            const LEGEND_HEIGHT = 82 // Height to last legend item
-            const TEXT_PADDING = 5 // Extra padding for text height
-            const LABEL_HEIGHT = 15 // Height for pen label
-            const legendBottom = legendY + LEGEND_HEIGHT + TEXT_PADDING
-            const ebPenBottom = eb.config.y + eb.config.pen.y + eb.config.pen.h + LABEL_HEIGHT
-
-            // Clock is now embedded and sized to align with legend/pen
-            const clockBottom = Math.max(legendBottom, ebPenBottom)
-
-            // Calculate viewBox parameters
-            const TOP_PADDING = 10
-            const BOTTOM_PADDING = 10
-
-            // Find the actual top of all content
-            // Always need to include the W/b pen in the viewBox
-            const contentTop = Math.min(wbPenTop, wbTunnelTop)
-
-            // Simple viewBox calculation - always include all content with padding
-            const svgViewBoxY = contentTop - TOP_PADDING
-            const svgViewBoxHeight = (clockBottom + BOTTOM_PADDING) - svgViewBoxY
-
-            return (
-              <svg
-                key={`svg-${windowSize.width}`} // Force re-render on viewport change
-                width="100%"
-                viewBox={`0 ${svgViewBoxY} ${COMPUTED_LAYOUT.SVG_WIDTH} ${svgViewBoxHeight}`}
-                preserveAspectRatio="xMidYMid meet"
-                style={{ height: 'auto', display: 'block' }}>
-                {/* Both tunnels */}
-                <Tunnel
-                  dir="west"
-                  displayTime={displayTime}
-                  phase={phases.west}
-                  tunnel={wb}
-                />
-
-                <Tunnel
-                  dir="east"
-                  displayTime={displayTime}
-                  phase={phases.east}
-                  tunnel={eb}
-                />
-
-                {/* NJ | NY label at tunnel midpoint - hide on narrow screens */}
-                {windowSize.width > 500 && (
-                  <text
-                    x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH / 2}
-                    y={180}  // Midpoint: W/b bottom (160) + gap to E/b top (200) = 180
-                    fontSize="18"  // Increased from 14
-                    fontWeight="bold"
-                    textAnchor="middle"
-                    dominantBaseline="middle"  // Vertically center the text
-                    fill="#333"
-                    opacity="0.6"
-                    style={{ userSelect: 'none' }}
-                  >
-                    NJ | NY
-                  </text>
-                )}
-
-                {/* Clock digital display in space between tunnels */}
-                <text
-                  x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - 10}  // Right-aligned in tunnel area
-                  y={180}  // Same vertical position as NJ | NY
-                  fontSize="22"  // Increased from 18
-                  fontWeight="bold"
-                  textAnchor="end"
-                  dominantBaseline="middle"  // Vertically center the text
-                  fill="#333"
-                  style={{ userSelect: 'none' }}
-                >
-                  :{showDecimal
-                    ? displayTime.toFixed(1).padStart(4, '0')
-                    : String(Math.floor(displayTime) % 60).padStart(2, '0')}
-                </text>
-
-                {/* Global vehicles (Sweep and Pace) */}
-                {useMemo(() => {
-                  const allVehicles = tunnels.getAllVehicles(displayTime)
-                  const globalVehicles = allVehicles.filter(v => v.type === 'sweep' || v.type === 'pace')
-
-                  return globalVehicles.map(v => {
-                    const { id, dir, pos, type } = v
-                    const x = pos.x + LAYOUT.QUEUE_AREA_WIDTH
-                    const y = pos.y  // No yOffset needed - positions are absolute
-
-                    return (
-                      <text
-                        key={id}
-                        x={x}
-                        y={y}
-                        fontSize="20"
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        opacity={pos.opacity}
-                        style={{ userSelect: 'none', cursor: 'pointer' }}
-                        transform={dir === 'east' ? `translate(${x * 2},0) scale(-1,1)` : undefined}
-                        data-tooltip-id="vehicle-tooltip"
-                        data-tooltip-content={type === 'sweep' ?
-                          'Sweep van: Clears the lane for bikes at 12 mph' :
-                          'Pace car: Leads cars back into the lane at 20 mph'}
-                      >
-                        {type === 'sweep' ? '🚐' : '🚓'}
-                      </text>
-                    )
-                  })
-                }, [displayTime])}
-
-                {/* Legend positioned to the right of E/b bike pen */}
-                {(() => {
-                  // Position legend to the right of the E/b bike pen
-                  // On narrow screens, move it closer to save space
-                  const legendSpacing = windowSize.width <= 500 ? 10 : 20
-                  const legendX = LAYOUT.QUEUE_AREA_WIDTH + eb.config.pen.x + eb.config.pen.w + legendSpacing
-                  const legendY = eb.config.y + eb.config.pen.y + 10
-
-                  return (
-                    <>
-                      <g transform={`translate(${legendX}, ${legendY})`}>
-                        <text x="0" y="0" fontSize="14" fontWeight="bold" style={{ userSelect: 'none' }}>Legend</text>
-
-                        {/* Green rect - bike space */}
-                        <rect x="0" y="10" width="20" height="10" fill="#4caf50" opacity="0.3" />
-                        <text x="25" y="19" fontSize="12" style={{ userSelect: 'none' }}>Bike space</text>
-
-                        {/* Red rect - buffer */}
-                        <rect x="0" y="25" width="20" height="10" fill="#f44336" opacity="0.3" />
-                        <text x="25" y="34" fontSize="12" style={{ userSelect: 'none' }}>Buffer</text>
-
-                        {/* Grey rect - car space */}
-                        <rect x="0" y="40" width="20" height="10" fill="#666" />
-                        <text x="25" y="49" fontSize="12" style={{ userSelect: 'none' }}>Car space</text>
-
-                        {/* Sweep icon */}
-                        <text x="10" y="65" fontSize="16" textAnchor="middle" style={{ userSelect: 'none' }}>🚐</text>
-                        <text x="25" y="65" fontSize="12" style={{ userSelect: 'none' }}>"Sweep" clears stragglers</text>
-
-                        {/* Pace icon */}
-                        <text x="10" y="82" fontSize="16" textAnchor="middle" style={{ userSelect: 'none' }}>🚓</text>
-                        <text x="25" y="82" fontSize="12" style={{ userSelect: 'none' }}>"Pace car" reopens 🚗 lane</text>
-                      </g>
-
-                      {/* Settings gear icon */}
-                      {(() => {
-                        let gearX, gearCenterY, gearSize
-
-                        if (windowSize.width <= 500) {
-                          // On narrow screens, place gear inline with Legend title
-                          gearX = legendX + 68  // More space from "Legend" text
-                          gearCenterY = legendY - 6  // Move up more to align with text center
-                          gearSize = 20  // Even bigger for better visibility
-                        } else {
-                          // On wider screens, position in the pocket above legend
-                          const ebTunnelBottom = eb.config.y + LAYOUT.LANE_HEIGHT * 2
-                          const sweepTextTop = legendY + 55  // Top of Sweep line
-
-                          const GEAR_PADDING = 20
-                          const gearTop = ebTunnelBottom + GEAR_PADDING
-                          const gearBottom = sweepTextTop - GEAR_PADDING
-                          gearSize = Math.max(10, gearBottom - gearTop)
-                          gearCenterY = (gearTop + gearBottom) / 2
-                          gearX = legendX + 140  // Closer to legend items
-                        }
-
-                        return (
-                          <>
-                            <g
-                              className="settings-gear"
-                              transform={`translate(${gearX}, ${gearCenterY})`}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                // Toggle controls
-                                setShowControls(!showControls)
-                                setControlsSticky(!showControls)
-                              }}
-                              style={{ cursor: 'pointer' }}
-                              data-gear-x={gearX}
-                              data-gear-y={gearCenterY}
-                            >
-                              <circle
-                                cx="0"
-                                cy="0"
-                                r={gearSize/2 + 2}
-                                fill={showControls ? "#e3f2fd" : "#f5f5f5"}
-                                stroke={showControls ? "#2196f3" : "#ddd"}
-                                strokeWidth={showControls ? "2" : "1"}
-                              />
-                              <Settings
-                                x={-gearSize/2}
-                                y={-gearSize/2}
-                                size={gearSize}
-                                color={showControls ? "#1976d2" : "#666"}
-                              />
-                            </g>
-                          </>
-                        )
-                      })()}
-                    </>
-                  )
-                })()}
-
-                {/* Embedded clock positioned right-aligned with tunnel exit */}
-                {(() => {
-                  // Calculate legend and bike pen bottom for alignment
-                  const ebPenY = eb.config.y + eb.config.pen.y
-                  const ebPenBottom = ebPenY + eb.config.pen.h
-                  const legendY = ebPenY + 10
-                  const LEGEND_HEIGHT = 82 // Height to last legend item
-                  const TEXT_PADDING = 5 // Extra padding for text height
-                  const legendBottom = legendY + LEGEND_HEIGHT + TEXT_PADDING
-                  const targetBottom = Math.max(ebPenBottom, legendBottom)
-
-                  // Position clock tightly below E/b tunnel, sized to reach the bottom alignment
-                  const CLOCK_TOP_OFFSET = windowSize.width <= 500 ? 70 : 65 // More offset on narrow screens
-                  const clockTop = eb.config.y + CLOCK_TOP_OFFSET
-                  let clockSize = targetBottom - clockTop // Make clock big enough to reach bottom
-                  // Slightly smaller clock on narrow screens to leave room for gear
-                  if (windowSize.width <= 500) {
-                    clockSize = Math.min(clockSize, 70) // Max 70px on narrow screens
-                  }
-                  const clockX = LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - clockSize // Right edge aligns with tunnel
-                  const clockY = clockTop
-
-                  return (
-                    <>
-                      <AnalogClock
-                        minute={displayTime}
-                        size={clockSize}
-                        x={clockX}
-                        y={clockY}
-                        embedded={true}
-                      />
-                    </>
-                  )
-                })()}
-              </svg>
-            )
-          })()}
-
-          {/* Clock positioned below E/b exit - REMOVED, now embedded in SVG above */}
-        </div>
-      </div>
-
-      {/* Controls popover/tooltip */}
-      {showControls && (() => {
-        // Calculate gear position in viewport coordinates
-        const gearElement = document.querySelector('.settings-gear')
-        const svgElement = document.querySelector('.tunnel-visualization-svg svg')
-        let popupStyle: React.CSSProperties = {
-          position: 'fixed',
-          background: 'white',
-          border: '2px solid #ddd',
-          borderRadius: '8px',
-          padding: '20px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          zIndex: 10000,
-          minWidth: '300px'
-        }
-
-        if (gearElement && svgElement) {
-          const svgRect = svgElement.getBoundingClientRect()
-          const gearTransform = gearElement.getAttribute('transform')
-          const match = gearTransform?.match(/translate\(([^,]+),([^)]+)\)/)
-
-          if (match) {
-            const gearX = parseFloat(match[1])
-            const gearY = parseFloat(match[2])
-
-            // Convert SVG coordinates to viewport coordinates
-            const svgViewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 800, 400]
-            const scaleX = svgRect.width / svgViewBox[2]
-            const scaleY = svgRect.height / svgViewBox[3]
-
-            const gearScreenX = svgRect.left + (gearX - svgViewBox[0]) * scaleX
-            const gearScreenY = svgRect.top + (gearY - svgViewBox[1]) * scaleY
-
-            // Always position below gear, centered horizontally
-            popupStyle.left = `${gearScreenX}px`
-            popupStyle.top = `${gearScreenY + 30}px`
-            popupStyle.transform = 'translateX(-50%)'
-          }
-        }
-
-        return (
-          <div className="controls-popover"
-            onClick={(e) => e.stopPropagation()}
-            style={popupStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-            <h3 style={{ margin: 0, fontSize: '16px' }}>Playback Controls</h3>
-            <button
-              onClick={() => {
-                setShowControls(false)
-                setControlsSticky(false)
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '20px',
-                cursor: 'pointer',
-                padding: '0',
-                color: '#666'
-              }}
-            >×</button>
-          </div>
-          <div className="button-group" style={{ marginBottom: '15px', display: 'flex', gap: '4px', justifyContent: 'center' }}>
-            <button onClick={() => {
-              setIsPaused(prev => !prev)
-              setShowDecimal(false)
-              // Update URL based on pause state
-              if (!isPaused) {
-                const url = new URL(window.location.href)
-                url.searchParams.set('t', currentMinute.toString())
-                window.history.replaceState({}, '', url.toString())
-              } else {
-              // Clear URL param when playing
-                const url = new URL(window.location.href)
-                url.searchParams.delete('t')
-                window.history.replaceState({}, '', url.toString())
-              }
-            }} style={{ padding: '8px 12px', fontSize: '16px', border: 'none', borderRadius: '6px', background: '#007bff', color: 'white', cursor: 'pointer' }}>
-              {isPaused ? <Play size={18} /> : <Pause size={18} />}
-            </button>
-            <button
-              onClick={() => {
-                if (isPaused) {
-                  const baseTime = isTransitioning ? targetTime : displayTime
-                  const newTime = (baseTime - 1 + 60) % 60
-                  setTargetTime(newTime)
-                  setIsTransitioning(true)
-                  setShowDecimal(false)
-
-                  // Update URL
-                  const url = new URL(window.location.href)
-                  url.searchParams.set('t', newTime.toFixed(1))
-                  window.history.replaceState({}, '', url.toString())
-                }
-              }}
-              disabled={!isPaused}
-              title="Step backward 1 minute"
-              style={{ padding: '8px 12px', fontSize: '16px', border: 'none', borderRadius: '6px', background: '#007bff', color: 'white', cursor: 'pointer', opacity: isPaused ? 1 : 0.5 }}>
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              onClick={() => {
-                if (isPaused) {
-                  const baseTime = isTransitioning ? targetTime : displayTime
-                  const newTime = (baseTime + 1) % 60
-                  setTargetTime(newTime)
-                  setIsTransitioning(true)
-                  setShowDecimal(false)
-
-                  // Update URL
-                  const url = new URL(window.location.href)
-                  url.searchParams.set('t', newTime.toFixed(1))
-                  window.history.replaceState({}, '', url.toString())
-                }
-              }}
-              disabled={!isPaused}
-              title="Step forward 1 minute"
-              style={{ padding: '8px 12px', fontSize: '16px', border: 'none', borderRadius: '6px', background: '#007bff', color: 'white', cursor: 'pointer', opacity: isPaused ? 1 : 0.5 }}>
-              <ChevronRight size={18} />
-            </button>
-          </div>
-          <label style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '5px'
-          }}>
-            <span style={{ fontSize: '14px' }}>Speed: {speed}x</span>
-            <input
-              type="range"
-              min="0.5"
-              max="10"
-              step="0.5"
-              value={speed}
-              onChange={(e) => setSpeed(parseFloat(e.target.value))}
-              style={{ width: '100%' }}
-            />
-          </label>
-          {!isMobile && (
-            <div style={{ marginTop: '15px', fontSize: '12px', color: '#666', lineHeight: '1.5' }}>
-              <div><strong>Keyboard shortcuts:</strong></div>
-              <div>Space: Play/Pause</div>
-              <div>←/→: Step ±1 minute</div>
-              <div>⌥←/→: Step ±0.1 minute</div>
-            </div>
-          )}
-        </div>
-        )
-      })()}
-
-      <div className="timeline-and-how">
-        <div className="timeline-section">
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginBottom: '10px'
+            position: 'relative',
+            width: '100%'  // Full width of visualization container
           }}>
-            <h2 style={{ margin: 0 }}>Timeline ({timelineDirection === 'east' ? 'Eastbound' : 'Westbound'})</h2>
-            <button
-              onClick={() => setTimelineDirection(prev => prev === 'east' ? 'west' : 'east')}
-              style={{
-                background: 'none',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                padding: '2px 6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '14px'
-              }}
-              title="Switch direction"
-            >
-              <ArrowLeftRight size={14} />
-            </button>
-          </div>
-          <ul>
-            {generateTimeline(timelineDirection === 'east' ? eb : wb).map((entry, i) => {
-              const isCurrentPhase = entry.end > entry.start
-                ? currentMinute >= entry.start && currentMinute < entry.end
-                : currentMinute >= entry.start || currentMinute < entry.end // Wraps around hour
+            {(() => {
+              // Calculate SVG height based on actual content
+              const wbTunnelTop = wb.config.y // W/b tunnel top
+              const wbPenTop = wb.config.y + wb.config.pen.y // W/b pen top (tunnel y + pen y offset)
+              // const ebTunnelBottom = eb.config.y + LAYOUT.LANE_HEIGHT * 2 // E/b tunnel bottom (2 lanes)
+
+              // Calculate bottom elements
+              const legendY = eb.config.y + eb.config.pen.y + 10
+              const LEGEND_HEIGHT = 82 // Height to last legend item
+              const TEXT_PADDING = 5 // Extra padding for text height
+              const LABEL_HEIGHT = 15 // Height for pen label
+              const legendBottom = legendY + LEGEND_HEIGHT + TEXT_PADDING
+              const ebPenBottom = eb.config.y + eb.config.pen.y + eb.config.pen.h + LABEL_HEIGHT
+
+              // Clock is now embedded and sized to align with legend/pen
+              const clockBottom = Math.max(legendBottom, ebPenBottom)
+
+              // Calculate viewBox parameters
+              const TOP_PADDING = 10
+              const BOTTOM_PADDING = 10
+
+              // Find the actual top of all content
+              // Always need to include the W/b pen in the viewBox
+              const contentTop = Math.min(wbPenTop, wbTunnelTop)
+
+              // Simple viewBox calculation - always include all content with padding
+              const svgViewBoxY = contentTop - TOP_PADDING
+              const svgViewBoxHeight = (clockBottom + BOTTOM_PADDING) - svgViewBoxY
 
               return (
-                <li
-                  key={i}
-                  className={`timeline-item ${isCurrentPhase ? 'current-phase' : ''}`}
-                  onClick={() => handleTimelineClick(entry.start)}>
-                  :{String(entry.start).padStart(2, '0')}-:{String(entry.end).padStart(2, '0')} - {entry.label}
-                </li>
+                <svg
+                  key={`svg-${windowSize.width}`} // Force re-render on viewport change
+                  width="100%"
+                  viewBox={`0 ${svgViewBoxY} ${COMPUTED_LAYOUT.SVG_WIDTH} ${svgViewBoxHeight}`}
+                  preserveAspectRatio="xMidYMid meet"
+                  style={{ height: 'auto', display: 'block' }}>
+                  {/* Both tunnels */}
+                  <Tunnel
+                    dir="west"
+                    displayTime={displayTime}
+                    phase={phases.west}
+                    tunnel={wb}
+                  />
+
+                  <Tunnel
+                    dir="east"
+                    displayTime={displayTime}
+                    phase={phases.east}
+                    tunnel={eb}
+                  />
+
+                  {/* NJ | NY label at tunnel midpoint - hide on narrow screens */}
+                  {windowSize.width > 500 && (
+                    <text
+                      x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH / 2}
+                      y={180}  // Midpoint: W/b bottom (160) + gap to E/b top (200) = 180
+                      fontSize="18"  // Increased from 14
+                      fontWeight="bold"
+                      textAnchor="middle"
+                      dominantBaseline="middle"  // Vertically center the text
+                      fill="#333"
+                      opacity="0.6"
+                      style={{ userSelect: 'none' }}
+                    >
+                      NJ | NY
+                    </text>
+                  )}
+
+                  {/* Clock digital display in space between tunnels */}
+                  <text
+                    x={LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - 10}  // Right-aligned in tunnel area
+                    y={180}  // Same vertical position as NJ | NY
+                    fontSize="22"  // Increased from 18
+                    fontWeight="bold"
+                    textAnchor="end"
+                    dominantBaseline="middle"  // Vertically center the text
+                    fill="#333"
+                    style={{ userSelect: 'none' }}
+                  >
+                    :{showDecimal
+                    ? displayTime.toFixed(1).padStart(4, '0')
+                    : String(Math.floor(displayTime) % 60).padStart(2, '0')}
+                  </text>
+
+                  {/* Global vehicles (Sweep and Pace) */}
+                  {useMemo(() => {
+                    const allVehicles = tunnels.getAllVehicles(displayTime)
+                    const globalVehicles = allVehicles.filter(v => v.type === 'sweep' || v.type === 'pace')
+
+                    return globalVehicles.map(v => {
+                      const { id, dir, pos, type } = v
+                      const x = pos.x + LAYOUT.QUEUE_AREA_WIDTH
+                      const y = pos.y  // No yOffset needed - positions are absolute
+
+                      return (
+                        <text
+                          key={id}
+                          x={x}
+                          y={y}
+                          fontSize="20"
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          opacity={pos.opacity}
+                          style={{ userSelect: 'none', cursor: 'pointer' }}
+                          transform={dir === 'east' ? `translate(${x * 2},0) scale(-1,1)` : undefined}
+                          data-tooltip-id="vehicle-tooltip"
+                          data-tooltip-content={type === 'sweep' ?
+                            'Sweep van: Clears the lane for bikes at 12 mph' :
+                            'Pace car: Leads cars back into the lane at 20 mph'}
+                        >
+                          {type === 'sweep' ? '🚐' : '🚓'}
+                        </text>
+                      )
+                    })
+                  }, [displayTime])}
+
+                  {/* Legend positioned to the right of E/b bike pen */}
+                  {(() => {
+                    // Position legend to the right of the E/b bike pen
+                    // On narrow screens, move it closer to save space
+                    const legendSpacing = windowSize.width <= 500 ? 10 : 20
+                    const legendX = LAYOUT.QUEUE_AREA_WIDTH + eb.config.pen.x + eb.config.pen.w + legendSpacing
+                    const legendY = eb.config.y + eb.config.pen.y + 10
+
+                    return (
+                      <>
+                        <g transform={`translate(${legendX}, ${legendY})`}>
+                          <text x="0" y="0" fontSize="14" fontWeight="bold" style={{ userSelect: 'none' }}>Legend</text>
+
+                          {/* Green rect - bike space */}
+                          <rect x="0" y="10" width="20" height="10" fill="#4caf50" opacity="0.3" />
+                          <text x="25" y="19" fontSize="12" style={{ userSelect: 'none' }}>Bike space</text>
+
+                          {/* Red rect - buffer */}
+                          <rect x="0" y="25" width="20" height="10" fill="#f44336" opacity="0.3" />
+                          <text x="25" y="34" fontSize="12" style={{ userSelect: 'none' }}>Buffer</text>
+
+                          {/* Grey rect - car space */}
+                          <rect x="0" y="40" width="20" height="10" fill="#666" />
+                          <text x="25" y="49" fontSize="12" style={{ userSelect: 'none' }}>Car space</text>
+
+                          {/* Sweep icon */}
+                          <text x="10" y="65" fontSize="16" textAnchor="middle" style={{ userSelect: 'none' }}>🚐</text>
+                          <text x="25" y="65" fontSize="12" style={{ userSelect: 'none' }}>"Sweep" clears stragglers</text>
+
+                          {/* Pace icon */}
+                          <text x="10" y="82" fontSize="16" textAnchor="middle" style={{ userSelect: 'none' }}>🚓</text>
+                          <text x="25" y="82" fontSize="12" style={{ userSelect: 'none' }}>"Pace car" reopens 🚗 lane</text>
+                        </g>
+
+                        {/* Settings gear icon */}
+                        {(() => {
+                          let gearX, gearCenterY, gearSize
+
+                          if (windowSize.width <= 500) {
+                            // On narrow screens, place gear inline with Legend title
+                            gearX = legendX + 68  // More space from "Legend" text
+                            gearCenterY = legendY - 6  // Move up more to align with text center
+                            gearSize = 20  // Even bigger for better visibility
+                          } else {
+                            // On wider screens, position in the pocket above legend
+                            const ebTunnelBottom = eb.config.y + LAYOUT.LANE_HEIGHT * 2
+                            const sweepTextTop = legendY + 55  // Top of Sweep line
+
+                            const GEAR_PADDING = 20
+                            const gearTop = ebTunnelBottom + GEAR_PADDING
+                            const gearBottom = sweepTextTop - GEAR_PADDING
+                            gearSize = Math.max(10, gearBottom - gearTop)
+                            gearCenterY = (gearTop + gearBottom) / 2
+                            gearX = legendX + 140  // Closer to legend items
+                          }
+
+                          return (
+                            <>
+                              <g
+                                className="settings-gear"
+                                transform={`translate(${gearX}, ${gearCenterY})`}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  // Toggle controls
+                                  setShowControls(!showControls)
+                                  setControlsSticky(!showControls)
+                                }}
+                                style={{ cursor: 'pointer' }}
+                                data-gear-x={gearX}
+                                data-gear-y={gearCenterY}
+                              >
+                                <circle
+                                  cx="0"
+                                  cy="0"
+                                  r={gearSize/2 + 2}
+                                  fill={showControls ? "#e3f2fd" : "#f5f5f5"}
+                                  stroke={showControls ? "#2196f3" : "#ddd"}
+                                  strokeWidth={showControls ? "2" : "1"}
+                                />
+                                <Settings
+                                  x={-gearSize/2}
+                                  y={-gearSize/2}
+                                  size={gearSize}
+                                  color={showControls ? "#1976d2" : "#666"}
+                                />
+                              </g>
+                            </>
+                          )
+                        })()}
+                      </>
+                    )
+                  })()}
+
+                  {/* Embedded clock positioned right-aligned with tunnel exit */}
+                  {(() => {
+                    // Calculate legend and bike pen bottom for alignment
+                    const ebPenY = eb.config.y + eb.config.pen.y
+                    const ebPenBottom = ebPenY + eb.config.pen.h
+                    const legendY = ebPenY + 10
+                    const LEGEND_HEIGHT = 82 // Height to last legend item
+                    const TEXT_PADDING = 5 // Extra padding for text height
+                    const legendBottom = legendY + LEGEND_HEIGHT + TEXT_PADDING
+                    const targetBottom = Math.max(ebPenBottom, legendBottom)
+
+                    // Position clock tightly below E/b tunnel, sized to reach the bottom alignment
+                    const CLOCK_TOP_OFFSET = windowSize.width <= 500 ? 70 : 65 // More offset on narrow screens
+                    const clockTop = eb.config.y + CLOCK_TOP_OFFSET
+                    let clockSize = targetBottom - clockTop // Make clock big enough to reach bottom
+                    // Slightly smaller clock on narrow screens to leave room for gear
+                    if (windowSize.width <= 500) {
+                      clockSize = Math.min(clockSize, 70) // Max 70px on narrow screens
+                    }
+                    const clockX = LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - clockSize // Right edge aligns with tunnel
+                    const clockY = clockTop
+
+                    return (
+                      <>
+                        <AnalogClock
+                          minute={displayTime}
+                          size={clockSize}
+                          x={clockX}
+                          y={clockY}
+                          embedded={true}
+                        />
+                      </>
+                    )
+                  })()}
+                </svg>
               )
-            })}
-          </ul>
+            })()}
+
+            {/* Clock positioned below E/b exit - REMOVED, now embedded in SVG above */}
+
+            {/* Controls popover - positioned outside SVG as tooltip below gear */}
+            {showControls && (() => {
+              // Calculate gear position in SVG coordinates - must match the SVG gear positioning exactly
+              const legendSpacing = windowSize.width <= 500 ? 10 : 20
+              const legendX = LAYOUT.QUEUE_AREA_WIDTH + eb.config.pen.x + eb.config.pen.w + legendSpacing
+              const legendY = eb.config.y + eb.config.pen.y + 10
+
+              let gearX, gearY, gearSize
+              if (windowSize.width <= 500) {
+                // On narrow screens, place gear inline with Legend title
+                gearX = legendX + 68  // More space from "Legend" text
+                gearY = legendY - 6  // Move up more to align with text center
+                gearSize = 20  // Even bigger for better visibility
+              } else {
+                // On wider screens, position in the pocket above legend
+                const ebTunnelBottom = eb.config.y + LAYOUT.LANE_HEIGHT * 2
+                const sweepTextTop = legendY + 55  // Top of Sweep line
+                const GEAR_PADDING = 20
+                const gearTop = ebTunnelBottom + GEAR_PADDING
+                const gearBottom = sweepTextTop - GEAR_PADDING
+                gearSize = Math.max(10, gearBottom - gearTop)
+                gearY = (gearTop + gearBottom) / 2
+                gearX = legendX + 140  // Closer to legend items
+              }
+
+              // Calculate position for popover to appear below gear
+              const popoverWidth = windowSize.width <= 500 ? 200 : 250
+              const popoverLeft = gearX - popoverWidth / 2  // Center under gear
+              // gearY is center, gearSize/2 is radius, plus circle stroke and gap
+              // On desktop, gear can be larger so we need less additional gap
+              const strokeWidth = windowSize.width <= 500 ? 2 : 2
+              const gap = windowSize.width <= 500 ? 3 : -5  // Negative gap on desktop to compensate for larger gear
+              const popoverTop = gearY + gearSize / 2 + strokeWidth + gap
+
+              return (
+                <div
+                  className="controls-popover"
+                  style={{
+                    position: 'absolute',
+                    left: `${popoverLeft}px`,
+                    top: `${popoverTop}px`,
+                    width: `${popoverWidth}px`,
+                    background: 'white',
+                    border: '2px solid #ddd',
+                    borderRadius: '8px',
+                    padding: '15px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    zIndex: 10000,
+                    fontSize: '14px'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <h3 style={{ margin: 0, fontSize: '14px' }}>Playback Controls</h3>
+                    <button
+                      onClick={() => {
+                        setShowControls(false)
+                        setControlsSticky(false)
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '18px',
+                        cursor: 'pointer',
+                        padding: '0',
+                        lineHeight: '1'
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="controls" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div className="button-group" style={{ display: 'flex', gap: '4px' }}>
+                      <button onClick={() => setDisplayTime(Math.max(0, displayTime - 1))} disabled={displayTime === 0}>
+                        <ChevronLeft size={16} />
+                      </button>
+                      <button onClick={togglePlay}>
+                        {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                      </button>
+                      <button onClick={() => setDisplayTime(Math.min(59, displayTime + 1))} disabled={displayTime === 59}>
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
+                      Speed: {speed}x
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="10"
+                        step="0.5"
+                        value={speed}
+                        onChange={(e) => setSpeed(parseFloat(e.target.value))}
+                        style={{ flex: 1 }}
+                      />
+                    </label>
+
+                    <div style={{ marginTop: '5px', fontSize: '12px', color: '#666', lineHeight: '1.5' }}>
+                      <div><strong>Keyboard shortcuts:</strong></div>
+                      <div>Space: Play/Pause</div>
+                      <div>←/→: Step ±1 minute</div>
+                      <div>⌥←/→: Step ±0.1 minute</div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
         </div>
 
-        <div className="how-section">
-          <h2 style={{ margin: '0 0 10px 0' }}>How</h2>
-          <ul>
-            <li>Bikes get a 3-minute "pulse" each hour (like catching a train)</li>
-            <li>Cars restricted from 1 lane for 10mins (<a href={`#spacetime`}>&lt;10% of total space/time</a>)</li>
-            <li>Bikes get 12-15mins to cross</li>
-            <li>2 official vehicles:
-              <ul>
-                <li>"Sweep" van (picks up stragglers)</li>
-                <li>"Pace car" (reopens lane to cars)</li>
-              </ul>
-            </li>
-          </ul>
-        </div>
-      </div>
+        <div className="timeline-and-how">
+          <div className="timeline-section">
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '10px'
+            }}>
+              <h2 style={{ margin: 0 }}>Timeline ({timelineDirection === 'east' ? 'Eastbound' : 'Westbound'})</h2>
+              <button
+                onClick={() => setTimelineDirection(prev => prev === 'east' ? 'west' : 'east')}
+                style={{
+                  background: 'none',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  padding: '2px 6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '14px'
+                }}
+                title="Switch direction"
+              >
+                <ArrowLeftRight size={14} />
+              </button>
+            </div>
+            <ul>
+              {generateTimeline(timelineDirection === 'east' ? eb : wb).map((entry, i) => {
+                const isCurrentPhase = entry.end > entry.start
+                  ? currentMinute >= entry.start && currentMinute < entry.end
+                  : currentMinute >= entry.start || currentMinute < entry.end // Wraps around hour
 
-      <div className="why-section-container">
-        <div className="why-section">{MD(`
+                return (
+                  <li
+                    key={i}
+                    className={`timeline-item ${isCurrentPhase ? 'current-phase' : ''}`}
+                    onClick={() => handleTimelineClick(entry.start)}>
+                    :{String(entry.start).padStart(2, '0')}-:{String(entry.end).padStart(2, '0')} - {entry.label}
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+
+          <div className="how-section">
+            <h2 style={{ margin: '0 0 10px 0' }}>How</h2>
+            <ul>
+              <li>Bikes get a 3-minute "pulse" each hour (like catching a train)</li>
+              <li>Cars restricted from 1 lane for 10mins (<a href={`#spacetime`}>&lt;10% of total space/time</a>)</li>
+              <li>Bikes get 12-15mins to cross</li>
+              <li>2 official vehicles:
+                <ul>
+                  <li>"Sweep" van (picks up stragglers)</li>
+                  <li>"Pace car" (reopens lane to cars)</li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="why-section-container">
+          <div className="why-section">{MD(`
           ## Why
 
           - It should be possible to walk or bike between Hudson County and NYC (it's not, today)
@@ -831,59 +817,59 @@ export function Tunnels() {
           [PATH overcrowding]: https://photos.app.goo.gl/7cL6phf51MSDcBT59
           [AN]: https://hudcostreets.org/panynj
         `)}
+          </div>
         </div>
-      </div>
 
         {/* Appendix: Ward Tour video */}
         <div id="wt" className="appendix-container first">
-        <div className="appendix-section with-video">
-          <div className="text-content">
-            <h2>Appendix: more bikes than cars per lane-minute</h2>
-            <p>
-              <A href={"https://www.instagram.com/p/DKXr7giSaeK/"}>Here's</A> 2,000 cyclists using 1-2 car lanes in 5 minutes (during <A href={"https://www.bikejc.org/ward-tour"}>the Jersey City Ward Tour</A>).
-            </p>
-            <p>
-              That's more throughput than cars achieve all year (including on highways like JFK and 139), on the one hour per year when bikes can use them safely.
-            </p>
-          </div>
-          <div className="video-content">
-            <video
-              ref={videoRef}
-              controls
-              muted
-              playsInline
-              onEnded={() => {
-                // Add a visual cue that video can be replayed
-                if (videoRef.current) {
-                  videoRef.current.style.opacity = '0.8'
-                }
-              }}
-              onClick={(e) => {
-                const video = e.currentTarget
-                // Only handle click if video has ended
-                // This avoids interfering with native controls
-                if (video.ended) {
-                  video.currentTime = 0
-                  video.style.opacity = '1'
-                  video.play()
-                }
-              }}
-              style={{
-                maxWidth: '100%',
-                maxHeight: '500px',
-                width: 'auto',
-                height: 'auto',
-                borderRadius: '6px',
-                background: '#000',
-                cursor: 'pointer'
-              }}
-            >
-              <source src="/wt.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+          <div className="appendix-section with-video">
+            <div className="text-content">
+              <h2>Appendix: more bikes than cars per lane-minute</h2>
+              <p>
+                <A href={"https://www.instagram.com/p/DKXr7giSaeK/"}>Here's</A> 2,000 cyclists using 1-2 car lanes in 5 minutes (during <A href={"https://www.bikejc.org/ward-tour"}>the Jersey City Ward Tour</A>).
+              </p>
+              <p>
+                That's more throughput than cars achieve all year (including on highways like JFK and 139), on the one hour per year when bikes can use them safely.
+              </p>
+            </div>
+            <div className="video-content">
+              <video
+                ref={videoRef}
+                controls
+                muted
+                playsInline
+                onEnded={() => {
+                  // Add a visual cue that video can be replayed
+                  if (videoRef.current) {
+                    videoRef.current.style.opacity = '0.8'
+                  }
+                }}
+                onClick={(e) => {
+                  const video = e.currentTarget
+                  // Only handle click if video has ended
+                  // This avoids interfering with native controls
+                  if (video.ended) {
+                    video.currentTime = 0
+                    video.style.opacity = '1'
+                    video.play()
+                  }
+                }}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '500px',
+                  width: 'auto',
+                  height: 'auto',
+                  borderRadius: '6px',
+                  background: '#000',
+                  cursor: 'pointer'
+                }}
+              >
+                <source src="/wt.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
           </div>
         </div>
-      </div>
 
         {/* Appendix: Space-Time Diagram */}
         <div id="spacetime" className="appendix-container last">
