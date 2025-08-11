@@ -366,54 +366,43 @@ export function Tunnels() {
                     </g>
                   )
                 })()}
+
+                {/* Embedded clock positioned right-aligned with tunnel exit */}
+                {(() => {
+                  // Position clock below E/b tunnel, right-aligned with tunnel exit
+                  const clockSize = 80
+                  const clockX = LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH - clockSize // Right edge of clock aligns with tunnel right edge
+                  const clockY = eb.config.y + 80 // Below the E/b tunnel
+
+                  return (
+                    <>
+                      <AnalogClock
+                        minute={displayTime}
+                        size={clockSize}
+                        x={clockX}
+                        y={clockY}
+                        embedded={true}
+                      />
+                      {/* Clock digital display */}
+                      <text
+                        x={clockX + 40}
+                        y={clockY + clockSize + 15}
+                        fontSize="14"
+                        textAnchor="middle"
+                        fill="#333"
+                      >
+                        _ : {showDecimal
+                          ? displayTime.toFixed(1).padStart(4, '0')
+                          : String(Math.floor(displayTime) % 60).padStart(2, '0')}
+                      </text>
+                    </>
+                  )
+                })()}
               </svg>
             )
           })()}
 
-          {/* Clock positioned below E/b exit */}
-          {(() => {
-            // E/b tunnel: y=200, height=60, pen: y=70 (relative), height=70
-            const ebTunnelBottom = 200 + 60 // 260
-            const ebPenY = 200 + 70
-            const ebPenBottom = ebPenY + COMPUTED_LAYOUT.BIKE_PEN_HEIGHT
-            const bikePenLabelBottom = ebPenBottom + 15 // Bike pen label is 15px below pen
-
-            // Legend bottom: starts at pen.y + 10, has 82px of content (last item at y=82)
-            const legendY = ebPenY + 10
-            const legendBottom = legendY + 82 // Last text baseline is at y=82 in the legend
-
-            // Clock should align with the lowest element (max of bike pen label and legend)
-            const clockLabelBottom = Math.max(bikePenLabelBottom, legendBottom)
-            const clockTop = ebTunnelBottom + 15 // Start clock a bit below tunnel
-            const clockHeight = clockLabelBottom - clockTop
-
-            // E/b exit is at x = QUEUE_AREA_WIDTH + TUNNEL_WIDTH
-            const exitX = LAYOUT.QUEUE_AREA_WIDTH + LAYOUT.TUNNEL_WIDTH
-
-            return (
-              <div style={{
-                position: 'absolute',
-                right: `${COMPUTED_LAYOUT.SVG_WIDTH - exitX}px`, // Right-align with E/b exit
-                top: `${clockTop}px`,
-                height: `${clockHeight}px`,
-                width: '100px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'flex-end'
-              }}>
-                {/* Clock only */}
-                <div style={{ transform: 'scale(1.0)', flex: '1', display: 'flex', alignItems: 'center' }}>
-                  <AnalogClock minute={displayTime} />
-                </div>
-                <div style={{ fontSize: '14px' }}>
-                  _ : {showDecimal
-                    ? displayTime.toFixed(1).padStart(4, '0')
-                    : String(Math.floor(displayTime) % 60).padStart(2, '0')}
-                </div>
-              </div>
-            )
-          })()}
+          {/* Clock positioned below E/b exit - REMOVED, now embedded in SVG above */}
         </div>
       </div>
 

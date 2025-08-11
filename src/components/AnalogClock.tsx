@@ -3,9 +3,12 @@ import { motion } from 'framer-motion'
 interface AnalogClockProps {
   minute: number;
   size?: number;
+  x?: number;
+  y?: number;
+  embedded?: boolean;
 }
 
-export function AnalogClock({ minute, size = 80 }: AnalogClockProps) {
+export function AnalogClock({ minute, size = 80, x = 0, y = 0, embedded = false }: AnalogClockProps) {
   // Calculate minute hand angle (6 degrees per minute)
   // Use fractional minutes for smooth animation
   const minuteAngle = (minute * 6) - 90 // -90 to start from top
@@ -40,13 +43,8 @@ export function AnalogClock({ minute, size = 80 }: AnalogClockProps) {
     `
   }
 
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 80 80"
-      className="analog-clock"
-    >
+  const clockContent = (
+    <>
       {/* Clock face */}
       <circle
         cx="40"
@@ -139,6 +137,27 @@ export function AnalogClock({ minute, size = 80 }: AnalogClockProps) {
 
       {/* Center dot */}
       <circle cx="40" cy="40" r="3" fill="#333" />
+    </>
+  )
+
+  // If embedded, return as a group element
+  if (embedded) {
+    return (
+      <g transform={`translate(${x}, ${y}) scale(${size / 80})`}>
+        {clockContent}
+      </g>
+    )
+  }
+
+  // Otherwise return as standalone SVG
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 80 80"
+      className="analog-clock"
+    >
+      {clockContent}
     </svg>
   )
 }
