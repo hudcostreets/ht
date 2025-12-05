@@ -785,40 +785,44 @@ export function Tunnels() {
             </ul>
           </div>
 
-          <div className="how-section">
-            <h2 style={{ margin: '0 0 10px 0' }}>How</h2>
-            <ul>
-              <li>Bikes get a 3-minute "pulse" each hour (like catching a train)</li>
-              <li>Cars restricted from 1 lane for 10mins (<a href={`#spacetime`}>&lt;10% of total space/time</a>)</li>
-              <li>Bikes get 12-15mins to cross</li>
-              <li>2 official vehicles:
-                <ul>
-                  <li>"Sweep" van (picks up stragglers)</li>
-                  <li>"Pace car" (reopens lane to cars)</li>
-                </ul>
-              </li>
-            </ul>
-          </div>
+          {useMemo(() => (
+            <div className="how-section">
+              <h2 style={{ margin: '0 0 10px 0' }}>How</h2>
+              <ul>
+                <li>Bikes get a 3-minute "pulse" each hour (like catching a train)</li>
+                <li>Cars restricted from 1 lane for 10mins (<a href={`#spacetime`}>&lt;10% of total space/time</a>)</li>
+                <li>Bikes get 12-15mins to cross</li>
+                <li>2 official vehicles:
+                  <ul>
+                    <li>"Sweep" van (picks up stragglers)</li>
+                    <li>"Pace car" (reopens lane to cars)</li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          ), [])}
         </div>
 
-        <div className="why-section-container">
-          <div className="why-section">{MD(`
-          ## Why
+        {useMemo(() => (
+          <div className="why-section-container">
+            <div className="why-section">{MD(`
+            ## Why
 
-          - It should be possible to walk or bike between Hudson County and NYC (it's not, today)
-          - No one has a plan to make it possible within 10 years (not acceptable)
-          - [Bikes can transport more people per lane-minute than cars][wt], deserve a little time to do so
-          - This will help alleviate [PATH overcrowding], reduce (e)bikes on crowded PATH trains
-          - [The Holland Tunnel is the worst-performing Hudson River crossing][hudson-transit]
-          - [The Port Authority should start piloting this on weekends][AN]
+            - It should be possible to walk or bike between Hudson County and NYC (it's not, today)
+            - No one has a plan to make it possible within 10 years (not acceptable)
+            - [Bikes can transport more people per lane-minute than cars][wt], deserve a little time to do so
+            - This will help alleviate [PATH overcrowding], reduce (e)bikes on crowded PATH trains
+            - [The Holland Tunnel is the worst-performing Hudson River crossing][hudson-transit]
+            - [The Port Authority should start piloting this on weekends][AN]
 
-          [wt]: #wt
-          [hudson-transit]: https://github.com/hudcostreets/hudson-transit
-          [PATH overcrowding]: https://photos.app.goo.gl/7cL6phf51MSDcBT59
-          [AN]: https://hudcostreets.org/panynj
-        `)}
+            [wt]: #wt
+            [hudson-transit]: https://github.com/hudcostreets/hudson-transit
+            [PATH overcrowding]: https://photos.app.goo.gl/7cL6phf51MSDcBT59
+            [AN]: https://hudcostreets.org/panynj
+          `)}
+            </div>
           </div>
-        </div>
+        ), [])}
 
         {/* Appendix: Ward Tour video */}
         <div id="wt" className="appendix-container first">
